@@ -301,7 +301,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                 <div key={type.value} className="p-3 border border-zinc-100 dark:border-zinc-800 rounded-xl">
                                     <div className="flex justify-between items-center mb-2">
                                         <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{type.label}</span>
-                                        <label className="cursor-pointer text-[10px] font-bold text-blue-600 hover:text-blue-700 py-1 px-2 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded transition-colors">
+                                        <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 py-1.5 px-3 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded transition-colors">
                                             {pkg.collateral?.find(c => c.type === type.value) ? "Replace" : "Upload"}
                                             <input
                                                 type="file"
@@ -311,7 +311,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                             />
                                         </label>
                                     </div>
-                                    {isNew && <p className="text-[10px] text-zinc-400 italic">Save package first to upload collateral.</p>}
+                                    {isNew && <p className="text-xs text-zinc-400 italic">Save package first to upload collateral.</p>}
                                     <div className="space-y-2">
                                         {pkg.collateral?.filter(c => c.type === type.value).map(asset => (
                                             <div key={asset.id} className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-950 p-2 rounded-lg text-xs">
@@ -359,7 +359,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                 </button>
                                                 <div>
                                                     <h3 className="font-bold text-zinc-900 dark:text-zinc-100 leading-none">{service.name}</h3>
-                                                    <p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold tracking-wider">{service.metadata?.category || 'Service'}</p>
+                                                    <p className="text-xs text-zinc-500 mt-1 uppercase font-bold tracking-wider">{service.metadata?.category || 'Service'}</p>
                                                 </div>
                                             </div>
 
@@ -383,7 +383,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                     <select
                                                         value={serviceItem?.inclusion_type}
                                                         onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType)}
-                                                        className="text-xs font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 outline-none pointer-events-auto"
+                                                        className="text-sm font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 outline-none pointer-events-auto"
                                                     >
                                                         <option value="required">Required</option>
                                                         <option value="standard">Standard (Opt-out)</option>
@@ -424,15 +424,15 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                                         supportedFeatures: option.supported_features || []
                                                                                     });
                                                                                 }}
-                                                                                className="text-[9px] font-bold text-zinc-500 hover:text-blue-600 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded transition-colors"
+                                                                                className="text-xs font-bold text-zinc-500 hover:text-blue-600 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded transition-colors"
                                                                             >
-                                                                                Feat ({optionItem?.enabled_features?.length || 0})
+                                                                                Features ({optionItem?.enabled_features?.length || 0})
                                                                             </button>
                                                                         )}
                                                                         <select
                                                                             value={optionItem?.inclusion_type}
                                                                             onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType, option.id)}
-                                                                            className="text-[10px] font-bold bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 rounded-md px-2 py-0.5 outline-none"
+                                                                            className="text-xs font-bold bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 rounded-md px-2 py-1 outline-none"
                                                                         >
                                                                             <option value="required">Required</option>
                                                                             <option value="standard">Standard</option>
@@ -458,8 +458,8 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                                         className="w-3.5 h-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/10"
                                                                                     />
                                                                                     <div className="truncate">
-                                                                                        <p className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200 truncate">{design.name}</p>
-                                                                                        <p className="text-[9px] text-zinc-500 font-medium">{design.category || 'Design'}</p>
+                                                                                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">{design.name}</p>
+                                                                                        <p className="text-xs text-zinc-500 font-medium">{design.category || 'Design'}</p>
                                                                                     </div>
                                                                                 </div>
                                                                                 {isDesignSelected && (
@@ -479,13 +479,13 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                                                 className="w-5 h-5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors text-zinc-400 hover:text-zinc-600"
                                                                                                 title="Manage Features"
                                                                                             >
-                                                                                                <span className="text-[10px]">⚙</span>
+                                                                                                <span className="text-xs">⚙</span>
                                                                                             </button>
                                                                                         )}
                                                                                         <select
                                                                                             value={designItem?.inclusion_type}
                                                                                             onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType, option.id, design.id)}
-                                                                                            className="text-[9px] font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-md px-1 py-0.5 outline-none"
+                                                                                            className="text-xs font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-md px-1.5 py-1 outline-none"
                                                                                         >
                                                                                             <option value="required">REQ</option>
                                                                                             <option value="standard">STD</option>
@@ -552,12 +552,12 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                             <button
                                                                 key={type}
                                                                 onClick={() => updateFeatureInclusion(fid, type === 'none' ? 'none' : type as InclusionType)}
-                                                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${(inclusion === type) || (type === 'none' && !featureState)
+                                                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${(inclusion === type) || (type === 'none' && !featureState)
                                                                     ? 'bg-white dark:bg-zinc-700 text-blue-600 shadow-sm'
                                                                     : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                                                                     }`}
                                                             >
-                                                                {type === 'none' ? 'Off' : type.charAt(0).toUpperCase() + type.slice(1, 3)}
+                                                                {type === 'none' ? 'Off' : type.charAt(0).toUpperCase() + type.slice(1)}
                                                             </button>
                                                         ))}
                                                     </div>
