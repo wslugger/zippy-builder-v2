@@ -87,18 +87,32 @@ export interface TechnicalFeature {
   assumptions?: string[];
 }
 
+export type InclusionType = 'required' | 'standard' | 'optional';
+
+export interface PackageCollateral {
+  id: string;
+  name: string;
+  type: 'solution_brief' | 'technical_reference' | 'diagram' | 'other';
+  url: string;
+  file_name: string;
+  uploaded_at: string;
+}
+
 export interface PackageItem {
   service_id: string; // Reference to Service.id
   service_option_id?: string; // Reference to ServiceOption.id
   design_option_id?: string; // Reference to DesignOption.id
   enabled_features: string[]; // List of TechnicalFeature.id enabled for this item
+  inclusion_type: InclusionType;
 }
 
 export interface Package {
   id: string; // e.g. "cost_centric"
   name: string; // "Cost Centric"
-  description: string;
+  short_description: string;
+  detailed_description: string;
   items: PackageItem[];
+  collateral?: PackageCollateral[];
   active: boolean;
 }
 

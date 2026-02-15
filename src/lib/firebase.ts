@@ -1,7 +1,8 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Equipment, CatalogMetadata, Service, TechnicalFeature, Package } from "@/src/lib/types";
+import { cleanObject } from "@/src/lib/feature-utils";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -27,7 +28,8 @@ const EQUIPMENT_COLLECTION = "equipment_catalog";
 export const EquipmentService = {
     saveEquipment: async (equipment: Equipment) => {
         const docRef = doc(db, EQUIPMENT_COLLECTION, equipment.id);
-        await setDoc(docRef, equipment, { merge: true });
+        const cleaned = cleanObject(equipment);
+        await setDoc(docRef, cleaned, { merge: true });
         return equipment.id;
     },
 
@@ -39,7 +41,8 @@ export const EquipmentService = {
 
         items.forEach((item) => {
             const docRef = doc(db, EQUIPMENT_COLLECTION, item.id);
-            batch.set(docRef, item, { merge: true });
+            const cleaned = cleanObject(item);
+            batch.set(docRef, cleaned, { merge: true });
         });
 
         await batch.commit();
@@ -73,7 +76,8 @@ const SERVICE_COLLECTION = "service_catalog";
 export const ServiceService = {
     saveService: async (service: Service) => {
         const docRef = doc(db, SERVICE_COLLECTION, service.id);
-        await setDoc(docRef, service, { merge: true });
+        const cleaned = cleanObject(service);
+        await setDoc(docRef, cleaned, { merge: true });
         return service.id;
     },
 
@@ -157,7 +161,8 @@ const PACKAGES_COLLECTION = "packages_catalog";
 export const FeatureService = {
     saveFeature: async (feature: TechnicalFeature) => {
         const docRef = doc(db, FEATURES_COLLECTION, feature.id);
-        await setDoc(docRef, feature, { merge: true });
+        const cleaned = cleanObject(feature);
+        await setDoc(docRef, cleaned, { merge: true });
         return feature.id;
     },
 
@@ -194,7 +199,8 @@ export const FeatureService = {
 export const PackageService = {
     savePackage: async (pkg: Package) => {
         const docRef = doc(db, PACKAGES_COLLECTION, pkg.id);
-        await setDoc(docRef, pkg, { merge: true });
+        const cleaned = cleanObject(pkg);
+        await setDoc(docRef, cleaned, { merge: true });
         return pkg.id;
     },
 
@@ -210,6 +216,48 @@ export const PackageService = {
             return snapshot.data() as Package;
         }
         return null;
+    },
+
+    deletePackage: async (id: string) => {
+        const docRef = doc(db, PACKAGES_COLLECTION, id);
+        await deleteDoc(docRef);
+    },
+
+    uploadCollateral: async (packageId: string, file: File, type: string) => {
+        try {
+            console.log("Starting upload to Storage for:", file.name);
+            const path = `packages/${packageId}/collateral/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, path);
+
+            console.log("Uploading bytes to path:", path);
+            const snapshot = await uploadBytes(storageRef, file);
+
+            console.log("Upload succesful. Metadata:", snapshot.metadata);
+            console.log("Retrieving download URL...");
+            const url = await getDownloadURL(snapshot.ref);
+
+            console.log("URL retrieved:", url);
+            const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : Math.random().toString(36).substring(2, 11);
+
+            return {
+                id,
+                name: file.name.split('.')[0],
+                type,
+                url,
+                file_name: file.name,
+                uploaded_at: new Date().toISOString()
+            };
+        } catch (error) {
+            console.error("Firebase Storage Upload Error:", error);
+            throw error;
+        }
+    },
+
+    deleteCollateral: async (url: string) => {
+        const storageRef = ref(storage, url);
+        await deleteObject(storageRef);
     }
 };
 

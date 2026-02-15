@@ -72,3 +72,25 @@ export function getFeatureUsage(
 
     return usage;
 }
+
+/**
+ * Recursively removes all undefined values from an object or array.
+ * Firestore does not support undefined values.
+ */
+export function cleanObject<T>(obj: T): T {
+    if (Array.isArray(obj)) {
+        return (obj as unknown[])
+            .filter(v => v !== undefined)
+            .map(v => (v && typeof v === 'object' ? cleanObject(v) : v)) as unknown as T;
+    }
+
+    if (obj && typeof obj === 'object') {
+        return Object.fromEntries(
+            Object.entries(obj)
+                .filter(([, v]) => v !== undefined)
+                .map(([k, v]) => [k, v && typeof v === 'object' ? cleanObject(v) : v])
+        ) as unknown as T;
+    }
+
+    return obj;
+}

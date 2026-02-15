@@ -7,21 +7,7 @@ export function usePackages() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    useEffect(() => {
-        async function load() {
-            try {
-                const data = await PackageService.getAllPackages();
-                setPackages(data);
-            } catch (e) {
-                setError(e as Error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        load();
-    }, []);
-
-    const refreshPackages = async () => {
+    async function load() {
         setLoading(true);
         try {
             const data = await PackageService.getAllPackages();
@@ -31,7 +17,16 @@ export function usePackages() {
         } finally {
             setLoading(false);
         }
-    };
+    }
 
-    return { packages, loading, error, refreshPackages };
+    useEffect(() => {
+        load();
+    }, []);
+
+    return {
+        packages,
+        loading,
+        error,
+        refreshPackages: load
+    };
 }
