@@ -81,6 +81,10 @@ export default function MetadataPage() {
                     service_categories: {
                         label: "Service Categories",
                         values: ["Fiber", "Broadband", "Satellite", "Wireless", "Cybersecurity", "Managed Services"]
+                    },
+                    design_option_categories: {
+                        label: "Design Option Categories",
+                        values: ["Topology", "East-West Security", "Internet Breakout"]
                     }
                 }
             };

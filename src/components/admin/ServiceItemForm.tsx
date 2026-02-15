@@ -1,6 +1,7 @@
 "use client";
 
-import { ServiceItem, DesignOption, DESIGN_OPTION_CATEGORIES } from "@/src/lib/types";
+import { ServiceItem, DesignOption, DESIGN_OPTION_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
+import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 
 interface ServiceItemFormProps {
     item: Partial<DesignOption>;
@@ -10,6 +11,9 @@ interface ServiceItemFormProps {
 }
 
 export default function ServiceItemForm({ item, onChange, title, showDesignFields }: ServiceItemFormProps) {
+    const { metadata } = useCatalogMetadata("service_catalog");
+    const categories = metadata?.fields?.design_option_categories?.values || DEFAULT_CATEGORIES;
+
     return (
         <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-100 dark:border-zinc-800 pb-2">{title}</h3>
@@ -39,7 +43,7 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
                                 placeholder="e.g. Topology"
                             />
                             <datalist id="design-option-categories">
-                                {DESIGN_OPTION_CATEGORIES.map(cat => (
+                                {categories.map((cat: string) => (
                                     <option key={cat} value={cat} />
                                 ))}
                             </datalist>

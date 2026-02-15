@@ -1,7 +1,7 @@
 "use client";
 
 import { ServiceItem, DesignOption } from "@/src/lib/types";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ServiceItemForm from "./ServiceItemForm";
 
 interface ServiceItemListProps {
@@ -42,18 +42,47 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
         onUpdate(items.map(i => i.id === id ? { ...i, ...updates } : i));
     };
 
-    // Group items by category if showDesignFields is true
-    const groupedItems: Record<string, DesignOption[]> = {};
-    if (showDesignFields) {
-        items.forEach(item => {
-            const cat = item.category || "Uncategorized";
-            if (!groupedItems[cat]) groupedItems[cat] = [];
-            groupedItems[cat].push(item);
-        });
-    }
+    // Use a ref to track the "locked" category of the item currently being edited
+    // to prevent it from jumping groups while the user is typing.
+    const [lockedCategory, setLockedCategory] = useState<{ id: string, category: string } | null>(null);
 
-    const renderItem = (item: DesignOption, index: number) => (
-        <div key={item.id} className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
+    // Update locked category when editingId changes
+    useEffect(() => {
+        if (editingId) {
+            const item = items.find(i => i.id === editingId);
+            setLockedCategory({ id: editingId, category: item?.category || "" });
+        } else {
+            setLockedCategory(null);
+        }
+    }, [editingId, items]);
+
+    // Stable flat list approach with "locked" position for editing item:
+    const listElements = useMemo(() => {
+        const sortedItems = [...items].sort((a, b) => {
+            // Use locked category for the editing item to keep it stable
+            const catA = (lockedCategory?.id === a.id ? lockedCategory.category : a.category) || "Uncategorized";
+            const catB = (lockedCategory?.id === b.id ? lockedCategory.category : b.category) || "Uncategorized";
+
+            if (catA === catB) return (a.name || "").localeCompare(b.name || "");
+            return catA.localeCompare(catB);
+        });
+
+        const elements: (DesignOption | { type: 'header', label: string })[] = [];
+        let lastCategory = "";
+
+        sortedItems.forEach(item => {
+            const cat = (lockedCategory?.id === item.id ? lockedCategory.category : item.category) || "Uncategorized";
+            if (cat !== lastCategory && showDesignFields) {
+                elements.push({ type: 'header', label: cat });
+                lastCategory = cat;
+            }
+            elements.push(item);
+        });
+        return elements;
+    }, [items, lockedCategory, showDesignFields]);
+
+    const renderItem = (item: DesignOption) => (
+        <div key={item.id} className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900 shadow-sm transition-all">
             <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800">
                 <button
                     onClick={() => setEditingId(editingId === item.id ? null : item.id)}
@@ -107,7 +136,7 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
                 )}
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-4">
                 {items.length === 0 ? (
                     <div className="py-10 text-center bg-zinc-50 dark:bg-zinc-950 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
                         <p className="text-sm text-zinc-500">No {itemTypeLabel.toLowerCase()}s added yet.</p>
@@ -120,27 +149,24 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
                             </button>
                         )}
                     </div>
-                ) : showDesignFields ? (
-                    Object.entries(groupedItems).map(([category, catItems]) => (
-                        <div key={category} className="space-y-3">
-                            <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-1 px-1">
-                                <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">{category}</h4>
-                                <button
-                                    onClick={() => addItem(category === "Uncategorized" ? "" : category)}
-                                    className="text-[10px] uppercase font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                                >
-                                    + Add to {category}
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-1 gap-4">
-                                {catItems.map((item, idx) => renderItem(item, idx))}
-                            </div>
-                        </div>
-                    ))
                 ) : (
-                    <div className="grid grid-cols-1 gap-4">
-                        {items.map((item, index) => renderItem(item, index))}
-                    </div>
+                    listElements.map((el: any, idx: number) => {
+                        if ('type' in el && el.type === 'header') {
+                            return (
+                                <div key={`header-${el.label}`} className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-1 px-1 mt-6 first:mt-0">
+                                    <h4 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">{el.label}</h4>
+                                    <button
+                                        onClick={() => addItem(el.label === "Uncategorized" ? "" : el.label)}
+                                        className="text-[10px] uppercase font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                                    >
+                                        + Add to {el.label}
+                                    </button>
+                                </div>
+                            );
+                        } else {
+                            return renderItem(el as DesignOption);
+                        }
+                    })
                 )}
             </div>
 
