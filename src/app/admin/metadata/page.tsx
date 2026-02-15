@@ -33,7 +33,8 @@ export default function MetadataPage() {
         }
     };
 
-    const seedDefaults = async () => {
+    const seedEquipmentDefaults = async () => {
+        if (metadata.find(m => m.id === "equipment_catalog") && !confirm("Equipment metadata already exists. Overwrite with defaults?")) return;
         setIsSaving(true);
         try {
             const defaultEqMetadata: CatalogMetadata = {
@@ -74,7 +75,20 @@ export default function MetadataPage() {
                 }
             };
             await MetadataService.saveCatalogMetadata(defaultEqMetadata);
+            await fetchMetadata();
+            alert("Equipment defaults seeded successfully!");
+        } catch (e) {
+            console.error(e);
+            alert("Failed to seed equipment defaults.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
+    const seedServiceDefaults = async () => {
+        if (metadata.find(m => m.id === "service_catalog") && !confirm("Service metadata already exists. Overwrite with defaults?")) return;
+        setIsSaving(true);
+        try {
             const defaultServiceMetadata: CatalogMetadata = {
                 id: "service_catalog",
                 fields: {
@@ -89,12 +103,11 @@ export default function MetadataPage() {
                 }
             };
             await MetadataService.saveCatalogMetadata(defaultServiceMetadata);
-
             await fetchMetadata();
-            alert("Default metadata seeded successfully!");
+            alert("Service defaults seeded successfully!");
         } catch (e) {
             console.error(e);
-            alert("Failed to seed defaults.");
+            alert("Failed to seed service defaults.");
         } finally {
             setIsSaving(false);
         }
@@ -199,9 +212,16 @@ export default function MetadataPage() {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={seedDefaults}
+                        onClick={seedServiceDefaults}
                         disabled={isSaving}
                         className="px-4 py-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors shadow-sm"
+                    >
+                        Seed Service Catalog
+                    </button>
+                    <button
+                        onClick={seedEquipmentDefaults}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors shadow-sm"
                     >
                         Seed Equipment Defaults
                     </button>

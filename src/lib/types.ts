@@ -70,6 +70,15 @@ export interface ServiceItem {
   assumptions: string[];
 }
 
+export const SERVICE_CATEGORIES = [
+  "Fiber",
+  "Broadband",
+  "Satellite",
+  "Wireless",
+  "Cybersecurity",
+  "Managed Services",
+] as const;
+
 export const DESIGN_OPTION_CATEGORIES = [
   "Topology",
   "East-West Security",

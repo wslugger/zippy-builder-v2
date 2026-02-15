@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { Service, ServiceItem } from "@/src/lib/types";
-import { ServiceService } from "@/src/lib/firebase";
+import { Service, ServiceItem, SERVICE_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
+import { ServiceService, MetadataService } from "@/src/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ServiceItemForm from "@/src/components/admin/ServiceItemForm";
 import ServiceOptionList from "@/src/components/admin/ServiceOptionList";
+import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 
 export default function ServiceEditorPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
@@ -28,6 +29,9 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
     const [loading, setLoading] = useState(!isNew);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState<"general" | "service-options">("general");
+
+    const { metadata } = useCatalogMetadata("service_catalog");
+    const categories: string[] = metadata?.fields?.service_categories?.values || [...DEFAULT_CATEGORIES];
 
     useEffect(() => {
         if (!isNew) {
@@ -57,10 +61,32 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
 
         setSaving(true);
         try {
+            const finalCategory = service.metadata?.category?.trim() || "";
             const finalService = {
                 ...service,
-                id: isNew && !service.id ? service.name.toLowerCase().replace(/\s+/g, "_") : service.id
+                id: isNew && !service.id ? service.name.toLowerCase().replace(/\s+/g, "_") : service.id,
+                metadata: { ...service.metadata, category: finalCategory }
             } as Service;
+
+            // If category is new, add it to master metadata
+            if (finalCategory && !categories.includes(finalCategory)) {
+                await MetadataService.updateCatalogField("service_catalog", "service_categories", finalCategory);
+            }
+
+            // Also check for new design option categories
+            const designCategories = metadata?.fields?.design_option_categories?.values || [];
+            const newDesignCategories = new Set<string>();
+            finalService.service_options?.forEach(opt => {
+                opt.design_options?.forEach(design => {
+                    if (design.category && !designCategories.includes(design.category)) {
+                        newDesignCategories.add(design.category);
+                    }
+                });
+            });
+
+            for (const newCat of Array.from(newDesignCategories)) {
+                await MetadataService.updateCatalogField("service_catalog", "design_option_categories", newCat);
+            }
 
             await ServiceService.saveService(finalService);
             alert("Service saved successfully!");
@@ -152,13 +178,36 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-medium text-zinc-500 mb-1">Service Category</label>
-                                    <input
-                                        type="text"
-                                        value={service.metadata?.category || ""}
-                                        onChange={(e) => setService(s => ({ ...s, metadata: { ...s.metadata, category: e.target.value } }))}
-                                        placeholder="e.g. Connectivity, Cybersecurity"
-                                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                                    />
+                                    <div className="space-y-2">
+                                        <select
+                                            value={categories.includes(service.metadata?.category || "") ? (service.metadata?.category || "") : (service.metadata?.category === "" ? "" : "custom")}
+                                            onChange={(e) => {
+                                                if (e.target.value === "custom") {
+                                                    setService(s => ({ ...s, metadata: { ...s.metadata, category: " " } })); // Space to trigger custom input
+                                                } else {
+                                                    setService(s => ({ ...s, metadata: { ...s.metadata, category: e.target.value } }));
+                                                }
+                                            }}
+                                            className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        >
+                                            <option value="">Select Category...</option>
+                                            {categories.map((cat: string) => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                            <option value="custom">＋ Create New Category...</option>
+                                        </select>
+
+                                        {(!service.metadata?.category || !categories.includes(service.metadata?.category)) && (
+                                            <input
+                                                type="text"
+                                                value={service.metadata?.category?.trim() || ""}
+                                                onChange={(e) => setService(s => ({ ...s, metadata: { ...s.metadata, category: e.target.value } }))}
+                                                placeholder="Enter new category name..."
+                                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 animate-in fade-in slide-in-from-top-1"
+                                                autoFocus
+                                            />
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-zinc-500 mb-1">Service Persistence ID</label>

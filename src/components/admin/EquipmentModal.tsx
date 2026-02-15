@@ -2,7 +2,7 @@
 
 import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES as DEFAULT_PURPOSES, CELLULAR_TYPES as DEFAULT_CELLULAR_TYPES, WIFI_STANDARDS as DEFAULT_WIFI_STANDARDS, EQUIPMENT_STATUSES as DEFAULT_STATUSES } from "@/src/lib/types";
 import { useState } from "react";
-import { EquipmentService } from "@/src/lib/firebase";
+import { EquipmentService, MetadataService } from "@/src/lib/firebase";
 import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 
 interface EquipmentModalProps {
@@ -41,6 +41,30 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            // Update metadata for dynamic fields if new values are found
+            const metadataUpdates: { field: string, value: string | string[] }[] = [
+                { field: 'mounting_options', value: formData.specs.mounting_options || [] },
+                { field: 'recommended_use_cases', value: formData.specs.recommended_use_case || "" },
+                { field: 'power_connector_types', value: formData.specs.power_connector_type || "" }
+            ];
+
+            // Add interface types
+            const { type: wanType } = parseInterface(formData.specs.wan_interfaces_desc);
+            const { type: lanType } = parseInterface(formData.specs.lan_interfaces_desc);
+            if (wanType) metadataUpdates.push({ field: 'interface_types', value: wanType });
+            if (lanType) metadataUpdates.push({ field: 'interface_types', value: lanType });
+
+            for (const update of metadataUpdates) {
+                const values = Array.isArray(update.value) ? update.value : [update.value];
+                const existingValues = (metadata?.fields?.[update.field]?.values || []) as string[];
+
+                for (const val of values) {
+                    if (val && !existingValues.includes(val)) {
+                        await MetadataService.updateCatalogField("equipment_catalog", update.field, val);
+                    }
+                }
+            }
+
             await EquipmentService.saveEquipment(formData);
             onSave(); // Refresh parent
             onClose();
