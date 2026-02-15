@@ -19,10 +19,10 @@ export async function POST(req: NextRequest) {
         await setDoc(docRef, equipment as Equipment, { merge: true });
 
         return NextResponse.json({ success: true, id: equipment.id });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Server-side save error:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to save equipment" },
+            { error: (error as Error).message || "Failed to save equipment" },
             { status: 500 }
         );
     }

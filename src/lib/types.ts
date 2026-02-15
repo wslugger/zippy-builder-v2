@@ -102,7 +102,7 @@ export interface Service extends ServiceItem {
   active: boolean;
   metadata?: {
     category?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

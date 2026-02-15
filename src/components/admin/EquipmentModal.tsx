@@ -76,11 +76,11 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
         }
     };
 
-    const handleChange = (field: keyof Equipment, value: any) => {
+    const handleChange = <K extends keyof Equipment>(field: K, value: Equipment[K]) => {
         setFormData({ ...formData, [field]: value });
     };
 
-    const handleSpecChange = (field: string, value: any) => {
+    const handleSpecChange = <K extends keyof Equipment['specs']>(field: K, value: string | number | string[]) => {
         setFormData({
             ...formData,
             specs: { ...formData.specs, [field]: Number(value) },
@@ -93,17 +93,17 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
             : [formData.purpose]; // Handle legacy string data
 
         let newPurposes;
-        if (currentPurposes.includes(purpose as any)) {
-            newPurposes = currentPurposes.filter((p) => p !== purpose && (purposes as any).includes(p));
+        if (currentPurposes.includes(purpose as Equipment['purpose'][number])) {
+            newPurposes = currentPurposes.filter((p) => p !== purpose && (purposes as string[]).includes(p));
         } else {
-            newPurposes = [...currentPurposes.filter(p => (purposes as any).includes(p)), purpose];
+            newPurposes = [...currentPurposes.filter(p => (purposes as string[]).includes(p)), purpose];
         }
 
         // Ensure at least one purpose is selected if possible, or allow empty?
         // Let's allow empty for now, or default to first one if empty is bad.
         // Actually, Zod schema might require min(1). Let's just set the state.
 
-        setFormData({ ...formData, purpose: newPurposes as any });
+        setFormData({ ...formData, purpose: newPurposes as Equipment['purpose'] });
     };
 
     const handleMountingChange = (option: string) => {
@@ -235,7 +235,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         <label className={labelClass}>Vendor</label>
                                         <select
                                             value={formData.vendor_id}
-                                            onChange={(e) => handleChange("vendor_id", e.target.value)}
+                                            onChange={(e) => handleChange("vendor_id", e.target.value as Equipment['vendor_id'])}
                                             className={inputClass}
                                         >
                                             {VENDOR_IDS.map((v) => (
@@ -249,7 +249,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         <label className={labelClass}>Status</label>
                                         <select
                                             value={formData.status || "Supported"}
-                                            onChange={(e) => handleChange("status", e.target.value)}
+                                            onChange={(e) => handleChange("status", e.target.value as Equipment['status'])}
                                             className={inputClass}
                                         >
                                             {statuses.map((s) => (
@@ -266,7 +266,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 <label key={p} className="flex items-center gap-2.5 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
                                                     <input
                                                         type="checkbox"
-                                                        checked={formData.purpose.includes(p as any)}
+                                                        checked={(formData.purpose as string[]).includes(p)}
                                                         onChange={() => handlePurposeChange(p)}
                                                         className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                                                     />
@@ -472,7 +472,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                         value={formData.specs.cellular_type || cellularTypes[0]}
                                                         onChange={(e) => setFormData({
                                                             ...formData,
-                                                            specs: { ...formData.specs, cellular_type: e.target.value as any }
+                                                            specs: { ...formData.specs, cellular_type: e.target.value as Equipment['specs']['cellular_type'] }
                                                         })}
                                                         className={`${inputClass} py-1.5 h-10 text-xs w-32`}
                                                     >
@@ -503,7 +503,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                         value={formData.specs.wifi_standard || wifiStandards[0]}
                                                         onChange={(e) => setFormData({
                                                             ...formData,
-                                                            specs: { ...formData.specs, wifi_standard: e.target.value as any }
+                                                            specs: { ...formData.specs, wifi_standard: e.target.value as Equipment['specs']['wifi_standard'] }
                                                         })}
                                                         className={`${inputClass} py-1.5 h-10 text-xs w-36`}
                                                     >
@@ -548,7 +548,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 <label key={option} className="flex items-center gap-2.5 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
                                                     <input
                                                         type="checkbox"
-                                                        checked={formData.specs.mounting_options?.includes(option as any) || false}
+                                                        checked={(formData.specs.mounting_options as string[])?.includes(option) || false}
                                                         onChange={() => handleMountingChange(option)}
                                                         className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                                                     />

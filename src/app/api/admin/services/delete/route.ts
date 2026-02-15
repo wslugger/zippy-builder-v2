@@ -18,10 +18,10 @@ export async function POST(req: NextRequest) {
         await deleteDoc(docRef);
 
         return NextResponse.json({ success: true, id });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Server-side delete error:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to delete service" },
+            { error: (error as Error).message || "Failed to delete service" },
             { status: 500 }
         );
     }

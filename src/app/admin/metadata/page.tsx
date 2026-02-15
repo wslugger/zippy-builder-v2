@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MetadataService } from "@/src/lib/firebase";
-import { CatalogMetadata, CatalogField } from "@/src/lib/types";
+import { CatalogMetadata } from "@/src/lib/types";
 
 export default function MetadataPage() {
     const [metadata, setMetadata] = useState<CatalogMetadata[]>([]);
@@ -14,11 +14,7 @@ export default function MetadataPage() {
     const [showNewFieldModal, setShowNewFieldModal] = useState(false);
     const [newFieldKey, setNewFieldKey] = useState("");
 
-    useEffect(() => {
-        fetchMetadata();
-    }, []);
-
-    const fetchMetadata = async () => {
+    const fetchMetadata = useCallback(async () => {
         setLoading(true);
         try {
             const data = await MetadataService.getAllCatalogMetadata();
@@ -31,7 +27,11 @@ export default function MetadataPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedCatalog]);
+
+    useEffect(() => {
+        fetchMetadata();
+    }, [fetchMetadata]);
 
     const seedEquipmentDefaults = async () => {
         if (metadata.find(m => m.id === "equipment_catalog") && !confirm("Equipment metadata already exists. Overwrite with defaults?")) return;

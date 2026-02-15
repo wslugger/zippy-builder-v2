@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { db } from '@/src/lib/firebase';
-import { collection, getDocs, limit, query, setDoc, doc, Timestamp } from 'firebase/firestore';
+
 
 export default function FirebaseDebug() {
     const [status, setStatus] = useState<string>('idle');
@@ -43,10 +42,10 @@ export default function FirebaseDebug() {
                 throw new Error(data.error || `HTTP ${res.status}`);
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Diagnostics failed:', error);
             setStatus('❌ Server Connection Failed');
-            log(`ERROR: ${error.message}`);
+            log(`ERROR: ${(error as Error).message}`);
         } finally {
             setIsLoading(false);
         }

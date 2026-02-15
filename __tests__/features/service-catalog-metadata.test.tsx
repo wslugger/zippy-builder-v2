@@ -37,6 +37,8 @@ describe("Service Catalog Metadata Integration", () => {
     beforeEach(() => {
         jest.clearAllMocks();
         (MetadataService.getAllCatalogMetadata as jest.Mock).mockResolvedValue(mockMetadata);
+        window.confirm = jest.fn(() => true);
+        window.alert = jest.fn();
     });
 
     it("renders both equipment and service catalogs in the sidebar", async () => {
@@ -51,24 +53,34 @@ describe("Service Catalog Metadata Integration", () => {
     it("allows switching to service_catalog and editing its fields", async () => {
         render(<MetadataPage />);
 
-        await waitFor(() => screen.getByText("service_catalog"));
+        await screen.findByText("service_catalog");
         fireEvent.click(screen.getByText("service_catalog"));
 
-        expect(screen.getByText("service_catalog Fields")).toBeInTheDocument();
-        expect(screen.getByText("Service Categories")).toBeInTheDocument();
-        expect(screen.getByText("Design Option Categories")).toBeInTheDocument();
+        expect(await screen.findByText("service_catalog Fields")).toBeInTheDocument();
+        // The labels are inside inputs, so use getByDisplayValue
+        expect(screen.getByDisplayValue("Service Categories")).toBeInTheDocument();
+        expect(screen.getByDisplayValue("Design Option Categories")).toBeInTheDocument();
     });
 
     it("seeds defaults for both catalogs", async () => {
         render(<MetadataPage />);
 
-        const seedButton = screen.getByText(/Seed Equipment Defaults/i); // Label might be confusing but that's what's in the code
+        const seedButton = await screen.findByText(/Seed Equipment Defaults/i);
         fireEvent.click(seedButton);
 
         await waitFor(() => {
             expect(MetadataService.saveCatalogMetadata).toHaveBeenCalledWith(expect.objectContaining({
                 id: "equipment_catalog"
             }));
+            // The seedEquipmentDefaults doesn't seed service_catalog, there's a separate button for that in the UI
+            // But let's check if the test intended to test both buttons.
+            // In the current MetadataPage, they are separate functions.
+        });
+
+        const seedServiceButton = screen.getByText(/Seed Service Catalog/i);
+        fireEvent.click(seedServiceButton);
+
+        await waitFor(() => {
             expect(MetadataService.saveCatalogMetadata).toHaveBeenCalledWith(expect.objectContaining({
                 id: "service_catalog"
             }));

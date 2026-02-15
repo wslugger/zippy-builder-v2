@@ -14,7 +14,6 @@ export async function GET() {
                 },
                 vendors: {
                     label: "Vendors",
-                    // @ts-ignore
                     values: [...VENDOR_IDS]
                 }
             },
@@ -27,7 +26,6 @@ export async function GET() {
             active: true,
             status: "Supported",
             vendor_id: "meraki",
-            // @ts-ignore
             purpose: ["SDWAN"],
             family: "Meraki MX",
             description: "Cloud-managed security & SD-WAN appliance",

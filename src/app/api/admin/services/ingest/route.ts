@@ -99,11 +99,11 @@ export async function POST(req: NextRequest) {
                 ...parsedService,
                 id: serviceId,
                 active: true,
-                service_options: (parsedService.service_options || []).map((o: any) => ({
+                service_options: (parsedService.service_options || []).map((o: { design_options?: unknown[] }) => ({
                     ...o,
                     id: crypto.randomUUID(),
-                    design_options: (o.design_options || []).map((d: any) => ({
-                        ...d,
+                    design_options: (Array.isArray(o.design_options) ? o.design_options : []).map((d: unknown) => ({
+                        ...(typeof d === 'object' && d !== null ? d : {}),
                         id: crypto.randomUUID()
                     }))
                 }))

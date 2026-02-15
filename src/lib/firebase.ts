@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { initializeFirestore, getFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch } from "firebase/firestore";
+import { initializeFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { Equipment, CatalogMetadata, Service } from "@/src/lib/types";
 
@@ -93,10 +93,7 @@ export const ServiceService = {
 
     deleteService: async (id: string) => {
         // Note: Actual delete might need dedicated API or Admin SDK depending on security rules
-        // but for now mirroring the equipment logic if we had one (equipment uses API route for delete)
-        const docRef = doc(db, SERVICE_COLLECTION, id);
-        // Firebase client SDK deleteDoc isn't imported here, but we can add it if needed.
-        // For consistency with existing pattern, we'll assume there's an API route for delete.
+        console.log("Delete service requested for ID:", id);
     }
 };
 

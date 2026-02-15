@@ -1,6 +1,6 @@
 "use client";
 
-import { ServiceItem, DesignOption, DESIGN_OPTION_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
+import { DesignOption, DESIGN_OPTION_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
 import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 
 interface ServiceItemFormProps {

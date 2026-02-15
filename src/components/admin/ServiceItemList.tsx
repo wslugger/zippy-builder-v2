@@ -1,7 +1,7 @@
 "use client";
 
-import { ServiceItem, DesignOption } from "@/src/lib/types";
-import { useState, useEffect, useMemo } from "react";
+import { DesignOption } from "@/src/lib/types";
+import { useState, useMemo } from "react";
 import ServiceItemForm from "./ServiceItemForm";
 
 interface ServiceItemListProps {
@@ -29,13 +29,13 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
             cons: []
         };
         onUpdate([...items, newItem]);
-        setEditingId(newItem.id);
+        handleSetEditingId(newItem.id);
     };
 
     const removeItem = (id: string) => {
         if (!confirm(`Delete this ${itemTypeLabel}?`)) return;
         onUpdate(items.filter(i => i.id !== id));
-        if (editingId === id) setEditingId(null);
+        if (editingId === id) handleSetEditingId(null);
     };
 
     const updateItem = (id: string, updates: Partial<DesignOption>) => {
@@ -46,15 +46,16 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
     // to prevent it from jumping groups while the user is typing.
     const [lockedCategory, setLockedCategory] = useState<{ id: string, category: string } | null>(null);
 
-    // Update locked category ONLY when a new item starts being edited
-    useEffect(() => {
-        if (editingId && lockedCategory?.id !== editingId) {
-            const item = items.find(i => i.id === editingId);
-            setLockedCategory({ id: editingId, category: item?.category || "" });
-        } else if (!editingId) {
+    // Helper to start/stop editing and manage the locked category
+    const handleSetEditingId = (id: string | null) => {
+        setEditingId(id);
+        if (id) {
+            const item = items.find(i => i.id === id);
+            setLockedCategory({ id, category: item?.category || "" });
+        } else {
             setLockedCategory(null);
         }
-    }, [editingId, lockedCategory?.id]);
+    };
 
     // Stable flat list approach with "locked" position for editing item:
     const listElements = useMemo(() => {
@@ -85,7 +86,7 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
         <div key={item.id} className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900 shadow-sm transition-all">
             <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800">
                 <button
-                    onClick={() => setEditingId(editingId === item.id ? null : item.id)}
+                    onClick={() => handleSetEditingId(editingId === item.id ? null : item.id)}
                     className="flex-1 text-left font-medium text-sm text-zinc-900 dark:text-zinc-100 hover:text-blue-600 transition-colors"
                 >
                     {item.name || `Unnamed ${itemTypeLabel}`}
@@ -95,7 +96,7 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
                 </button>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => setEditingId(editingId === item.id ? null : item.id)}
+                        onClick={() => handleSetEditingId(editingId === item.id ? null : item.id)}
                         className="p-1 px-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
                     >
                         {editingId === item.id ? "Collapse" : "Edit"}
@@ -150,7 +151,7 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
                         )}
                     </div>
                 ) : (
-                    listElements.map((el: any, idx: number) => {
+                    listElements.map((el) => {
                         if ('type' in el && el.type === 'header') {
                             return (
                                 <div key={`header-${el.label}`} className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-1 px-1 mt-6 first:mt-0">

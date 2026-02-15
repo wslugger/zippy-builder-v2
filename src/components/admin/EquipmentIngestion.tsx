@@ -3,7 +3,6 @@
 import { useState } from "react";
 import FirebaseDebug from "./FirebaseDebug";
 import { VENDOR_IDS, VENDOR_LABELS, Equipment } from "@/src/lib/types";
-import { EquipmentService } from "@/src/lib/firebase";
 
 export default function EquipmentIngestion() {
     const [file, setFile] = useState<File | null>(null);
@@ -102,9 +101,9 @@ export default function EquipmentIngestion() {
                 setStatusMessage(`⚠️ Completed with issues. Saved ${savedCount} items, failed ${errorCount}. Check console for details.`);
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Critical Save Error:", error);
-            setStatusMessage(`Critical failure: ${error.message}`);
+            setStatusMessage(`Critical failure: ${(error as Error).message}`);
         } finally {
             setIsLoading(false);
         }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { EquipmentSchema, VENDOR_IDS, EQUIPMENT_PURPOSES } from "@/src/lib/types";
+import { EQUIPMENT_PURPOSES } from "@/src/lib/types";
 import { MetadataService } from "@/src/lib/firebase";
 
 // Initialize Gemini
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
             const parsedResponse = JSON.parse(jsonString);
             const items = parsedResponse.items || [parsedResponse]; // Fallback to single object if not in array
 
-            const finalItems = items.map((item: any) => {
+            const finalItems = items.map((item: { model: string } & Record<string, unknown>) => {
                 const activeId = `${vendorId}_${item.model.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}`;
                 return {
                     ...item,

@@ -1,6 +1,6 @@
 
-const parseInterface = (desc: any = "") => {
-    const safeDesc = desc || "";
+const parseInterface = (desc: unknown = "") => {
+    const safeDesc = (desc as string) || "";
     const match = safeDesc.match(/^(\d+)x\s*(.*)$/);
     if (match) {
         return { qty: match[1], type: match[2] };
@@ -8,23 +8,20 @@ const parseInterface = (desc: any = "") => {
     return { qty: "", type: safeDesc };
 };
 
-console.log("Starting verification test...");
+describe("Bugfix: null-match-error", () => {
+    it("should handle valid string '1x GbE RJ45'", () => {
+        expect(parseInterface("1x GbE RJ45")).toEqual({ qty: "1", type: "GbE RJ45" });
+    });
 
-try {
-    console.log("Testing with valid string '1x GbE RJ45':", parseInterface("1x GbE RJ45"));
-    console.log("Testing with empty string '':", parseInterface(""));
-    console.log("Testing with null (THIS SHOULD NOW WORK):", parseInterface(null));
-    console.log("Testing with undefined:", parseInterface(undefined));
+    it("should handle empty string ''", () => {
+        expect(parseInterface("")).toEqual({ qty: "", type: "" });
+    });
 
-    const nullResult = parseInterface(null);
-    if (nullResult.qty === "" && nullResult.type === "") {
-        console.log("Verification successful! No error thrown and correct default returned.");
-        process.exit(0);
-    } else {
-        console.error("Verification failed! Unexpected result:", nullResult);
-        process.exit(1);
-    }
-} catch (e: any) {
-    console.error("VERIFICATION FAILED! Error thrown:", e.message);
-    process.exit(1);
-}
+    it("should handle null and not throw", () => {
+        expect(parseInterface(null)).toEqual({ qty: "", type: "" });
+    });
+
+    it("should handle undefined", () => {
+        expect(parseInterface(undefined)).toEqual({ qty: "", type: "" });
+    });
+});

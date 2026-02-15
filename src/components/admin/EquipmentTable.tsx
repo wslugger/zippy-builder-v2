@@ -69,7 +69,7 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                                     : [];
 
                                             return purposes
-                                                .filter(p => (EQUIPMENT_PURPOSES as any).includes(p))
+                                                .filter(p => (EQUIPMENT_PURPOSES as readonly string[]).includes(p))
                                                 .map((p) => (
                                                     <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
                                                         {p}
