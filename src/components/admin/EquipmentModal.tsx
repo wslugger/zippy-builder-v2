@@ -105,12 +105,13 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
         });
     };
 
-    const parseInterface = (desc: string = "") => {
-        const match = desc.match(/^(\d+)x\s*(.*)$/);
+    const parseInterface = (desc: string | null | undefined = "") => {
+        const safeDesc = desc || "";
+        const match = safeDesc.match(/^(\d+)x\s*(.*)$/);
         if (match) {
             return { qty: match[1], type: match[2] };
         }
-        return { qty: "", type: desc };
+        return { qty: "", type: safeDesc };
     };
 
     const joinInterface = (qty: string, type: string) => {
