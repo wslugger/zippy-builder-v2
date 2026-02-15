@@ -29,15 +29,4 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Deploy to Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: '' # Leave empty to force token usage if available, or just remove
-          firebaseToken: '${{ secrets.FIREBASE_TOKEN }}'
-          channelId: live
-          projectId: zippy-builder-v2
-          expires: 7d
-          entryPoint: .
-          firebaseToolsVersion: latest
-          disableComment: false
-          force: false
+        run: npx firebase-tools deploy --only hosting --project zippy-builder-v2 --token "${{ secrets.FIREBASE_TOKEN }}"
