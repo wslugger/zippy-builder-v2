@@ -35,26 +35,33 @@ graph TB
 ```
 
 ### Directory Structure
-- `src/app`: App Router pages and layouts.
-- `src/components`: Reusable UI elements.
-- `src/services`: Business logic and DB interaction (Firestore, Gemini, Equipment, BOM Logic).
-- `src/lib`: Utilities and helpers (`utils.ts`, `firebase.ts`).
+- `src/app`: App Router pages and layouts (Admin & Public).
+- `src/components`: Reusable UI elements and complex editors.
+- `src/hooks`: Custom data fetching and state hooks (`usePackages`, `useTechnicalFeatures`).
+- `src/lib`: Utilities and Firebase service implementations (`firebase.ts`, `types.ts`).
 - `src/context`: React Context providers (Auth, Theme).
 
 ## 🧱 Data Model (Firestore)
 ```mermaid
 erDiagram
-    PACKAGES ||--o{ COMPONENTS : contains
-    COMPONENTS ||--o{ SECTIONS : contains
-    SECTIONS ||--o{ OPTIONS : references
-    DESIGN_OPTIONS ||--o{ OPTIONS : "is referenced by"
-    USERS ||--o{ ROLES : has
+    PACKAGES ||--o{ PACKAGE_ITEMS : contains
+    PACKAGE_ITEMS }o--|| SERVICES : references
+    PACKAGE_ITEMS }o--|| TECHNICAL_FEATURES : enables
     CATALOG_METADATA ||--o{ EQUIPMENT : "defines options for"
+    USERS ||--o{ ROLES : has
 
     PACKAGES {
         string id
         string name
-        array components
+        string short_description
+        array items
+        array collateral
+        boolean active
+    }
+    TECHNICAL_FEATURES {
+        string id
+        string name
+        string category
     }
     USERS {
         string uid

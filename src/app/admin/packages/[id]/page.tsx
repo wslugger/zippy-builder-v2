@@ -6,6 +6,7 @@ import { PackageService } from "@/src/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useServices } from "@/src/hooks/useServices";
+import { useTechnicalFeatures } from "@/src/hooks/useTechnicalFeatures";
 
 const COLLATERAL_TYPES = [
     { value: 'solution_brief', label: 'Solution Brief' },
@@ -30,6 +31,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
     });
 
     const { services, loading: loadingServices } = useServices();
+    const { features, loading: loadingFeatures } = useTechnicalFeatures();
     const [loading, setLoading] = useState(!isNew);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -121,6 +123,25 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
         }
     };
 
+    const toggleFeature = (serviceId: string, featureId: string, optionId?: string, designId?: string) => {
+        const current = [...(pkg.items || [])];
+        const idx = current.findIndex(i =>
+            i.service_id === serviceId &&
+            i.service_option_id === optionId &&
+            i.design_option_id === designId
+        );
+
+        if (idx > -1) {
+            const enabled = [...(current[idx].enabled_features || [])];
+            if (enabled.includes(featureId)) {
+                current[idx].enabled_features = enabled.filter(fid => fid !== featureId);
+            } else {
+                current[idx].enabled_features = [...enabled, featureId];
+            }
+            setPkg({ ...pkg, items: current });
+        }
+    };
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -171,7 +192,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
         }
     };
 
-    if (loading || loadingServices) {
+    if (loading || loadingServices || loadingFeatures) {
         return (
             <div className="flex justify-center py-20">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -325,15 +346,35 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                             </div>
 
                                             {isServiceSelected && (
-                                                <select
-                                                    value={serviceItem?.inclusion_type}
-                                                    onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType)}
-                                                    className="text-xs font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 outline-none pointer-events-auto"
-                                                >
-                                                    <option value="required">Required</option>
-                                                    <option value="standard">Standard (Opt-out)</option>
-                                                    <option value="optional">Optional (Opt-in)</option>
-                                                </select>
+                                                <div className="flex items-center gap-3">
+                                                    {service.supported_features && service.supported_features.length > 0 && (
+                                                        <div className="flex -space-x-1 overflow-hidden">
+                                                            {service.supported_features.map(fid => {
+                                                                const feature = features.find(f => f.id === fid);
+                                                                const isEnabled = serviceItem?.enabled_features?.includes(fid);
+                                                                return (
+                                                                    <button
+                                                                        key={fid}
+                                                                        onClick={(e) => { e.stopPropagation(); toggleFeature(service.id, fid); }}
+                                                                        title={feature?.name || fid}
+                                                                        className={`w-5 h-5 rounded-full border text-[8px] flex items-center justify-center transition-all ${isEnabled ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400'}`}
+                                                                    >
+                                                                        {feature?.name?.charAt(0) || '?'}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                    <select
+                                                        value={serviceItem?.inclusion_type}
+                                                        onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType)}
+                                                        className="text-xs font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 outline-none pointer-events-auto"
+                                                    >
+                                                        <option value="required">Required</option>
+                                                        <option value="standard">Standard (Opt-out)</option>
+                                                        <option value="optional">Optional (Opt-in)</option>
+                                                    </select>
+                                                </div>
                                             )}
                                         </div>
 
@@ -356,15 +397,35 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                     <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{option.name}</span>
                                                                 </div>
                                                                 {isOptionSelected && (
-                                                                    <select
-                                                                        value={optionItem?.inclusion_type}
-                                                                        onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType, option.id)}
-                                                                        className="text-[10px] font-bold bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 rounded-md px-2 py-0.5 outline-none"
-                                                                    >
-                                                                        <option value="required">Required</option>
-                                                                        <option value="standard">Standard</option>
-                                                                        <option value="optional">Optional</option>
-                                                                    </select>
+                                                                    <div className="flex items-center gap-3">
+                                                                        {option.supported_features && option.supported_features.length > 0 && (
+                                                                            <div className="flex gap-1">
+                                                                                {option.supported_features.map(fid => {
+                                                                                    const feature = features.find(f => f.id === fid);
+                                                                                    const isEnabled = optionItem?.enabled_features?.includes(fid);
+                                                                                    return (
+                                                                                        <button
+                                                                                            key={fid}
+                                                                                            onClick={(e) => { e.stopPropagation(); toggleFeature(service.id, fid, option.id); }}
+                                                                                            title={feature?.name || fid}
+                                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-bold border transition-all ${isEnabled ? 'bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-800 dark:border-white' : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-400'}`}
+                                                                                        >
+                                                                                            {feature?.name || fid}
+                                                                                        </button>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        )}
+                                                                        <select
+                                                                            value={optionItem?.inclusion_type}
+                                                                            onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType, option.id)}
+                                                                            className="text-[10px] font-bold bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 rounded-md px-2 py-0.5 outline-none"
+                                                                        >
+                                                                            <option value="required">Required</option>
+                                                                            <option value="standard">Standard</option>
+                                                                            <option value="optional">Optional</option>
+                                                                        </select>
+                                                                    </div>
                                                                 )}
                                                             </div>
 
@@ -389,15 +450,33 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                                     </div>
                                                                                 </div>
                                                                                 {isDesignSelected && (
-                                                                                    <select
-                                                                                        value={designItem?.inclusion_type}
-                                                                                        onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType, option.id, design.id)}
-                                                                                        className="text-[9px] font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-md px-1 py-0.5 outline-none shrink-0 ml-2"
-                                                                                    >
-                                                                                        <option value="required">REQ</option>
-                                                                                        <option value="standard">STD</option>
-                                                                                        <option value="optional">OPT</option>
-                                                                                    </select>
+                                                                                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                                                                                        {design.supported_features && design.supported_features.length > 0 && (
+                                                                                            <div className="flex gap-1 mr-1">
+                                                                                                {design.supported_features.map(fid => {
+                                                                                                    const isEnabled = designItem?.enabled_features?.includes(fid);
+                                                                                                    return (
+                                                                                                        <button
+                                                                                                            key={fid}
+                                                                                                            onClick={(e) => { e.stopPropagation(); toggleFeature(service.id, fid, option.id, design.id); }}
+                                                                                                            className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-all ${isEnabled ? 'bg-blue-600 border-blue-600 text-white' : 'bg-transparent border-zinc-200 dark:border-zinc-700 text-transparent'}`}
+                                                                                                        >
+                                                                                                            <span className="text-[6px]">★</span>
+                                                                                                        </button>
+                                                                                                    );
+                                                                                                })}
+                                                                                            </div>
+                                                                                        )}
+                                                                                        <select
+                                                                                            value={designItem?.inclusion_type}
+                                                                                            onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType, option.id, design.id)}
+                                                                                            className="text-[9px] font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-md px-1 py-0.5 outline-none"
+                                                                                        >
+                                                                                            <option value="required">REQ</option>
+                                                                                            <option value="standard">STD</option>
+                                                                                            <option value="optional">OPT</option>
+                                                                                        </select>
+                                                                                    </div>
                                                                                 )}
                                                                             </div>
                                                                         );
