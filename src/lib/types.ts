@@ -163,3 +163,42 @@ export interface CatalogMetadata {
     [key: string]: CatalogField;
   };
 }
+
+// --- Solutions Architect (SA) Flow Types ---
+
+export interface Project {
+  id: string; // UUID
+  userId: string; // Owner (SA)
+  name: string;
+  customerName: string;
+  description?: string;
+  status: 'draft' | 'package_selection' | 'customizing' | 'completed';
+  currentStep: number; // 1-5 (mapped to UI steps)
+
+  // Step 2: Package Selection
+  selectedPackageId?: string;
+  packageConfidenceScore?: number; // 0-100
+  packageReasoning?: string;
+
+  // Requirements (Gemini Analysis Context)
+  requirementsFiles?: string[]; // URLs to storage
+  requirementsText?: string; // Extracted text or summary from files
+
+  // Step 4: Customizations
+  // We store differences from the base package to allow "reset to default" logic
+  selectedFeatures?: string[]; // IDs of selected features (both standard and optional)
+  selectedDesignOptions?: Record<string, string>; // categoryId -> designOptionId (e.g. "internet_breakout" -> "local_breakout")
+
+  createdAt: string; // ISO Date string
+  updatedAt: string; // ISO Date string
+
+  // Full snapshot of the configuration (Service/Option/Design/Features)
+  // Initialized from Package.items, then modified by SA
+  customizedItems?: PackageItem[];
+}
+
+export interface AIAnalysisResult {
+  packageId: string;
+  confidence: number;
+  reasoning: string;
+}
