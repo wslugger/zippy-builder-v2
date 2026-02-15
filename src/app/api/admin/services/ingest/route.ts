@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       {
         "name": "Main Service Name",
         "short_description": "2-3 sentence summary",
-        "detailed_description": "Full technical and business description",
+        "detailed_description": "Full technical and business description including all key features that are NOT selectable options.",
         "metadata": {
             "category": "One of: ${activeCategories.join(", ")}"
         },
@@ -40,19 +40,19 @@ export async function POST(req: NextRequest) {
         "assumptions": ["assumption 1", "assumption 2"],
         "service_options": [
             {
-                "name": "Option/Tier Name (e.g. Business Fiber 100Mbps)",
+                "name": "Option/Tier Name (e.g. Business Fiber 100Mbps, Standard Tier)",
                 "short_description": "Brief summary",
-                "detailed_description": "Technical details",
+                "detailed_description": "Technical details of this specific tier",
                 "caveats": [],
                 "assumptions": [],
                 "design_options": [
                     {
-                        "name": "Design Configuration (e.g. Static IP, Managed Router)",
+                        "name": "Selectable Configuration (e.g. Static IP, Managed Router)",
                         "short_description": "Brief summary",
                         "detailed_description": "Technical details",
-                        "decision_driver": "Why select this?",
-                        "pros": ["benefit 1"],
-                        "cons": ["drawback 1"],
+                        "decision_driver": "Why would a customer choose this specific option?",
+                        "pros": ["benefit of this specific choice"],
+                        "cons": ["drawback of this specific choice"],
                         "caveats": [],
                         "assumptions": []
                     }
@@ -61,12 +61,14 @@ export async function POST(req: NextRequest) {
         ]
       }
 
-      CRITICAL INSTRUCTIONS:
-      1. Hierarchical Extraction: Identify physical/logical "Tiers", "Speeds", or "Editions" as 'service_options'.
-      2. Nested Design Options: Identify "Features", "Add-ons", or "Configurations" that are specific to a tier (or generally available) and nest them under the relevant 'service_option'. If a design option applies to all, duplicate it across service options for now.
-      3. For Design Options: Extract "Decision Drivers", "Pros", and "Cons".
-      4. Caveats & Assumptions: Look for restrictions or prerequisites.
-      5. Return ONLY the JSON object.
+      CRITICAL EXTRACTION RULES:
+      1. IDENTIFY CHOICES: 'service_options' and 'design_options' MUST represent actual choices or configurations a customer must select.
+      2. MERGE INHERENT FEATURES: Do NOT create options for "Key Features", "Standard Capabilities", or "Service Benefits" if they are inherent to the service and not a selectable choice. Instead, incorporate these into the 'detailed_description' or 'short_description' of the main service.
+      3. Tiers vs Features: 'service_options' should usually be physical or logical logical "Tiers", "Speeds", or "Service Levels".
+      4. Selectable Configurations: 'design_options' should be "Add-ons", "Optional Features", or "Configurations" that can be toggled on/off or selected.
+      5. Extraction depth: If a feature is standard across all tiers, do NOT make it a design option; describe it in the main service description.
+      
+      Return ONLY the JSON object.
     `;
 
         const result = await model.generateContent([

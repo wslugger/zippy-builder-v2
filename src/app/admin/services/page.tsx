@@ -81,8 +81,12 @@ export default function ServicesPage() {
                                         {service.active ? 'Active' : 'Draft'}
                                     </div>
                                     <button
-                                        onClick={() => deleteService(service.id)}
-                                        className="text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            deleteService(service.id);
+                                        }}
+                                        className="relative z-10 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
                                     >
                                         ✕
                                     </button>
