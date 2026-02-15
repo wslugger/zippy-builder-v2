@@ -1,6 +1,6 @@
 "use client";
 
-import { ServiceItem, DesignOption } from "@/src/lib/types";
+import { ServiceItem, DesignOption, DESIGN_OPTION_CATEGORIES } from "@/src/lib/types";
 
 interface ServiceItemFormProps {
     item: Partial<DesignOption>;
@@ -27,15 +27,33 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
                 </div>
 
                 {showDesignFields && (
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Decision Driver</label>
-                        <input
-                            type="text"
-                            value={item.decision_driver || ""}
-                            onChange={(e) => onChange({ decision_driver: e.target.value })}
-                            className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            placeholder="What triggers the selection of this option?"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
+                            <input
+                                type="text"
+                                list="design-option-categories"
+                                value={item.category || ""}
+                                onChange={(e) => onChange({ category: e.target.value })}
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                placeholder="e.g. Topology"
+                            />
+                            <datalist id="design-option-categories">
+                                {DESIGN_OPTION_CATEGORIES.map(cat => (
+                                    <option key={cat} value={cat} />
+                                ))}
+                            </datalist>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Decision Driver</label>
+                            <input
+                                type="text"
+                                value={item.decision_driver || ""}
+                                onChange={(e) => onChange({ decision_driver: e.target.value })}
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                placeholder="What triggers the selection of this option?"
+                            />
+                        </div>
                     </div>
                 )}
 

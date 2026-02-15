@@ -70,8 +70,15 @@ export interface ServiceItem {
   assumptions: string[];
 }
 
+export const DESIGN_OPTION_CATEGORIES = [
+  "Topology",
+  "East-West Security",
+  "Internet Breakout",
+] as const;
+
 export interface DesignOption extends ServiceItem {
   id: string; // Ensure ID is mandatory
+  category?: string;
   decision_driver?: string;
   pros?: string[];
   cons?: string[];
