@@ -98,11 +98,16 @@ export interface PackageCollateral {
   uploaded_at: string;
 }
 
+export interface PackageFeature {
+  feature_id: string;
+  inclusion_type: InclusionType;
+}
+
 export interface PackageItem {
   service_id: string; // Reference to Service.id
   service_option_id?: string; // Reference to ServiceOption.id
   design_option_id?: string; // Reference to DesignOption.id
-  enabled_features: string[]; // List of TechnicalFeature.id enabled for this item
+  enabled_features: PackageFeature[]; // List of enabled features with inclusion rules
   inclusion_type: InclusionType;
 }
 

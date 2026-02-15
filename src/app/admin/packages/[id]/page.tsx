@@ -15,6 +15,14 @@ const COLLATERAL_TYPES = [
     { value: 'other', label: 'Other Asset' }
 ] as const;
 
+interface EditingItem {
+    serviceId: string;
+    optionId?: string;
+    designId?: string;
+    label: string;
+    supportedFeatures: string[];
+}
+
 export default function PackageEditorPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
@@ -35,6 +43,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
     const [loading, setLoading] = useState(!isNew);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [editingItem, setEditingItem] = useState<EditingItem | null>(null);
 
     useEffect(() => {
         if (!isNew) {
@@ -123,20 +132,29 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
         }
     };
 
-    const toggleFeature = (serviceId: string, featureId: string, optionId?: string, designId?: string) => {
+    const updateFeatureInclusion = (featureId: string, type: InclusionType | 'none') => {
+        if (!editingItem) return;
+
         const current = [...(pkg.items || [])];
         const idx = current.findIndex(i =>
-            i.service_id === serviceId &&
-            i.service_option_id === optionId &&
-            i.design_option_id === designId
+            i.service_id === editingItem.serviceId &&
+            i.service_option_id === editingItem.optionId &&
+            i.design_option_id === editingItem.designId
         );
 
         if (idx > -1) {
-            const enabled = [...(current[idx].enabled_features || [])];
-            if (enabled.includes(featureId)) {
-                current[idx].enabled_features = enabled.filter(fid => fid !== featureId);
+            const currentFeatures = [...(current[idx].enabled_features || [])];
+
+            if (type === 'none') {
+                current[idx].enabled_features = currentFeatures.filter(f => f.feature_id !== featureId);
             } else {
-                current[idx].enabled_features = [...enabled, featureId];
+                const existingIdx = currentFeatures.findIndex(f => f.feature_id === featureId);
+                if (existingIdx > -1) {
+                    currentFeatures[existingIdx].inclusion_type = type;
+                } else {
+                    currentFeatures.push({ feature_id: featureId, inclusion_type: type });
+                }
+                current[idx].enabled_features = currentFeatures;
             }
             setPkg({ ...pkg, items: current });
         }
@@ -348,22 +366,19 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                             {isServiceSelected && (
                                                 <div className="flex items-center gap-3">
                                                     {service.supported_features && service.supported_features.length > 0 && (
-                                                        <div className="flex -space-x-1 overflow-hidden">
-                                                            {service.supported_features.map(fid => {
-                                                                const feature = features.find(f => f.id === fid);
-                                                                const isEnabled = serviceItem?.enabled_features?.includes(fid);
-                                                                return (
-                                                                    <button
-                                                                        key={fid}
-                                                                        onClick={(e) => { e.stopPropagation(); toggleFeature(service.id, fid); }}
-                                                                        title={feature?.name || fid}
-                                                                        className={`w-5 h-5 rounded-full border text-[8px] flex items-center justify-center transition-all ${isEnabled ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400'}`}
-                                                                    >
-                                                                        {feature?.name?.charAt(0) || '?'}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setEditingItem({
+                                                                    serviceId: service.id,
+                                                                    label: service.name,
+                                                                    supportedFeatures: service.supported_features || []
+                                                                });
+                                                            }}
+                                                            className="text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                                        >
+                                                            Features ({serviceItem?.enabled_features?.length || 0})
+                                                        </button>
                                                     )}
                                                     <select
                                                         value={serviceItem?.inclusion_type}
@@ -399,22 +414,20 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                 {isOptionSelected && (
                                                                     <div className="flex items-center gap-3">
                                                                         {option.supported_features && option.supported_features.length > 0 && (
-                                                                            <div className="flex gap-1">
-                                                                                {option.supported_features.map(fid => {
-                                                                                    const feature = features.find(f => f.id === fid);
-                                                                                    const isEnabled = optionItem?.enabled_features?.includes(fid);
-                                                                                    return (
-                                                                                        <button
-                                                                                            key={fid}
-                                                                                            onClick={(e) => { e.stopPropagation(); toggleFeature(service.id, fid, option.id); }}
-                                                                                            title={feature?.name || fid}
-                                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-bold border transition-all ${isEnabled ? 'bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-800 dark:border-white' : 'bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-400'}`}
-                                                                                        >
-                                                                                            {feature?.name || fid}
-                                                                                        </button>
-                                                                                    );
-                                                                                })}
-                                                                            </div>
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setEditingItem({
+                                                                                        serviceId: service.id,
+                                                                                        optionId: option.id,
+                                                                                        label: option.name,
+                                                                                        supportedFeatures: option.supported_features || []
+                                                                                    });
+                                                                                }}
+                                                                                className="text-[9px] font-bold text-zinc-500 hover:text-blue-600 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded transition-colors"
+                                                                            >
+                                                                                Feat ({optionItem?.enabled_features?.length || 0})
+                                                                            </button>
                                                                         )}
                                                                         <select
                                                                             value={optionItem?.inclusion_type}
@@ -452,20 +465,22 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                                 {isDesignSelected && (
                                                                                     <div className="flex items-center gap-2 shrink-0 ml-2">
                                                                                         {design.supported_features && design.supported_features.length > 0 && (
-                                                                                            <div className="flex gap-1 mr-1">
-                                                                                                {design.supported_features.map(fid => {
-                                                                                                    const isEnabled = designItem?.enabled_features?.includes(fid);
-                                                                                                    return (
-                                                                                                        <button
-                                                                                                            key={fid}
-                                                                                                            onClick={(e) => { e.stopPropagation(); toggleFeature(service.id, fid, option.id, design.id); }}
-                                                                                                            className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-all ${isEnabled ? 'bg-blue-600 border-blue-600 text-white' : 'bg-transparent border-zinc-200 dark:border-zinc-700 text-transparent'}`}
-                                                                                                        >
-                                                                                                            <span className="text-[6px]">★</span>
-                                                                                                        </button>
-                                                                                                    );
-                                                                                                })}
-                                                                                            </div>
+                                                                                            <button
+                                                                                                onClick={(e) => {
+                                                                                                    e.stopPropagation();
+                                                                                                    setEditingItem({
+                                                                                                        serviceId: service.id,
+                                                                                                        optionId: option.id,
+                                                                                                        designId: design.id,
+                                                                                                        label: design.name,
+                                                                                                        supportedFeatures: design.supported_features || []
+                                                                                                    });
+                                                                                                }}
+                                                                                                className="w-5 h-5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors text-zinc-400 hover:text-zinc-600"
+                                                                                                title="Manage Features"
+                                                                                            >
+                                                                                                <span className="text-[10px]">⚙</span>
+                                                                                            </button>
                                                                                         )}
                                                                                         <select
                                                                                             value={designItem?.inclusion_type}
@@ -495,6 +510,75 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                     </section>
                 </div>
             </div>
+            {/* Feature Editor Modal */}
+            {editingItem && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-lg font-bold">Configure Features</h3>
+                                <p className="text-sm text-zinc-500">{editingItem.label}</p>
+                            </div>
+                            <button onClick={() => setEditingItem(null)} className="text-zinc-400 hover:text-zinc-600">✕</button>
+                        </div>
+                        <div className="p-2 max-h-[60vh] overflow-y-auto">
+                            <table className="w-full text-sm">
+                                <thead className="text-xs text-zinc-500 border-b border-zinc-100 dark:border-zinc-800">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left font-medium">Feature</th>
+                                        <th className="px-4 py-3 text-right font-medium">Inclusion Rule</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {editingItem.supportedFeatures.map(fid => {
+                                        const feature = features.find(f => f.id === fid);
+                                        const currentItem = pkg.items?.find(i =>
+                                            i.service_id === editingItem.serviceId &&
+                                            i.service_option_id === editingItem.optionId &&
+                                            i.design_option_id === editingItem.designId
+                                        );
+                                        const featureState = currentItem?.enabled_features?.find(f => f.feature_id === fid);
+                                        const inclusion = featureState?.inclusion_type || 'none';
+
+                                        return (
+                                            <tr key={fid} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div className="font-medium text-zinc-900 dark:text-zinc-100">{feature?.name || fid}</div>
+                                                    <div className="text-xs text-zinc-500">{feature?.category}</div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <div className="inline-flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+                                                        {(['none', 'required', 'standard', 'optional'] as const).map((type) => (
+                                                            <button
+                                                                key={type}
+                                                                onClick={() => updateFeatureInclusion(fid, type === 'none' ? 'none' : type as InclusionType)}
+                                                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${(inclusion === type) || (type === 'none' && !featureState)
+                                                                    ? 'bg-white dark:bg-zinc-700 text-blue-600 shadow-sm'
+                                                                    : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                                                                    }`}
+                                                            >
+                                                                {type === 'none' ? 'Off' : type.charAt(0).toUpperCase() + type.slice(1, 3)}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="p-4 bg-zinc-50 dark:bg-zinc-950/50 border-t border-zinc-100 dark:border-zinc-800 flex justify-end">
+                            <button
+                                onClick={() => setEditingItem(null)}
+                                className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm font-medium"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

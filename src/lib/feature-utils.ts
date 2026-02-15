@@ -57,7 +57,7 @@ export function getFeatureUsage(
     packages.forEach(pkg => {
         // A package item enables a feature for a specific service/option
         pkg.items.forEach(item => {
-            if (item.enabled_features?.includes(featureId)) {
+            if (item.enabled_features?.some(f => f.feature_id === featureId)) {
                 // Find the service name for context
                 const service = services.find(s => s.id === item.service_id);
                 usage.push({

@@ -33,7 +33,7 @@ export default function FeatureList({ features, services, packages, onRefresh }:
         // Check Packages
         packages.forEach(p => {
             p.items.forEach(i => {
-                if (i.enabled_features?.includes(featureId)) count++;
+                if (i.enabled_features?.some(f => f.feature_id === featureId)) count++;
             });
         });
 
