@@ -49,7 +49,8 @@ erDiagram
     SECTIONS ||--o{ OPTIONS : references
     DESIGN_OPTIONS ||--o{ OPTIONS : "is referenced by"
     USERS ||--o{ ROLES : has
-    
+    CATALOG_METADATA ||--o{ EQUIPMENT : "defines options for"
+
     PACKAGES {
         string id
         string name
@@ -64,6 +65,10 @@ erDiagram
         string id
         map utilization_thresholds
         map power_requirements
+    }
+    CATALOG_METADATA {
+        string id
+        map fields
     }
 ```
 
@@ -138,3 +143,12 @@ sequenceDiagram
 ### 6. Unified Service Catalog (Stable ID Sync)
 - **Lesson**: Data drift between hardcoded seed data and a dynamic "Unified Catalog" is a common source of bugs.
 - **Pattern**: When seeding data templates (like Packages), always include the **Stable IDs** of the master catalog items. This allows for resilient, ID-based matching during runtime, preventing "ghost" references when display names or descriptions are updated by administrators.
+
+### 7. Dynamic Metadata Management
+- **Lesson**: Hardcoding dropdown options (e.g., Interface Types, Form Factors) requires code deployments for simple business data changes.
+- **Pattern**: Store all UI "choice" data in a `catalog_metadata` collection.
+    - **Implementation**: The `useCatalogMetadata` hook fetches these options on component mount.
+    - **Benefit**: Admins can add new "Recommended Use Cases" or "Mounting Options" via the Admin UI, and these immediately propagate to:
+        1. The Equipment Editor UI.
+        2. The AI Ingestion Prompt (as validation rules).
+        3. The Filter/Search panels.

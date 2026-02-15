@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## 🌟 Key Features
+
+### 🧠 AI-Powered Equipment Ingestion
+- **Automated Datasheet Parsing**: Drag-and-drop PDF datasheets to automatically extract technical specs using Google Gemini 1.5 Flash.
+- **Smart Validation**: The AI validates extracted data against your defined metadata (e.g., ensuring "Interface Types" match your standard catalog).
+- **Vendor-Specific Logic**: Custom parsing rules for different vendors (Cisco Catalyst, Meraki, etc.) to handle terminology differences.
+
+### 🎛️ Dynamic Metadata Management
+- **Admin Control**: Manage all dropdown options (Interface Types, Mounting Options, Use Cases) directly from the Admin UI.
+- **No Code Required**: Adding a new "WiFi Standard" or "Form Factor" no longer requires a code deployment.
+- **Universal Sync**: Changes in metadata instantly update the Ingestion Engine, Editor UI, and Search Filters.
+
+### 🎨 Modern UX/UI
+- **Layout Options**: Choose between High Density, Comfortable, or Card-based layouts for the equipment catalog.
+- **Dark Mode**: Fully supported system-wide dark mode.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
