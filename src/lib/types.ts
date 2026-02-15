@@ -61,14 +61,7 @@ export const EquipmentSchema = z.object({
 
 export type Equipment = z.infer<typeof EquipmentSchema>;
 
-export interface ServiceItem {
-  id: string;
-  name: string;
-  short_description: string;
-  detailed_description: string;
-  caveats: string[];
-  assumptions: string[];
-}
+
 
 export const SERVICE_CATEGORIES = [
   "Fiber",
@@ -84,6 +77,40 @@ export const DESIGN_OPTION_CATEGORIES = [
   "East-West Security",
   "Internet Breakout",
 ] as const;
+
+export interface TechnicalFeature {
+  id: string; // e.g. "bgp"
+  name: string; // "BGP Routing"
+  category: string; // "Routing", "Security", etc.
+  description: string;
+  caveats?: string[];
+  assumptions?: string[];
+}
+
+export interface PackageItem {
+  service_id: string; // Reference to Service.id
+  service_option_id?: string; // Reference to ServiceOption.id
+  design_option_id?: string; // Reference to DesignOption.id
+  enabled_features: string[]; // List of TechnicalFeature.id enabled for this item
+}
+
+export interface Package {
+  id: string; // e.g. "cost_centric"
+  name: string; // "Cost Centric"
+  description: string;
+  items: PackageItem[];
+  active: boolean;
+}
+
+export interface ServiceItem {
+  id: string;
+  name: string;
+  short_description: string;
+  detailed_description: string;
+  caveats: string[];
+  assumptions: string[];
+  supported_features?: string[]; // IDs of features this service supports
+}
 
 export interface DesignOption extends ServiceItem {
   id: string; // Ensure ID is mandatory

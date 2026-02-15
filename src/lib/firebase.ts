@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { initializeFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch } from "firebase/firestore";
+import { initializeFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { Equipment, CatalogMetadata, Service } from "@/src/lib/types";
+import { Equipment, CatalogMetadata, Service, TechnicalFeature, Package } from "@/src/lib/types";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -148,6 +148,68 @@ export const MetadataService = {
                 }
             });
         }
+    }
+};
+
+const FEATURES_COLLECTION = "technical_features";
+const PACKAGES_COLLECTION = "packages_catalog";
+
+export const FeatureService = {
+    saveFeature: async (feature: TechnicalFeature) => {
+        const docRef = doc(db, FEATURES_COLLECTION, feature.id);
+        await setDoc(docRef, feature, { merge: true });
+        return feature.id;
+    },
+
+    getAllFeatures: async (): Promise<TechnicalFeature[]> => {
+        const snapshot = await getDocs(collection(db, FEATURES_COLLECTION));
+        return snapshot.docs.map((doc) => doc.data() as TechnicalFeature);
+    },
+
+    getFeatureById: async (id: string): Promise<TechnicalFeature | null> => {
+        const docRef = doc(db, FEATURES_COLLECTION, id);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+            return snapshot.data() as TechnicalFeature;
+        }
+        return null;
+    },
+
+    saveFeatureBatch: async (features: TechnicalFeature[]) => {
+        const batch = writeBatch(db);
+        features.forEach(feature => {
+            const docRef = doc(db, FEATURES_COLLECTION, feature.id);
+            batch.set(docRef, feature, { merge: true });
+        });
+        await batch.commit();
+        return features.length;
+    },
+
+    deleteFeature: async (id: string) => {
+        const docRef = doc(db, FEATURES_COLLECTION, id);
+        await deleteDoc(docRef);
+    }
+};
+
+export const PackageService = {
+    savePackage: async (pkg: Package) => {
+        const docRef = doc(db, PACKAGES_COLLECTION, pkg.id);
+        await setDoc(docRef, pkg, { merge: true });
+        return pkg.id;
+    },
+
+    getAllPackages: async (): Promise<Package[]> => {
+        const snapshot = await getDocs(collection(db, PACKAGES_COLLECTION));
+        return snapshot.docs.map((doc) => doc.data() as Package);
+    },
+
+    getPackageById: async (id: string): Promise<Package | null> => {
+        const docRef = doc(db, PACKAGES_COLLECTION, id);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+            return snapshot.data() as Package;
+        }
+        return null;
     }
 };
 

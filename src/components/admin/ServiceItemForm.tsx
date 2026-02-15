@@ -1,7 +1,9 @@
 "use client";
 
 import { DesignOption, DESIGN_OPTION_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
+import { useState } from "react";
 import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { useTechnicalFeatures } from "@/src/hooks/useTechnicalFeatures";
 
 interface ServiceItemFormProps {
     item: Partial<DesignOption>;
@@ -12,7 +14,10 @@ interface ServiceItemFormProps {
 
 export default function ServiceItemForm({ item, onChange, title, showDesignFields }: ServiceItemFormProps) {
     const { metadata } = useCatalogMetadata("service_catalog");
+    const { features } = useTechnicalFeatures();
     const categories: string[] = metadata?.fields?.design_option_categories?.values || [...DEFAULT_CATEGORIES];
+    const [featureSearch, setFeatureSearch] = useState("");
+    const [showSelectedOnly, setShowSelectedOnly] = useState(false);
 
     return (
         <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
@@ -129,6 +134,99 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
                         </div>
                     </div>
                 )}
+
+                <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div className="flex items-center gap-4">
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Supported Features</label>
+                            {item.supported_features && item.supported_features.length > 0 && (
+                                <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    {item.supported_features.length} Selected
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <label className="flex items-center gap-2 text-xs text-zinc-500 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={showSelectedOnly}
+                                    onChange={(e) => setShowSelectedOnly(e.target.checked)}
+                                    className="w-3.5 h-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/10"
+                                />
+                                Show Selected Only
+                            </label>
+                            <input
+                                type="text"
+                                value={featureSearch}
+                                onChange={(e) => setFeatureSearch(e.target.value)}
+                                className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500/20 outline-none w-full sm:w-48 transition-all"
+                                placeholder="Search features..."
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-zinc-50 dark:bg-zinc-950/50 rounded-xl border border-zinc-200 dark:border-zinc-800 max-h-72 overflow-y-auto shadow-inner">
+                        {features
+                            .filter(f => {
+                                const matchesSearch = f.name.toLowerCase().includes(featureSearch.toLowerCase()) ||
+                                    f.category.toLowerCase().includes(featureSearch.toLowerCase());
+                                const isSelected = item.supported_features?.includes(f.id) || false;
+
+                                if (showSelectedOnly) return matchesSearch && isSelected;
+                                return matchesSearch;
+                            })
+                            .sort((a, b) => {
+                                const aSelected = item.supported_features?.includes(a.id) ? 1 : 0;
+                                const bSelected = item.supported_features?.includes(b.id) ? 1 : 0;
+                                // Sort selected to top, then by name
+                                if (aSelected !== bSelected) return bSelected - aSelected;
+                                return a.name.localeCompare(b.name);
+                            })
+                            .map((feature) => {
+                                const isSelected = item.supported_features?.includes(feature.id) || false;
+                                return (
+                                    <label
+                                        key={feature.id}
+                                        className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none ${isSelected
+                                            ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-200/50 dark:border-blue-800/50 shadow-sm"
+                                            : "bg-white dark:bg-zinc-900 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
+                                            }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={(e) => {
+                                                const current = item.supported_features || [];
+                                                const updated = e.target.checked
+                                                    ? [...current, feature.id]
+                                                    : current.filter((id) => id !== feature.id);
+                                                onChange({ supported_features: updated });
+                                            }}
+                                            className="mt-0.5 w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/20"
+                                        />
+                                        <div className="min-w-0">
+                                            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 truncate">{feature.name}</div>
+                                            <div className="text-xs text-zinc-500 font-medium">{feature.category}</div>
+                                        </div>
+                                    </label>
+                                );
+                            })}
+                        {features.length > 0 && features.filter(f => {
+                            const matchesSearch = f.name.toLowerCase().includes(featureSearch.toLowerCase()) || f.category.toLowerCase().includes(featureSearch.toLowerCase());
+                            const isSelected = item.supported_features?.includes(f.id) || false;
+                            if (showSelectedOnly) return matchesSearch && isSelected;
+                            return matchesSearch;
+                        }).length === 0 && (
+                                <div className="col-span-full text-center text-sm text-zinc-400 py-10">
+                                    {showSelectedOnly ? "No selected features match your search." : "No matching features found."}
+                                </div>
+                            )}
+                        {features.length === 0 && (
+                            <div className="col-span-full text-center text-sm text-zinc-400 py-10">
+                                No features available in the catalog.
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
