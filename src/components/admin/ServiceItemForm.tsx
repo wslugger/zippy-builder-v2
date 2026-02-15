@@ -12,7 +12,7 @@ interface ServiceItemFormProps {
 
 export default function ServiceItemForm({ item, onChange, title, showDesignFields }: ServiceItemFormProps) {
     const { metadata } = useCatalogMetadata("service_catalog");
-    const categories = metadata?.fields?.design_option_categories?.values || DEFAULT_CATEGORIES;
+    const categories: string[] = metadata?.fields?.design_option_categories?.values || [...DEFAULT_CATEGORIES];
 
     return (
         <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
@@ -34,20 +34,41 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
-                            <input
-                                type="text"
-                                list="design-option-categories"
-                                value={item.category || ""}
-                                onFocus={(e) => e.target.select()}
-                                onChange={(e) => onChange({ category: e.target.value })}
-                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="e.g. Topology"
-                            />
-                            <datalist id="design-option-categories">
-                                {categories.map((cat: string) => (
-                                    <option key={cat} value={cat} />
-                                ))}
-                            </datalist>
+                            <div className="space-y-2">
+                                <select
+                                    value={categories.includes(item.category || "") ? item.category : "custom"}
+                                    onChange={(e) => {
+                                        if (e.target.value === "custom") {
+                                            onChange({ category: "" }); // Clear to prompt typing, or keep? Better to clear or set default?
+                                            // Actually, if switching to custom, maybe we keep current value if it's not in list?
+                                            // Simpler: If "custom" selected, don't change value, just expose input.
+                                            // But we need to distinguish "Custom" mode.
+                                            // Let's force empty if they explicitly choose "Create New" or similar.
+                                            // For now, let's just use the value directly if not 'custom'.
+                                        } else {
+                                            onChange({ category: e.target.value });
+                                        }
+                                    }}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                >
+                                    <option value="" disabled>Select Category...</option>
+                                    {categories.map((cat: string) => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                    <option value="custom">＋ Create New Category...</option>
+                                </select>
+
+                                {(!item.category || !categories.includes(item.category) || item.category === "custom") && (
+                                    <input
+                                        type="text"
+                                        value={item.category || ""}
+                                        onChange={(e) => onChange({ category: e.target.value })}
+                                        className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all animate-in fade-in slide-in-from-top-1"
+                                        placeholder="Enter new category name..."
+                                        autoFocus
+                                    />
+                                )}
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Decision Driver</label>
