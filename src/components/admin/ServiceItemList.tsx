@@ -42,19 +42,19 @@ export default function ServiceItemList({ items, onUpdate, title, itemTypeLabel,
         onUpdate(items.map(i => i.id === id ? { ...i, ...updates } : i));
     };
 
-    // Use a ref to track the "locked" category of the item currently being edited
+    // Use a ref-like state to track the "locked" category of the item currently being edited
     // to prevent it from jumping groups while the user is typing.
     const [lockedCategory, setLockedCategory] = useState<{ id: string, category: string } | null>(null);
 
-    // Update locked category when editingId changes
+    // Update locked category ONLY when a new item starts being edited
     useEffect(() => {
-        if (editingId) {
+        if (editingId && lockedCategory?.id !== editingId) {
             const item = items.find(i => i.id === editingId);
             setLockedCategory({ id: editingId, category: item?.category || "" });
-        } else {
+        } else if (!editingId) {
             setLockedCategory(null);
         }
-    }, [editingId, items]);
+    }, [editingId, lockedCategory?.id]);
 
     // Stable flat list approach with "locked" position for editing item:
     const listElements = useMemo(() => {

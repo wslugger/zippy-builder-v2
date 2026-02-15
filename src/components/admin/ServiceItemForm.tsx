@@ -38,6 +38,7 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
                                 type="text"
                                 list="design-option-categories"
                                 value={item.category || ""}
+                                onFocus={(e) => e.target.select()}
                                 onChange={(e) => onChange({ category: e.target.value })}
                                 className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                 placeholder="e.g. Topology"
