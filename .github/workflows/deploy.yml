@@ -32,6 +32,12 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZIPPY_BUILDER_V2 }}"
+          firebaseServiceAccount: '' # Leave empty to force token usage if available, or just remove
+          firebaseToken: '${{ secrets.FIREBASE_TOKEN }}'
           channelId: live
           projectId: zippy-builder-v2
+          expires: 7d
+          entryPoint: .
+          firebaseToolsVersion: latest
+          disableComment: false
+          force: false
