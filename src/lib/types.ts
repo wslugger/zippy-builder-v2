@@ -10,8 +10,7 @@ export const VENDOR_LABELS: Record<typeof VENDOR_IDS[number], string> = {
   hpe_aruba_sdbranch: "HPE Aruba SD BRANCH"
 };
 
-// export const EQUIPMENT_PURPOSES = ["SDWAN", "LAN", "WLAN", "Security"] as const; // Original
-export const EQUIPMENT_PURPOSES = ["SDWAN", "LAN", "WLAN"] as const;
+export const EQUIPMENT_PURPOSES = ["SDWAN", "LAN", "WLAN", "Security"] as const;
 export const CELLULAR_TYPES = ["LTE", "5G", "LTE/5G"] as const;
 export const WIFI_STANDARDS = ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"] as const;
 export const EQUIPMENT_STATUSES = ["Supported", "In development", "Not supported"] as const;
@@ -62,13 +61,42 @@ export const EquipmentSchema = z.object({
 
 export type Equipment = z.infer<typeof EquipmentSchema>;
 
+export interface ServiceItem {
+  id: string;
+  name: string;
+  short_description: string;
+  detailed_description: string;
+  caveats: string[];
+  assumptions: string[];
+}
+
+export interface DesignOption extends ServiceItem {
+  id: string; // Ensure ID is mandatory
+  decision_driver?: string;
+  pros?: string[];
+  cons?: string[];
+}
+
+export interface ServiceOption extends ServiceItem {
+  design_options: DesignOption[];
+}
+
+export interface Service extends ServiceItem {
+  service_options: ServiceOption[];
+  active: boolean;
+  metadata?: {
+    category?: string;
+    [key: string]: any;
+  };
+}
+
 export interface CatalogField {
   label: string;
   values: string[];
 }
 
 export interface CatalogMetadata {
-  id: string; // The catalog ID, e.g., 'equipment_catalog'
+  id: string; // The catalog ID, e.g., 'service_catalog'
   fields: {
     [key: string]: CatalogField;
   };

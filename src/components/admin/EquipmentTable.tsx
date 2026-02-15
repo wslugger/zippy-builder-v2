@@ -61,19 +61,21 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-wrap gap-1">
-                                        {Array.isArray(item.purpose) ? (
-                                            item.purpose.filter(p => (EQUIPMENT_PURPOSES as any).includes(p)).map((p) => (
-                                                <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-                                                    {p}
-                                                </span>
-                                            ))
-                                        ) : (
-                                            (EQUIPMENT_PURPOSES as any).includes(item.purpose) && (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-                                                    {item.purpose}
-                                                </span>
-                                            )
-                                        )}
+                                        {(() => {
+                                            const purposes = Array.isArray(item.purpose)
+                                                ? item.purpose
+                                                : typeof item.purpose === 'string'
+                                                    ? (item.purpose as string).split(',').map(p => p.trim())
+                                                    : [];
+
+                                            return purposes
+                                                .filter(p => (EQUIPMENT_PURPOSES as any).includes(p))
+                                                .map((p) => (
+                                                    <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
+                                                        {p}
+                                                    </span>
+                                                ));
+                                        })()}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
