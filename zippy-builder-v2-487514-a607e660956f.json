@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "zippy-builder-v2-487514",
+  "private_key_id": "a607e660956fcd58d7cdc4ba8ea1a40127e35ff0",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDC3m0p5lF7pn41\nBirllhJsI4qpcDneLsITinhTnIWuFmOSiV1BXWyopt84R2TYiLvcAO8kkHcJZRHB\nbg7XYJJsdlYz+gzQ3N2IdyAH9Qf4cdWRe9+5iy4ijNHxFlUbT0A9r/VAnVsvLjmP\nvxooVd83LhaGUmIasRkQdPwx5RG0Vs0FC4qWbpcXBznH/aU5FvteJL7Ewu4YszLc\nk0DKD7FS0FgM5d+5gZrfu8vL9+vurs9baAElwg6fTDQ5WcHB6Kd1vO5DawZAgnyA\n8971GKoKIQX+XqXe4RbkC49Hwn9PXhHaio7HPMq1RoOuKCywMqmmD4PA4NgcKXk0\nrBUmXzehAgMBAAECggEAQxJFpn9EmneixuNZjm4J5ziQeGNNN6EGYa1uXvDnvhSs\nrvoio+XhCWduOzOvjSv65O1ZYk9q+UvVQat85jqyCyzr3LX7BUSP53GBD9wRozyj\nEpD9XyJ9fZzUgdN69Yxggxr2IghHI0UYwNY4zZtI2fg9/nuKkr9T7islxpKedmA0\nLPXZ+JEDwpdAuuVEDzDMS7BQ2sCpLAQTZNpKMDEA2kDMnGLg7Wovha1ehfbKqY9Y\nnkJO5BYjpsZuW5E+1Wjk1RNit02e7KRy4gMNGiN/qiFzFXp/qh44Fqr+Q8EsKCU1\nsrTrLLPQH9y4ueE3tUMNPhiDm902GQzLJXw5sG6dRQKBgQDhCrx2vRT4TXjwnwN/\nTSMk2ZsRsh8K+MtLqNzHIbrLXRIhJYAxJnSsIB/VnKMKHYqEqiLGKaxM2tjXlLAV\nNQfD5S0BBiXrp9c1bPaq6/BkacJAtU0M97LNQH7KyGdOFoyygWbLoupnBljVpvO8\ngZGpPHX5r3eFEuufOVNppbaDywKBgQDdrRb9zfHIyIAM6vGDFKbXNFmYbZuuxnYc\n9pFdCos/jr5C65/0o9WeQFqT4DbEGelgf5i5NygFPQKqH39wkxnQGflIN3d9sW2r\nTrWuLuW5OHIkGJQ+4w0T+2EKYFWZJDFI7Gi1fkkkU0xS8gRPyV1A6EfF34ME3Gzv\ntkiHljf8wwKBgQC1k6MTL2dPHbt6cuMwgP3dStMLCSxw/uORjZNt/PIqClOJeSeh\nAMVc6KKnCbanf8R3XIuoVpGWhXI3J9qXke1NC4ovbFWGeit0CRJSQQL7EjZRXbfo\nwad8YxCq794irKEjmrNllXMKY52j7gx1yhnMcmNCbmjCb8y78VYzRSkp1wKBgQCH\nrVlVHqfN7Gnzfhkz0YAMV84+rVeMMYw5TfDKsZlo3UU2UGEmquAka98Eg0cB35on\npfEj685i5mSrG3w0utQhusQIn2pTVDV7lEE+yxVvuEykKycRFob6o/FRGIVLpgtE\nRu4Pp6u8v/8HBXn+G5EoGQNU6OiYIRHL5hWeZyL9YQKBgQDMtun4wa/bMiLHLg6P\ncNr0GMdl1lGqreBq6N/+mWpuJpUDd+de+G6Fsv3wDXg3u4vVVOcrpHzlZnF4Qn8v\nUr8RlD6ZEeRpCc7lT9qE1GnUtGN27u/d7u5wnQxC6L+0wPkURF42w5hONYgiePaH\nKUNHVLzHxPanmYIGab42jZyGOw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "github-deploy@zippy-builder-v2-487514.iam.gserviceaccount.com",
+  "client_id": "101102544951647103662",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/github-deploy%40zippy-builder-v2-487514.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

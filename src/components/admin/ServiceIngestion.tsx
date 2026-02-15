@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Service } from "@/src/lib/types";
+import { Service, ServiceOption } from "@/src/lib/types";
 import { ServiceService } from "@/src/lib/firebase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,9 +66,10 @@ export default function ServiceIngestion() {
                 router.push(`/admin/services/${previewData.id}`);
             }, 1500);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Save Error:", error);
-            setStatusMessage(`Failure: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+            setStatusMessage(`Failure: ${errorMessage}`);
         } finally {
             setIsLoading(false);
         }
@@ -79,7 +80,7 @@ export default function ServiceIngestion() {
         setPreviewData({ ...previewData, ...updates });
     };
 
-    const updateOption = (index: number, updates: Partial<any>) => {
+    const updateOption = (index: number, updates: Partial<ServiceOption>) => {
         if (!previewData) return;
         const newOptions = [...previewData.service_options];
         newOptions[index] = { ...newOptions[index], ...updates };

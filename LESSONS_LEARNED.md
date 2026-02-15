@@ -24,9 +24,8 @@
 - **Lesson**: Modern web apps must be resilient to the user's browser environment, which is outside our control.
 
 ## 5. Deployment & Infrastructure
-**Issue**: Next.js API Routes require a server environment, but standard "Static Export" is often preferred for cost/simplicity on Firebase Hosting.
-**Solution**: Acknowledged that for a full-stack Next.js app on Firebase:
-- **Frameworks Awareness**: Use `firebase-tools` with Web Frameworks experiment enabled, OR
-- **Containerization**: Deploy to Cloud Run, OR
-- **Hybrid**: Use Cloud Functions for SSR/API and Hosting for static assets.
-- **Decision**: The project is configured for Firebase Hosting, but deployment workflows must respect the need for server-side compute for API routes.
+**Issue**: Firebase Hosting's support for modern Next.js features (SSR, Server Actions, Image Optimization) was limited or required complex "Web Frameworks" configurations that often failed or incurred high costs (Cloud Run).
+**Solution**: Migrated hosting to **Vercel**.
+- **Decision**: Firebase is retained for **Backend-as-a-Service** (Firestore, Auth), while Vercel handles the **Frontend & Compute** (Next.js Application).
+- **Benefit**: Zero-config support for Server Actions, better build performance, and native Next.js integration.
+- **Migration**: Removed `hosting` config from `firebase.json` and added `vercel.json` / Vercel dashboard configuration.

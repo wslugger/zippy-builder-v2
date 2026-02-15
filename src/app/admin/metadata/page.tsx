@@ -49,7 +49,7 @@ export default function MetadataPage() {
                     },
                     wifi_standards: {
                         label: "Wi-Fi Standards",
-                        values: ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"]
+                        values: ["Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"]
                     },
                     statuses: {
                         label: "Support Statuses",
@@ -74,6 +74,18 @@ export default function MetadataPage() {
                 }
             };
             await MetadataService.saveCatalogMetadata(defaultEqMetadata);
+
+            const defaultServiceMetadata: CatalogMetadata = {
+                id: "service_catalog",
+                fields: {
+                    service_categories: {
+                        label: "Service Categories",
+                        values: ["Fiber", "Broadband", "Satellite", "Wireless", "Cybersecurity", "Managed Services"]
+                    }
+                }
+            };
+            await MetadataService.saveCatalogMetadata(defaultServiceMetadata);
+
             await fetchMetadata();
             alert("Default metadata seeded successfully!");
         } catch (e) {

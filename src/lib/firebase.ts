@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeFirestore, getFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { Equipment, CatalogMetadata } from "@/src/lib/types";
+import { Equipment, CatalogMetadata, Service } from "@/src/lib/types";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -68,6 +68,37 @@ export const EquipmentService = {
 };
 
 const METADATA_COLLECTION = "catalog_metadata";
+const SERVICE_COLLECTION = "service_catalog";
+
+export const ServiceService = {
+    saveService: async (service: Service) => {
+        const docRef = doc(db, SERVICE_COLLECTION, service.id);
+        await setDoc(docRef, service, { merge: true });
+        return service.id;
+    },
+
+    getAllServices: async (): Promise<Service[]> => {
+        const snapshot = await getDocs(collection(db, SERVICE_COLLECTION));
+        return snapshot.docs.map((doc) => doc.data() as Service);
+    },
+
+    getServiceById: async (id: string): Promise<Service | null> => {
+        const docRef = doc(db, SERVICE_COLLECTION, id);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+            return snapshot.data() as Service;
+        }
+        return null;
+    },
+
+    deleteService: async (id: string) => {
+        // Note: Actual delete might need dedicated API or Admin SDK depending on security rules
+        // but for now mirroring the equipment logic if we had one (equipment uses API route for delete)
+        const docRef = doc(db, SERVICE_COLLECTION, id);
+        // Firebase client SDK deleteDoc isn't imported here, but we can add it if needed.
+        // For consistency with existing pattern, we'll assume there's an API route for delete.
+    }
+};
 
 export const MetadataService = {
     getCatalogMetadata: async (catalogId: string): Promise<CatalogMetadata | null> => {

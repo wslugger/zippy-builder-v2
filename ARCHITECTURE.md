@@ -10,14 +10,14 @@ graph TB
         UI[Next.js UI Components]
     end
     
-    subgraph "Application Layer"
+    subgraph "Hosting Infrastructure (Vercel)"
         NextJS[Next.js App Router]
         API[API Routes]
         Actions[Server Actions]
         Middleware[Auth Middleware]
     end
     
-    subgraph "Service Layer"
+    subgraph "Google Cloud Platform"
         FirebaseService[Firebase Service]
         FirestoreService[Firestore Service]
         GeminiService[Gemini AI Service]
