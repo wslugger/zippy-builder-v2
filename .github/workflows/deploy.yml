@@ -23,7 +23,7 @@ jobs:
       - name: Deploy to Firebase
         run: |
           npx firebase-tools experiments:enable webframeworks
-          npx firebase-tools deploy --only hosting --project zippy-builder-v2-487514 --token "${{ secrets.FIREBASE_TOKEN }}"
+          npx firebase-tools deploy --only hosting --project zippy-builder-v2-487514 --token "${{ secrets.FIREBASE_TOKEN }}" --force
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
