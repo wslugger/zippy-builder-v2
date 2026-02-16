@@ -1,16 +1,68 @@
 import { BOMEngine } from "@/src/lib/bom-engine";
 import { Site } from "@/src/lib/bom-types";
-import { Package } from "@/src/lib/types";
+import { Package, Service } from "@/src/lib/types";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
-import { SEED_PACKAGES, SEED_SERVICES } from "@/src/lib/seed-data";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 
 describe("BOM Engine Logic", () => {
     const engine = new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT);
-    const costCentricPackage = SEED_PACKAGES.find(p => p.id === "cost_centric")!;
 
-    it("should select Meraki MX67 for small bandwidth site (Cost Centric)", () => {
+    const mockServices: Service[] = [
+        {
+            id: "managed_sdwan",
+            name: "Managed SD-WAN",
+            active: true,
+            short_description: "test",
+            detailed_description: "test",
+            metadata: { category: "Connectivity" },
+            caveats: [],
+            assumptions: [],
+            supported_features: [],
+            service_options: []
+        },
+        {
+            id: "managed_lan",
+            name: "Managed LAN",
+            active: true,
+            short_description: "test",
+            detailed_description: "test",
+            metadata: { category: "Managed Services" },
+            caveats: [],
+            assumptions: [],
+            supported_features: [],
+            service_options: []
+        },
+        {
+            id: "managed_wifi",
+            name: "Managed Wi-Fi",
+            active: true,
+            short_description: "test",
+            detailed_description: "test",
+            metadata: { category: "Wireless" },
+            caveats: [],
+            assumptions: [],
+            supported_features: [],
+            service_options: []
+        }
+    ];
+
+    const mockPackage: Package = {
+        id: "cost_centric",
+        name: "Test Package",
+        active: true,
+        short_description: "test",
+        detailed_description: "test",
+        items: [
+            {
+                service_id: "managed_sdwan",
+                inclusion_type: "required",
+                enabled_features: []
+            }
+        ]
+    };
+
+    it("should select Meraki MX67 for small bandwidth site", () => {
         const site: Site = {
             name: "Small Site",
             bandwidthDownMbps: 100, // < 200
@@ -27,14 +79,14 @@ describe("BOM Engine Logic", () => {
             primaryCircuit: "Broadband"
         };
 
-        const bom = engine.generateBOM("test-project", [site], costCentricPackage, SEED_SERVICES, ALL_SITE_TYPES);
+        const bom = engine.generateBOM("test-project", [site], mockPackage, mockServices, ALL_SITE_TYPES);
 
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx67");
     });
 
-    it("should select Meraki MX68 for medium bandwidth site (Cost Centric)", () => {
+    it("should select Meraki MX68 for medium bandwidth site", () => {
         const site: Site = {
             name: "Medium Site",
             bandwidthDownMbps: 300, // 200-500
@@ -51,14 +103,14 @@ describe("BOM Engine Logic", () => {
             primaryCircuit: "DIA"
         };
 
-        const bom = engine.generateBOM("test-project", [site], costCentricPackage, SEED_SERVICES, ALL_SITE_TYPES);
+        const bom = engine.generateBOM("test-project", [site], mockPackage, mockServices, ALL_SITE_TYPES);
 
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx68");
     });
 
-    it("should select Meraki MX85 for large bandwidth site (Cost Centric)", () => {
+    it("should select Meraki MX85 for large bandwidth site", () => {
         const site: Site = {
             name: "Large Site",
             bandwidthDownMbps: 1000, // > 500
@@ -75,7 +127,7 @@ describe("BOM Engine Logic", () => {
             primaryCircuit: "DIA"
         };
 
-        const bom = engine.generateBOM("test-project", [site], costCentricPackage, SEED_SERVICES, ALL_SITE_TYPES);
+        const bom = engine.generateBOM("test-project", [site], mockPackage, mockServices, ALL_SITE_TYPES);
 
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
         expect(sdwanItem).toBeDefined();
@@ -94,22 +146,15 @@ describe("BOM Engine Logic", () => {
             wanLinks: 1,
             lanPorts: 0,
             poePorts: 0,
-            indoorAPs: 5, // request 5 APs
+            indoorAPs: 5,
             outdoorAPs: 0,
             primaryCircuit: "Broadband"
         };
 
-        // Ensure Managed Wifi service is considered in the package.
-        // Cost Centric by default doesn't have Managed Wifi in SEED_PACKAGES?
-        // Let's check SEED_PACKAGES definition.
-        // It has Managed SD-WAN.
-        // I might need to mock a package that has Wifi or add Wifi to Cost Centric for test.
-
-        // Let's create a custom package for this test
         const wifiPackage: Package = {
-            ...costCentricPackage,
+            ...mockPackage,
             items: [
-                ...costCentricPackage.items,
+                ...mockPackage.items,
                 {
                     service_id: "managed_wifi",
                     inclusion_type: "standard",
@@ -118,7 +163,7 @@ describe("BOM Engine Logic", () => {
             ]
         };
 
-        const bom = engine.generateBOM("test-project", [site], wifiPackage, SEED_SERVICES, ALL_SITE_TYPES);
+        const bom = engine.generateBOM("test-project", [site], wifiPackage, mockServices, ALL_SITE_TYPES);
 
         const wifiItem = bom.items.find(i => i.serviceId === "managed_wifi");
         expect(wifiItem).toBeDefined();

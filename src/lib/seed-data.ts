@@ -88,25 +88,7 @@ const createServiceOption = (id: string, name: string, description: string, desi
 });
 
 export const SEED_SERVICES: Service[] = [
-    {
-        id: "managed_sdwan",
-        name: "Managed SD-WAN",
-        active: true,
-        short_description: "Software-defined wide area networking for secure, optimized branch connectivity.",
-        detailed_description: "Our Managed SD-WAN service leverages industry-leading platforms to provide secure, agile, and cost-effective connectivity. It features centralized management, application-aware routing, and integrated security to ensure your business-critical applications perform optimally over any transport.",
-        metadata: { category: "Managed Services" },
-        caveats: [],
-        assumptions: [],
-        supported_features: ["app_aware_routing", "auto_vpn", "cloud_mgmt"],
-        service_options: [
-            createServiceOption(
-                "sdwan_edge",
-                "Edge Connectivity",
-                "Primary SD-WAN appliances for branch sites.",
-                []
-            )
-        ]
-    },
+
 
     {
         id: "managed_lan",
@@ -174,12 +156,7 @@ export const SEED_PACKAGES: Package[] = [
         detailed_description: "The Cost Centric package is designed for lean organizations or smaller branch offices that require reliable connectivity without advanced enterprise features. It prioritizes cost-effective hardware (e.g., Meraki MX67, standard switches) and essential service levels. It provides a solid foundation for business operations with standard SD-WAN capabilities, basic security/firewalling, and cost-efficient internet breakout options, ensuring a low Total Cost of Ownership (TCO).",
         throughput_basis: "vpn_throughput_mbps",
         items: [
-            {
-                service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [
-                    { feature_id: "auto_vpn", inclusion_type: "standard" },
-                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
-                ]
-            },
+
             {
                 service_id: "managed_lan", inclusion_type: "standard", enabled_features: [
                     { feature_id: "cloud_mgmt", inclusion_type: "standard" }
@@ -200,13 +177,7 @@ export const SEED_PACKAGES: Package[] = [
         detailed_description: "Tailored for locations with heavy data usage, real-time applications (VoIP, Video), or critical uptime requirements. This package leverages high-performance hardware, dual-wan links with sub-second failover, and Application Aware Routing to guarantee Quality of Experience (QoE). Includes High Availability (HA) configurations and advanced analytics for deep network visibility.",
         throughput_basis: "vpn_throughput_mbps",
         items: [
-            {
-                service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [
-                    { feature_id: "app_aware_routing", inclusion_type: "standard" },
-                    { feature_id: "auto_vpn", inclusion_type: "standard" },
-                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
-                ]
-            },
+
             {
                 service_id: "managed_lan", inclusion_type: "required", enabled_features: [
                     { feature_id: "poe_plus", inclusion_type: "standard" },
@@ -229,15 +200,7 @@ export const SEED_PACKAGES: Package[] = [
         detailed_description: "Provides the highest level of network security, integrating Next-Generation Firewall (NGFW), Intrusion Prevention (IPS), and advanced malware protection directly into the network fabric. Ideal for regulated industries or data-sensitive environments. Includes secure segmentation for IoT devices and encrypted site-to-site communications by default.",
         throughput_basis: "adv_sec_throughput_mbps",
         items: [
-            {
-                service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [
-                    { feature_id: "app_aware_routing", inclusion_type: "standard" },
-                    { feature_id: "auto_vpn", inclusion_type: "standard" },
-                    { feature_id: "ngfw", inclusion_type: "standard" },
-                    { feature_id: "ids_ips", inclusion_type: "standard" },
-                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
-                ]
-            },
+
             {
                 service_id: "managed_lan", inclusion_type: "standard", enabled_features: [
                     { feature_id: "cloud_mgmt", inclusion_type: "standard" }
