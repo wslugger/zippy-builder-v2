@@ -120,6 +120,7 @@ export interface Package {
   collateral?: PackageCollateral[];
   active: boolean;
   throughput_basis?: "ngfw_throughput_mbps" | "vpn_throughput_mbps" | "adv_sec_throughput_mbps";
+  throughput_overhead_mbps?: number; // Base overhead for the package (e.g. VPN overhead)
 }
 
 export interface ServiceItem {
@@ -138,6 +139,7 @@ export interface DesignOption extends ServiceItem {
   decision_driver?: string;
   pros?: string[];
   cons?: string[];
+  throughput_overhead_mbps?: number; // Additional bandwidth overhead (e.g. VPN)
 }
 
 export interface ServiceOption extends ServiceItem {

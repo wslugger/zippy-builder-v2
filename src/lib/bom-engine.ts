@@ -6,6 +6,18 @@ import { SiteType } from "./site-types";
 /**
  * Generates a Bill of Materials based on Sites, Package configuration, and Rules.
  */
+// Maps alternative/Firestore service IDs to the canonical IDs used in rules
+const SERVICE_ID_ALIASES: Record<string, string> = {
+    "sd_wan_service": "managed_sdwan",
+    "managed_sdwan": "managed_sdwan",
+    "managed_lan": "managed_lan",
+    "managed_wifi": "managed_wifi",
+};
+
+function normalizeServiceId(id: string): string {
+    return SERVICE_ID_ALIASES[id] || id;
+}
+
 export class BOMEngine {
     private rules: BOMLogicRule[];
     private equipmentCatalog: Equipment[];
@@ -15,7 +27,7 @@ export class BOMEngine {
         this.equipmentCatalog = equipmentCatalog;
     }
 
-    public generateBOM(projectId: string, sites: Site[], selectedPackage: Package, services: Service[], siteTypes: SiteType[]): BOM {
+    public generateBOM(projectId: string, sites: Site[], selectedPackage: Package, services: Service[], siteTypes: SiteType[], manualSelections: Record<string, string> = {}): BOM {
         const bomItems: BOMLineItem[] = [];
 
         for (const site of sites) {
@@ -27,12 +39,13 @@ export class BOMEngine {
                     id: "generic",
                     name: "Generic Branch",
                     category: "SD-WAN",
-                    tier: "Standard",
+                    tier: "Standard Branch",
                     description: "Generic fallback profile",
                     constraints: [],
                     defaults: {
-                        redundancy: { cpe: "Single", circuits: "Single" },
-                        performance: { throughput_mbps: 0 }
+                        redundancy: { cpe: "Single", circuit: "Single" },
+                        slo: 99.9,
+                        requiredServices: ["managed_sdwan"]
                     }
                 } as SiteType;
             }
@@ -42,8 +55,66 @@ export class BOMEngine {
                 const service = services.find(s => s.id === pkgItem.service_id);
                 if (!service) continue;
 
+                // Normalize the service ID so rules work with both Firestore and seed IDs
+                const canonicalServiceId = normalizeServiceId(service.id);
+
+                // --- 0. CHECK MANUAL SELECTION ---
+                const selectionKey = `${site.name}:${service.id}`;
+                const manualOverrideId = manualSelections[selectionKey];
+
+                if (manualOverrideId) {
+                    const equip = this.equipmentCatalog.find(e => e.id === manualOverrideId);
+                    if (equip) {
+                        let quantity = 1;
+                        // Still respect redundancy for quantity if applicable, or just default to 1?
+                        // Let's assume manual selection implies the *device model*, but quantity might still be derived
+                        // from redundancy rules OR we just stick to 1 unless it's a dual CPE site.
+                        // For simplicity/consistency with auto-logic:
+                        if (canonicalServiceId === "managed_sdwan" && (site.redundancyModel?.toLowerCase().includes("dual") || siteDef.defaults.redundancy.cpe === "Dual")) {
+                            quantity = 2;
+                        }
+
+                        bomItems.push({
+                            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
+                            siteName: site.name,
+                            serviceId: canonicalServiceId,
+                            serviceName: service.name,
+                            itemId: equip.id,
+                            itemName: `${VENDOR_LABELS[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
+                            itemType: "equipment",
+                            quantity: quantity,
+                            reasoning: `Manual Selection`
+                        });
+                        continue;
+                    }
+                }
+
+                // --- 0.5 CALCULATE THROUGHPUT REQUIREMENT ---
+                // Calculate overhead from Package and Design Options
+                let throughputOverhead = selectedPackage.throughput_overhead_mbps || 0;
+
+                // Add overhead from selected design options for this service
+                if (pkgItem.design_option_id) {
+                    // Find the DesignOption object in the Service
+                    const designOption = service.service_options
+                        .flatMap(so => so.design_options)
+                        .find(d => d.id === pkgItem.design_option_id);
+
+                    if (designOption?.throughput_overhead_mbps) {
+                        throughputOverhead += designOption.throughput_overhead_mbps;
+                    }
+                }
+
+                const requiredThroughput = (site.bandwidthDownMbps || 0) + throughputOverhead;
+
+                // Create a proxy site object for rule evaluation that effectively has the "required" bandwidth
+                const ruleEvaluationSite = {
+                    ...site,
+                    bandwidthDownMbps: requiredThroughput
+                };
+
                 // --- 1. TRY RULES ENGINE FIRST ---
-                const matchingRules = this.findMatchingRules(site, selectedPackage.id, service.id);
+                const matchingRules = this.findMatchingRules(ruleEvaluationSite, selectedPackage.id, canonicalServiceId);
                 const equipmentAction = matchingRules
                     .flatMap(r => r.actions)
                     .find(a => a.type === "select_equipment");
@@ -52,6 +123,12 @@ export class BOMEngine {
                     const equip = this.equipmentCatalog.find(e => e.id === equipmentAction.targetId);
                     if (equip) {
                         let finalQuantity = equipmentAction.quantity || 1;
+
+                        // Override quantity if site specifies Dual CPE and it's an edge device
+                        if (canonicalServiceId === "managed_sdwan" && (site.redundancyModel?.toLowerCase().includes("dual") || siteDef.defaults.redundancy.cpe === "Dual")) {
+                            finalQuantity = 2;
+                        }
+
                         if (equipmentAction.quantityMultiplierField) {
                             const multiplier = site[equipmentAction.quantityMultiplierField as keyof Site] as number;
                             if (typeof multiplier === 'number') {
@@ -62,13 +139,13 @@ export class BOMEngine {
                         bomItems.push({
                             id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
                             siteName: site.name,
-                            serviceId: service.id,
+                            serviceId: canonicalServiceId,
                             serviceName: service.name,
                             itemId: equip.id,
                             itemName: `${VENDOR_LABELS[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
                             itemType: "equipment",
                             quantity: finalQuantity,
-                            reasoning: `Rule Match: ${matchingRules[0].name}`
+                            reasoning: `Rule Match: ${matchingRules[0].name}${finalQuantity === 2 ? ' (Redundant)' : ''}`
                         });
                         continue; // Skip fallback
                     }
@@ -89,7 +166,7 @@ export class BOMEngine {
                         "managed_lan": "LAN",
                         "managed_wifi": "WLAN"
                     };
-                    const requiredPurpose = purposeMapping[service.id];
+                    const requiredPurpose = purposeMapping[canonicalServiceId];
                     if (requiredPurpose && !e.purpose.includes(requiredPurpose as (typeof EQUIPMENT_PURPOSES)[number])) return false;
 
                     // 3. Matches Constraints (Rugged, Virtual, etc.)
@@ -97,7 +174,7 @@ export class BOMEngine {
 
                     // 4. Matches Basic Performance (Throughput)
                     if (requiredPurpose === "SDWAN") {
-                        const requiredThroughput = site.bandwidthDownMbps || 0;
+                        // Use calculated requiredThroughput including overhead
                         const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
                         const deviceThroughput = e.specs[throughputField] ?? e.specs.vpn_throughput_mbps ?? 0;
 
@@ -113,16 +190,43 @@ export class BOMEngine {
                 });
 
                 // C. Select Best Fit
-                const bestFit = candidates.sort((a, b) => {
+                let bestFit = candidates.sort((a, b) => {
                     const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
                     const valA = (a.specs[throughputField] ?? a.specs.vpn_throughput_mbps ?? 0) || a.specs.ports || 0;
                     const valB = (b.specs[throughputField] ?? b.specs.vpn_throughput_mbps ?? 0) || b.specs.ports || 0;
                     return valA - valB;
                 })[0];
 
+                let matchType = "Dynamic match";
+
+                // D. Fallback: If no candidate meets requirements, pick the highest performing device of that vendor/purpose
+                if (!bestFit) {
+                    const allPurposeCandidates = this.equipmentCatalog.filter(e => {
+                        if (e.vendor_id !== vendorId) return false;
+                        const purposeMapping: Record<string, string> = {
+                            "managed_sdwan": "SDWAN",
+                            "managed_lan": "LAN",
+                            "managed_wifi": "WLAN"
+                        };
+                        const requiredPurpose = purposeMapping[canonicalServiceId];
+                        return requiredPurpose && e.purpose.includes(requiredPurpose as (typeof EQUIPMENT_PURPOSES)[number]);
+                    });
+
+                    bestFit = allPurposeCandidates.sort((a, b) => {
+                        const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
+                        const valA = (a.specs[throughputField] ?? a.specs.vpn_throughput_mbps ?? 0) || a.specs.ports || 0;
+                        const valB = (b.specs[throughputField] ?? b.specs.vpn_throughput_mbps ?? 0) || b.specs.ports || 0;
+                        return valB - valA; // HIGHEST first for fallback
+                    })[0];
+
+                    if (bestFit) {
+                        matchType = "Fallback (Best available)";
+                    }
+                }
+
                 if (bestFit) {
                     let quantity = 1;
-                    if (pkgItem.service_id === "managed_sdwan" && siteDef.defaults.redundancy.cpe === "Dual") {
+                    if (canonicalServiceId === "managed_sdwan" && (site.redundancyModel?.toLowerCase().includes("dual") || siteDef.defaults.redundancy.cpe === "Dual")) {
                         quantity = 2;
                     }
 
@@ -135,7 +239,7 @@ export class BOMEngine {
                         itemName: `${VENDOR_LABELS[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,
                         itemType: "equipment",
                         quantity: quantity,
-                        reasoning: `Dynamic match: Vendor=${vendorId}, Throughput=${bestFit.specs.vpn_throughput_mbps || 'N/A'}, Redundancy=${siteDef.defaults.redundancy.cpe}`
+                        reasoning: `${matchType}: Vendor=${vendorId}, Throughput=${bestFit.specs.vpn_throughput_mbps || 'N/A'}, Redundancy=${quantity > 1 ? 'Dual' : 'Single'}`
                     });
                 }
             }

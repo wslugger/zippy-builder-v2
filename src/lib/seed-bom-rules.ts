@@ -38,10 +38,38 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         conditions: [
             { field: "packageId", operator: "equals", value: "cost_centric" },
             { field: "serviceId", operator: "equals", value: "managed_sdwan" },
-            { field: "bandwidthDownMbps", operator: "greater_than", value: 499 }
+            { field: "bandwidthDownMbps", operator: "greater_than", value: 499 },
+            { field: "bandwidthDownMbps", operator: "less_than", value: 1000 }
         ],
         actions: [
             { type: "select_equipment", targetId: "meraki_mx85", quantity: 1 }
+        ]
+    },
+    {
+        id: "rule_sdwan_gigabit",
+        name: "Cost Centric - Gigabit Branch SDWAN",
+        priority: 70,
+        conditions: [
+            { field: "packageId", operator: "equals", value: "cost_centric" },
+            { field: "serviceId", operator: "equals", value: "managed_sdwan" },
+            { field: "bandwidthDownMbps", operator: "greater_than", value: 999 },
+            { field: "bandwidthDownMbps", operator: "less_than", value: 2000 }
+        ],
+        actions: [
+            { type: "select_equipment", targetId: "meraki_mx105", quantity: 1 }
+        ]
+    },
+    {
+        id: "rule_sdwan_multigig",
+        name: "Cost Centric - Multi-Gigabit Branch SDWAN",
+        priority: 60,
+        conditions: [
+            { field: "packageId", operator: "equals", value: "cost_centric" },
+            { field: "serviceId", operator: "equals", value: "managed_sdwan" },
+            { field: "bandwidthDownMbps", operator: "greater_than", value: 1999 }
+        ],
+        actions: [
+            { type: "select_equipment", targetId: "meraki_mx250", quantity: 1 }
         ]
     },
 

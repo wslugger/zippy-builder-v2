@@ -29,12 +29,14 @@ function BOMBuilderContent() {
 
     const [project, setProject] = useState<Project | null>(null);
     const [pkg, setPkg] = useState<Package | null>(null);
+    const [allPackages, setAllPackages] = useState<Package[]>([]);
     const [services, setServices] = useState<Service[]>([]);
     const [siteTypes, setSiteTypes] = useState<SiteType[]>([]);
     const [sites, setSites] = useState<Site[]>([]);
     const [selectedSiteIndex, setSelectedSiteIndex] = useState<number>(0);
     const [activeTab, setActiveTab] = useState<string>("sdwan");
     const [engine] = useState(() => new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT));
+    const [manualSelections, setManualSelections] = useState<Record<string, string>>({});
 
     // Load Project Data
     useEffect(() => {
@@ -43,6 +45,8 @@ function BOMBuilderContent() {
             let p;
             if (projectId === 'demo') {
                 const pkgs = await PackageService.getAllPackages();
+                // Prefer cost_centric for demo since it has full BOM rules
+                const preferredPkg = pkgs.find(p => p.id === 'cost_centric') || pkgs[0];
                 p = {
                     id: 'demo',
                     userId: 'demo-user',
@@ -51,7 +55,7 @@ function BOMBuilderContent() {
                     description: 'Automated test project for BOM troubleshooting.',
                     status: 'completed',
                     currentStep: 5,
-                    selectedPackageId: pkgs[0]?.id || 'cost_centric',
+                    selectedPackageId: preferredPkg?.id || 'cost_centric',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 } as Project;
@@ -63,6 +67,11 @@ function BOMBuilderContent() {
                 const pk = await PackageService.getPackageById(p.selectedPackageId);
                 setPkg(pk);
             }
+
+            // Always fetch all packages for the selector (or at least in demo mode)
+            const allPkgs = await PackageService.getAllPackages();
+            setAllPackages(allPkgs);
+
             const s = await ServiceService.getAllServices();
             setServices(s);
 
@@ -100,10 +109,10 @@ function BOMBuilderContent() {
     // Re-generate BOM when sites change or logic changes
     const bom: BOM | null = useMemo(() => {
         if (sites.length > 0 && pkg && services.length > 0 && siteTypes.length > 0) {
-            return engine.generateBOM(projectId, sites, pkg, services, siteTypes);
+            return engine.generateBOM(projectId, sites, pkg, services, siteTypes, manualSelections);
         }
         return null;
-    }, [sites, pkg, services, siteTypes, engine, projectId]);
+    }, [sites, pkg, services, siteTypes, engine, projectId, manualSelections]);
 
 
     const selectedSite = sites[selectedSiteIndex];
@@ -141,12 +150,55 @@ function BOMBuilderContent() {
                             <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700" />
                         </div>
                     )}
-                    <button
-                        onClick={loadSampleData}
-                        className="mt-2 w-full text-left px-2 py-1 text-[10px] uppercase tracking-wider font-bold text-slate-400 hover:text-blue-600 transition-colors border border-dashed border-slate-200 rounded"
-                    >
-                        Load Sample Sites (Test)
-                    </button>
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                        {projectId === 'demo' && (
+                            <div className="mb-3">
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                    Test Package
+                                </label>
+                                <select
+                                    className="block w-full rounded border-slate-200 text-xs py-1 pl-2 pr-6 focus:ring-blue-500 focus:border-blue-500"
+                                    value={pkg?.id || ""}
+                                    onChange={async (e) => {
+                                        const newPkgId = e.target.value;
+                                        const newPkg = await PackageService.getPackageById(newPkgId);
+                                        setPkg(newPkg);
+                                        if (project) {
+                                            setProject({ ...project, selectedPackageId: newPkgId });
+                                        }
+                                    }}
+                                >
+                                    <option value="" disabled>Select Package...</option>
+                                    {/* We need all packages here. Let's fetch them if not already in a state variable. 
+                                        Actually, let's add a state variable for 'allPackages' at the component level.
+                                    */}
+                                    {allPackages.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={loadSampleData}
+                            className="w-full text-left px-2 py-1 text-[10px] uppercase tracking-wider font-bold text-slate-400 hover:text-blue-600 transition-colors border border-dashed border-slate-200 rounded"
+                        >
+                            Load Sample Sites (Test)
+                        </button>
+                    </div>
+                    {sites.length > 0 && (
+                        <button
+                            onClick={() => {
+                                if (confirm("Are you sure you want to clear all sites?")) {
+                                    setSites([]);
+                                    setSelectedSiteIndex(0);
+                                }
+                            }}
+                            className="mt-2 w-full text-left px-2 py-1 text-[10px] uppercase tracking-wider font-bold text-red-300 hover:text-red-600 transition-colors border border-dashed border-red-100 rounded"
+                        >
+                            Clear Sites
+                        </button>
+                    )}
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {sites.map((site, idx) => (
@@ -277,7 +329,37 @@ function BOMBuilderContent() {
 
                                     {/* Section: Edge Device */}
                                     <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
-                                        <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Edge Device</h3>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Edge Device</h3>
+
+                                            {/* Manual Selection Dropdown */}
+                                            <div className="flex items-center space-x-2">
+                                                <label className="text-xs text-slate-500 font-medium">Model:</label>
+                                                <select
+                                                    className="text-xs border-slate-200 rounded-md py-1 pl-2 pr-8 focus:ring-blue-500 focus:border-blue-500"
+                                                    value={manualSelections[`${selectedSite.name}:managed_sdwan`] || ""}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setManualSelections(prev => {
+                                                            const next = { ...prev };
+                                                            const key = `${selectedSite.name}:managed_sdwan`;
+                                                            if (val) next[key] = val;
+                                                            else delete next[key];
+                                                            return next;
+                                                        });
+                                                    }}
+                                                >
+                                                    <option value="">-- Auto-detect --</option>
+                                                    {SEED_EQUIPMENT
+                                                        .filter(e => e.purpose.includes("SDWAN"))
+                                                        .map(e => (
+                                                            <option key={e.id} value={e.id}>{e.model}</option>
+                                                        ))
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         {currentSDWANEquipment ? (
                                             <div className="flex items-start space-x-6">
                                                 <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center border border-slate-200">
@@ -290,6 +372,9 @@ function BOMBuilderContent() {
                                                         <button className="text-sm text-blue-600 hover:underline">View Specs</button>
                                                     </div>
                                                     <p className="text-sm text-slate-600 mt-1">{currentSDWANEquipment.description}</p>
+                                                    {manualSelections[`${selectedSite.name}:managed_sdwan`] && (
+                                                        <p className="text-xs text-amber-600 mt-1 font-medium">⚠️ Manually Selected</p>
+                                                    )}
 
                                                     {/* Utilization Bar */}
                                                     <div className="mt-4">

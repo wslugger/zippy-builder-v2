@@ -187,7 +187,7 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
 
                 <div className="print:hidden">
                     <Link
-                        href="/tools/bom-builder"
+                        href={`/sa/project/${projectId}/bom`}
                         className="flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all hover:scale-105 text-lg"
                     >
                         Continue to BOM Builder &rarr;

@@ -131,7 +131,7 @@ describe("BOM Engine Logic", () => {
 
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
         expect(sdwanItem).toBeDefined();
-        expect(sdwanItem?.itemId).toBe("meraki_mx85");
+        expect(sdwanItem?.itemId).toBe("meraki_mx105");
     });
 
     it("should calculate Correct AP count", () => {

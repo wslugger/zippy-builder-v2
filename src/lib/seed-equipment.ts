@@ -78,6 +78,25 @@ export const SEED_EQUIPMENT: Equipment[] = [
         },
         images: ["/assets/equipment/meraki_mx105.png"]
     },
+    {
+        id: "meraki_mx250",
+        vendor_id: "meraki",
+        model: "MX250",
+        active: true,
+        status: "Supported",
+        purpose: ["SDWAN", "Security"],
+        family: "Meraki MX",
+        description: "High-capacity SD-WAN appliance for large-scale deployments.",
+        specs: {
+            ngfw_throughput_mbps: 4000,
+            vpn_throughput_mbps: 2000,
+            wan_interfaces_desc: "2x 10GbE SFP+",
+            lan_interfaces_desc: "8x GbE RJ45, 8x SFP, 8x 10GbE SFP+",
+            max_clients: 2000,
+            recommended_use_case: "Campus / Data Center",
+        },
+        images: ["/assets/equipment/meraki_mx250.png"]
+    },
 
     // --- Cisco Catalyst Switches (Managed LAN) ---
     {
