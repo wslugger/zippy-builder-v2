@@ -129,13 +129,13 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
     if (loading || !pkg) return <div className="p-10 text-center">Loading Customizer...</div>;
 
     // Helper to get rule from Package Definition
-    const getPackageRule = (serviceId: string, optionId?: string, designId?: string): InclusionType => {
+    const getPackageRule = (serviceId: string, optionId?: string, designId?: string): InclusionType | null => {
         const item = pkg.items.find(i =>
             i.service_id === serviceId &&
             i.service_option_id === optionId &&
             i.design_option_id === designId
         );
-        return item?.inclusion_type || 'optional'; // If not in package explicitly, assume optional/add-on
+        return item?.inclusion_type || null;
     };
 
     return (
@@ -167,20 +167,29 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                 {/* Main Configurator */}
                 <div className="lg:col-span-3 space-y-8">
                     {services.map(service => {
-                        // Check if this service is relevant to the package (skip if completely unrelated? No, allow cross-sell)
-                        // For MVP, show all services but group by "Included in Package" vs "Add-ons"
-                        // Or just alphabetical. Let's do alphabetical.
-
                         const serviceRule = getPackageRule(service.id);
+
+                        // If the service itself is not in the package, skip it? 
+                        // Actually, some packages might not have the "Service" itself as a rule, 
+                        // but have sub-items. But usually the service is the top level.
+                        // Let's check if ANY sub-item is in the package if the service itself is null.
+                        const hasWhitelistedContent = serviceRule !== null ||
+                            service.service_options?.some(opt =>
+                                getPackageRule(service.id, opt.id) !== null ||
+                                opt.design_options?.some(design => getPackageRule(service.id, opt.id, design.id) !== null)
+                            );
+
+                        if (!hasWhitelistedContent) return null;
+
                         const isServiceActive = isItemActive(service.id);
                         const isServiceRequired = serviceRule === 'required';
-
+                        const effectiveServiceRule = serviceRule || 'optional'; // Fallback for display if sub-items exist
                         return (
                             <div key={service.id} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden shadow-sm">
                                 <div className={`p-6 flex items-center justify-between ${isServiceActive ? 'bg-blue-50/10' : ''}`}>
                                     <div className="flex items-center gap-4">
                                         <button
-                                            onClick={() => toggleItem(service.id, undefined, undefined, serviceRule)}
+                                            onClick={() => toggleItem(service.id, undefined, undefined, effectiveServiceRule)}
                                             disabled={isServiceRequired}
                                             className={`
                                                 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
@@ -195,11 +204,11 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                                         <div>
                                             <h3 className="text-xl font-bold">{service.name}</h3>
                                             <div className="flex gap-2 mt-1">
-                                                <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold tracking-wider ${serviceRule === 'required' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                    serviceRule === 'standard' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold tracking-wider ${effectiveServiceRule === 'required' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                    effectiveServiceRule === 'standard' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                                                         'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
                                                     }`}>
-                                                    {serviceRule}
+                                                    {effectiveServiceRule}
                                                 </span>
                                             </div>
                                         </div>
@@ -211,14 +220,22 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                                     <div className="border-t border-neutral-100 dark:border-neutral-800 p-6 space-y-6 bg-neutral-50 dark:bg-neutral-950/30">
                                         {service.service_options.map(option => {
                                             const optionRule = getPackageRule(service.id, option.id);
+
+                                            // Check if this option or any of its children are whitelisted
+                                            const hasWhitelistedOptionContent = optionRule !== null ||
+                                                option.design_options?.some(design => getPackageRule(service.id, option.id, design.id) !== null);
+
+                                            if (!hasWhitelistedOptionContent) return null;
+
                                             const isOptionActive = isItemActive(service.id, option.id);
                                             const isOptionRequired = optionRule === 'required';
+                                            const effectiveOptionRule = optionRule || 'optional';
 
                                             return (
                                                 <div key={option.id} className="pl-4 border-l-2 border-neutral-200 dark:border-neutral-800">
                                                     <div className="flex items-center gap-3 mb-4">
                                                         <button
-                                                            onClick={() => toggleItem(service.id, option.id, undefined, optionRule)}
+                                                            onClick={() => toggleItem(service.id, option.id, undefined, effectiveOptionRule)}
                                                             disabled={isOptionRequired}
                                                             className={`
                                                                 w-5 h-5 rounded border-2 flex items-center justify-center transition-all
@@ -231,7 +248,7 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                                                             {isOptionActive && <span className="text-xs font-bold">✓</span>}
                                                         </button>
                                                         <span className="font-semibold">{option.name}</span>
-                                                        <span className="text-xs text-neutral-400 uppercase">({optionRule})</span>
+                                                        <span className="text-xs text-neutral-400 uppercase">({effectiveOptionRule})</span>
                                                     </div>
 
                                                     {/* Design Options */}
@@ -239,6 +256,8 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8">
                                                             {option.design_options.map(design => {
                                                                 const designRule = getPackageRule(service.id, option.id, design.id);
+                                                                if (designRule === null) return null;
+
                                                                 const isDesignActive = isItemActive(service.id, option.id, design.id);
                                                                 const isDesignRequired = designRule === 'required';
 
