@@ -19,8 +19,23 @@ export class BOMEngine {
         const bomItems: BOMLineItem[] = [];
 
         for (const site of sites) {
-            const siteDef = siteTypes.find(t => t.id === site.siteTypeId);
-            if (!siteDef) continue;
+            let siteDef = siteTypes.find(t => t.id === site.siteTypeId);
+
+            // Fallback to a generic site definition if not found or not provided
+            if (!siteDef) {
+                siteDef = {
+                    id: "generic",
+                    name: "Generic Branch",
+                    category: "SD-WAN",
+                    tier: "Standard",
+                    description: "Generic fallback profile",
+                    constraints: [],
+                    defaults: {
+                        redundancy: { cpe: "Single", circuits: "Single" },
+                        performance: { throughput_mbps: 0 }
+                    }
+                } as SiteType;
+            }
 
             // 1. Process Services in Package
             for (const pkgItem of selectedPackage.items) {

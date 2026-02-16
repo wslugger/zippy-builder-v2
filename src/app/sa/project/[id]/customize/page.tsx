@@ -54,6 +54,13 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
         }
     }, [projectId]);
 
+    const getDesignCategory = (serviceId: string, optionId: string, designId: string) => {
+        const service = services.find(s => s.id === serviceId);
+        const option = service?.service_options?.find(o => o.id === optionId);
+        const design = option?.design_options?.find(d => d.id === designId);
+        return design?.category;
+    };
+
     const handleSave = async (gotoNext = false) => {
         if (!project) return;
         setSaving(true);
@@ -100,19 +107,45 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
             setItems(newItems);
         } else {
             // Add (Opt-in)
-            // We need to construct the item. We inherit the inclusion type from the package definition
-            // so we track that this was an "Optional" item that was selected.
-            // Or strictly speaking, if it's in the project items list, it's ON.
-            // We can just set inclusion_type to what it was in the package or 'standard' to denote it's now active.
-            // Let's use the package's inclusion type to track provenance.
+            let updatedItems = [...items];
+
+            // If it's a design option, enforce category mutual exclusivity
+            if (designId && optionId) {
+                const currentCategory = getDesignCategory(serviceId, optionId, designId);
+                if (currentCategory) {
+                    // Check for conflicts
+                    const conflicts = updatedItems.filter(i => {
+                        if (i.service_id === serviceId && i.service_option_id === optionId && i.design_option_id) {
+                            const otherCategory = getDesignCategory(i.service_id, i.service_option_id, i.design_option_id);
+                            return otherCategory === currentCategory && i.design_option_id !== designId;
+                        }
+                        return false;
+                    });
+
+                    // If any conflict is REQUIRED, block the switch
+                    const hasRequiredConflict = conflicts.some(i => 
+                        getPackageRule(i.service_id, i.service_option_id, i.design_option_id) === 'required'
+                    );
+
+                    if (hasRequiredConflict) {
+                        alert("Cannot select this option because it would replace a required item in the same category.");
+                        return;
+                    }
+
+                    // Remove all items in the same category before adding the new one
+                    const conflictIds = new Set(conflicts.map(i => i.design_option_id));
+                    updatedItems = updatedItems.filter(i => !conflictIds.has(i.design_option_id));
+                }
+            }
+
             const newItem: PackageItem = {
                 service_id: serviceId,
                 service_option_id: optionId,
                 design_option_id: designId,
-                enabled_features: [], // Copy default features? Simple MVP: start empty
+                enabled_features: [],
                 inclusion_type: pkgInclusionType
             };
-            setItems([...items, newItem]);
+            setItems([...updatedItems, newItem]);
         }
     };
 
@@ -282,7 +315,15 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                                                                                 <span className="text-xs text-neutral-500">{design.category}</span>
                                                                             </div>
                                                                         </div>
-                                                                        {isDesignRequired && <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-1.5 py-0.5 rounded">REQ</span>}
+                                                                        <div className="flex items-center gap-2">
+                                                                            {designRule === 'required' ? (
+                                                                                <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-1.5 py-0.5 rounded font-bold">REQ</span>
+                                                                            ) : designRule === 'standard' ? (
+                                                                                <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 px-1.5 py-0.5 rounded font-bold">STD</span>
+                                                                            ) : (
+                                                                                <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded font-bold">OPT</span>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 );
                                                             })}

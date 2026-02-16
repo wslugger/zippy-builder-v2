@@ -26,6 +26,6 @@ describe('SA Flow Navigation', () => {
 
         // These should fail currently
         expect(screen.getByText(/5\. BOM Builder/i)).toBeInTheDocument();
-        expect(screen.getByText(/6\. HDL/i)).toBeInTheDocument();
+        expect(screen.getByText(/6\. HLD/i)).toBeInTheDocument();
     });
 });

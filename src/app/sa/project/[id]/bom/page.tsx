@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService } from "@/src/lib/firebase";
 import { Project, Package, Service } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
@@ -11,11 +11,20 @@ import { BOMEngine } from "@/src/lib/bom-engine";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
 
+// Sample data for testing
+const SAMPLE_CSV = `Site Name,Address,User Count,Bandwidth Down (Mbps),Bandwidth Up (Mbps),Redundancy Model,WAN Links,LAN Ports,PoE Ports,Indoor APs,Outdoor APs,Primary Circuit,Secondary Circuit,Notes
+NY-HQ,123 Broadway New York NY,150,1000,1000,Dual CPE,2,140,120,10,0,DIA,Broadband,Critical site requires HA
+LA-Branch,456 Sunset Blvd Los Angeles CA,25,200,50,Single CPE,1,24,10,2,0,Broadband,,Standard branch
+CHI-Warehouse,789 Industrial Pkwy Chicago IL,50,500,500,Single CPE,2,48,20,15,2,DIA,LTE,High ceiling warehouse needs industrial APs
+MIA-Office,321 Ocean Dr Miami FL,10,100,20,Single CPE,1,12,5,1,0,Broadband,,Small sales office
+DAL-DataCenter,555 Tech Way Dallas TX,5,10000,10000,Dual CPE,2,24,0,0,0,DIA,DIA,Data center direct connect`;
+
 // --- Icons ---
 const AlertIcon = () => <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>;
 
-export default function BOMBuilderPage() {
+function BOMBuilderContent() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const projectId = params.id as string;
 
     const [project, setProject] = useState<Project | null>(null);
@@ -31,7 +40,24 @@ export default function BOMBuilderPage() {
     useEffect(() => {
         async function loadData() {
             if (!projectId) return;
-            const p = await ProjectService.getProject(projectId);
+            let p;
+            if (projectId === 'demo') {
+                const pkgs = await PackageService.getAllPackages();
+                p = {
+                    id: 'demo',
+                    userId: 'demo-user',
+                    name: 'Demo Project',
+                    customerName: 'Demo Corporation',
+                    description: 'Automated test project for BOM troubleshooting.',
+                    status: 'completed',
+                    currentStep: 5,
+                    selectedPackageId: pkgs[0]?.id || 'cost_centric',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                } as Project;
+            } else {
+                p = await ProjectService.getProject(projectId);
+            }
             setProject(p);
             if (p?.selectedPackageId) {
                 const pk = await PackageService.getPackageById(p.selectedPackageId);
@@ -55,13 +81,20 @@ export default function BOMBuilderPage() {
             const text = event.target?.result as string;
             const parsed = parseSiteListCSV(text);
             setSites(parsed);
-            // Auto-generate initial BOM
-            if (parsed.length > 0 && pkg) {
-                // BOM will reactively update
-            }
         };
         reader.readAsText(file);
     };
+
+    const loadSampleData = () => {
+        const parsed = parseSiteListCSV(SAMPLE_CSV);
+        setSites(parsed);
+    };
+
+    useEffect(() => {
+        if (searchParams.get("loadSample") === "true") {
+            setTimeout(loadSampleData, 500);
+        }
+    }, [searchParams]);
 
     // Re-generate BOM when sites change or logic changes
     // Re-generate BOM when sites change or logic changes
@@ -105,10 +138,15 @@ export default function BOMBuilderPage() {
                     <h2 className="font-semibold text-slate-800">Sites ({sites.length})</h2>
                     {sites.length === 0 && (
                         <div className="mt-4">
-                            <label className="block text-xs font-medium text-slate-500 mb-1">Upload Site List CSV</label>
                             <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700" />
                         </div>
                     )}
+                    <button
+                        onClick={loadSampleData}
+                        className="mt-2 w-full text-left px-2 py-1 text-[10px] uppercase tracking-wider font-bold text-slate-400 hover:text-blue-600 transition-colors border border-dashed border-slate-200 rounded"
+                    >
+                        Load Sample Sites (Test)
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {sites.map((site, idx) => (
@@ -380,5 +418,13 @@ export default function BOMBuilderPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function BOMBuilderPage() {
+    return (
+        <Suspense fallback={<div className="p-8">Loading BOM Builder...</div>}>
+            <BOMBuilderContent />
+        </Suspense>
     );
 }

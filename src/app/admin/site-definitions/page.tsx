@@ -47,6 +47,17 @@ export default function SiteDefinitionsListPage() {
         setSeeding(false);
     }
 
+    const deleteSiteDef = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this site type? This action cannot be undone.")) return;
+        try {
+            await SiteDefinitionService.deleteSiteDefinition(id);
+            setSiteDefs(siteDefs.filter(d => d.id !== id));
+        } catch (e) {
+            console.error(e);
+            alert("Failed to delete site definition.");
+        }
+    };
+
     if (loading) return <div className="p-8">Loading...</div>;
 
     return (
@@ -97,9 +108,15 @@ export default function SiteDefinitionsListPage() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{def.tier}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <Link href={`/admin/site-definitions/${def.id}`} className="text-blue-600 hover:text-blue-900">
+                                    <Link href={`/admin/site-definitions/${def.id}`} className="text-blue-600 hover:text-blue-900 mr-4">
                                         Edit
                                     </Link>
+                                    <button
+                                        onClick={() => deleteSiteDef(def.id)}
+                                        className="text-red-600 hover:text-red-900"
+                                    >
+                                        Delete
+                                    </button>
                                 </td>
                             </tr>
                         ))}

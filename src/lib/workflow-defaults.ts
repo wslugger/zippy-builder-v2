@@ -6,5 +6,5 @@ export const DEFAULT_WORKFLOW_STEPS: WorkflowStep[] = [
     { id: 'customize', label: '3. Customize', path: 'customize' },
     { id: 'design-doc', label: '4. Design Doc', path: 'design-doc' },
     { id: 'bom-builder', label: '5. BOM Builder', path: 'bom-builder' },
-    { id: 'hld', label: '6. HDL', path: 'hld' },
+    { id: 'hld', label: '6. HLD', path: 'hld' },
 ];

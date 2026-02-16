@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useServices } from "@/src/hooks/useServices";
 import { useTechnicalFeatures } from "@/src/hooks/useTechnicalFeatures";
+import { InclusionToggle } from "@/src/components/admin/inclusion-toggle";
 
 const COLLATERAL_TYPES = [
     { value: 'solution_brief', label: 'Solution Brief' },
@@ -127,7 +128,8 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
             i.design_option_id === designId
         );
         if (idx > -1) {
-            current[idx].inclusion_type = type;
+            const newItem = { ...current[idx], inclusion_type: type };
+            current[idx] = newItem;
             setPkg({ ...pkg, items: current });
         }
     };
@@ -150,7 +152,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
             } else {
                 const existingIdx = currentFeatures.findIndex(f => f.feature_id === featureId);
                 if (existingIdx > -1) {
-                    currentFeatures[existingIdx].inclusion_type = type;
+                    currentFeatures[existingIdx] = { ...currentFeatures[existingIdx], inclusion_type: type };
                 } else {
                     currentFeatures.push({ feature_id: featureId, inclusion_type: type });
                 }
@@ -393,15 +395,11 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                             Features ({serviceItem?.enabled_features?.length || 0})
                                                         </button>
                                                     )}
-                                                    <select
-                                                        value={serviceItem?.inclusion_type}
-                                                        onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType)}
-                                                        className="text-sm font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 outline-none pointer-events-auto"
-                                                    >
-                                                        <option value="required">Required</option>
-                                                        <option value="standard">Standard (Opt-out)</option>
-                                                        <option value="optional">Optional (Opt-in)</option>
-                                                    </select>
+                                                    <InclusionToggle
+                                                        value={serviceItem?.inclusion_type || 'required'} // Default to required if missing, though schema might say otherwise
+                                                        onChange={(val) => updateInclusion(service.id, val)}
+                                                        className="text-sm"
+                                                    />
                                                 </div>
                                             )}
                                         </div>
@@ -442,73 +440,81 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                                 Features ({optionItem?.enabled_features?.length || 0})
                                                                             </button>
                                                                         )}
-                                                                        <select
-                                                                            value={optionItem?.inclusion_type}
-                                                                            onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType, option.id)}
-                                                                            className="text-xs font-bold bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 rounded-md px-2 py-1 outline-none"
-                                                                        >
-                                                                            <option value="required">Required</option>
-                                                                            <option value="standard">Standard</option>
-                                                                            <option value="optional">Optional</option>
-                                                                        </select>
+                                                                        <InclusionToggle
+                                                                            value={optionItem?.inclusion_type || 'required'}
+                                                                            onChange={(val) => updateInclusion(service.id, val, option.id)}
+                                                                            className="py-1 px-2"
+                                                                        />
                                                                     </div>
                                                                 )}
                                                             </div>
 
                                                             {isOptionSelected && option.design_options?.length > 0 && (
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-8">
-                                                                    {option.design_options.map(design => {
-                                                                        const isDesignSelected = pkg.items?.some(i => i.service_id === service.id && i.service_option_id === option.id && i.design_option_id === design.id);
-                                                                        const designItem = pkg.items?.find(i => i.service_id === service.id && i.service_option_id === option.id && i.design_option_id === design.id);
+                                                                <div className="space-y-6 pt-2">
+                                                                    {Object.entries(
+                                                                        option.design_options.reduce((acc, design) => {
+                                                                            const cat = design.category || 'General Settings';
+                                                                            if (!acc[cat]) acc[cat] = [];
+                                                                            acc[cat].push(design);
+                                                                            return acc;
+                                                                        }, {} as Record<string, typeof option.design_options>)
+                                                                    ).map(([category, designs]) => (
+                                                                        <div key={category} className="space-y-3">
+                                                                            <h4 className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] pl-10 flex items-center gap-2">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800"></span>
+                                                                                {category}
+                                                                            </h4>
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-10">
+                                                                                {designs.map(design => {
+                                                                                    const isDesignSelected = pkg.items?.some(i => i.service_id === service.id && i.service_option_id === option.id && i.design_option_id === design.id);
+                                                                                    const designItem = pkg.items?.find(i => i.service_id === service.id && i.service_option_id === option.id && i.design_option_id === design.id);
 
-                                                                        return (
-                                                                            <div key={design.id} className={`p-3 rounded-xl border transition-all flex items-center justify-between ${isDesignSelected ? 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700' : 'border-zinc-100 dark:border-zinc-800 opacity-60'}`}>
-                                                                                <div className="flex items-center gap-2 overflow-hidden">
-                                                                                    <input
-                                                                                        type="checkbox"
-                                                                                        checked={isDesignSelected}
-                                                                                        onChange={() => toggleItem(service.id, option.id, design.id)}
-                                                                                        className="w-3.5 h-3.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/10"
-                                                                                    />
-                                                                                    <div className="truncate">
-                                                                                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">{design.name}</p>
-                                                                                        <p className="text-xs text-zinc-500 font-medium">{design.category || 'Design'}</p>
-                                                                                    </div>
-                                                                                </div>
-                                                                                {isDesignSelected && (
-                                                                                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                                                                                        {design.supported_features && design.supported_features.length > 0 && (
-                                                                                            <button
-                                                                                                onClick={(e) => {
-                                                                                                    e.stopPropagation();
-                                                                                                    setEditingItem({
-                                                                                                        serviceId: service.id,
-                                                                                                        optionId: option.id,
-                                                                                                        designId: design.id,
-                                                                                                        label: design.name,
-                                                                                                        supportedFeatures: design.supported_features || []
-                                                                                                    });
-                                                                                                }}
-                                                                                                className="w-5 h-5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors text-zinc-400 hover:text-zinc-600"
-                                                                                                title="Manage Features"
-                                                                                            >
-                                                                                                <span className="text-xs">⚙</span>
-                                                                                            </button>
-                                                                                        )}
-                                                                                        <select
-                                                                                            value={designItem?.inclusion_type}
-                                                                                            onChange={(e) => updateInclusion(service.id, e.target.value as InclusionType, option.id, design.id)}
-                                                                                            className="text-xs font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-md px-1.5 py-1 outline-none"
-                                                                                        >
-                                                                                            <option value="required">REQ</option>
-                                                                                            <option value="standard">STD</option>
-                                                                                            <option value="optional">OPT</option>
-                                                                                        </select>
-                                                                                    </div>
-                                                                                )}
+                                                                                    return (
+                                                                                        <div key={design.id} className={`p-3 rounded-xl border transition-all flex items-center justify-between ${isDesignSelected ? 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 shadow-sm' : 'border-zinc-100 dark:border-zinc-800 opacity-60 hover:opacity-100'}`}>
+                                                                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                                                                <input
+                                                                                                    type="checkbox"
+                                                                                                    checked={isDesignSelected}
+                                                                                                    onChange={() => toggleItem(service.id, option.id, design.id)}
+                                                                                                    className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/10 cursor-pointer"
+                                                                                                />
+                                                                                                <div className="truncate cursor-pointer" onClick={() => toggleItem(service.id, option.id, design.id)}>
+                                                                                                    <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">{design.name}</p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            {isDesignSelected && (
+                                                                                                <div className="flex items-center gap-2 shrink-0 ml-2">
+                                                                                                    {design.supported_features && design.supported_features.length > 0 && (
+                                                                                                        <button
+                                                                                                            onClick={(e) => {
+                                                                                                                e.stopPropagation();
+                                                                                                                setEditingItem({
+                                                                                                                    serviceId: service.id,
+                                                                                                                    optionId: option.id,
+                                                                                                                    designId: design.id,
+                                                                                                                    label: design.name,
+                                                                                                                    supportedFeatures: design.supported_features || []
+                                                                                                                });
+                                                                                                            }}
+                                                                                                            className="w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors text-zinc-400 hover:text-blue-600"
+                                                                                                            title="Manage Features"
+                                                                                                        >
+                                                                                                            <span className="text-xs">⚙</span>
+                                                                                                        </button>
+                                                                                                    )}
+                                                                                                    <InclusionToggle
+                                                                                                        value={designItem?.inclusion_type || 'required'}
+                                                                                                        onChange={(val) => updateInclusion(service.id, val, option.id, design.id)}
+                                                                                                        className="py-1 px-1.5 scale-90 origin-right" // Make it slightly smaller
+                                                                                                    />
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
                                                                             </div>
-                                                                        );
-                                                                    })}
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             )}
                                                         </div>

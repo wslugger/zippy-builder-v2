@@ -138,14 +138,16 @@ export default function EditSiteDefinitionPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700">Category</label>
+                            <label htmlFor="category" className="block text-sm font-medium text-slate-700">Category</label>
                             <select
+                                id="category"
                                 value={def.category}
                                 onChange={e => updateDef('category', e.target.value)}
                                 className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             >
                                 <option value="SD-WAN">SD-WAN</option>
                                 <option value="LAN">LAN</option>
+                                <option value="WLAN">WLAN</option>
                             </select>
                         </div>
                         <div className="col-span-2">
@@ -189,29 +191,33 @@ export default function EditSiteDefinitionPage() {
                                 className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700">CPE Redundancy</label>
-                            <select
-                                value={def.defaults.redundancy?.cpe || "Single"}
-                                onChange={e => updateRedundancy('cpe', e.target.value)}
-                                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="Single">Single CPE</option>
-                                <option value="Dual">Dual CPE (HA)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700">Circuit Redundancy</label>
-                            <select
-                                value={def.defaults.redundancy?.circuit || "Single"}
-                                onChange={e => updateRedundancy('circuit', e.target.value)}
-                                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="Single">Single Circuit</option>
-                                <option value="Dual">Dual Circuit</option>
-                                <option value="Hybrid">Hybrid (DIA + Broadband)</option>
-                            </select>
-                        </div>
+                        {def.category === 'SD-WAN' && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700">CPE Redundancy</label>
+                                    <select
+                                        value={def.defaults.redundancy?.cpe || "Single"}
+                                        onChange={e => updateRedundancy('cpe', e.target.value)}
+                                        className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    >
+                                        <option value="Single">Single CPE</option>
+                                        <option value="Dual">Dual CPE (HA)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700">Circuit Redundancy</label>
+                                    <select
+                                        value={def.defaults.redundancy?.circuit || "Single"}
+                                        onChange={e => updateRedundancy('circuit', e.target.value)}
+                                        className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    >
+                                        <option value="Single">Single Circuit</option>
+                                        <option value="Dual">Dual Circuit</option>
+                                        <option value="Hybrid">Hybrid (DIA + Broadband)</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </section>
 
