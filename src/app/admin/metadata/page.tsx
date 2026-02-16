@@ -113,6 +113,40 @@ export default function MetadataPage() {
         }
     };
 
+    const seedFeatureDefaults = async () => {
+        if (metadata.find(m => m.id === "feature_catalog") && !confirm("Feature metadata already exists. Overwrite with defaults?")) return;
+        setIsSaving(true);
+        try {
+            const defaultFeatureMetadata: CatalogMetadata = {
+                id: "feature_catalog",
+                fields: {
+                    feature_categories: {
+                        label: "Feature Categories",
+                        values: [
+                            "Routing",
+                            "Security",
+                            "Management",
+                            "SD-WAN",
+                            "High Availability",
+                            "Cloud Integration",
+                            "Monitoring",
+                            "Performance",
+                            "QoS"
+                        ]
+                    }
+                }
+            };
+            await MetadataService.saveCatalogMetadata(defaultFeatureMetadata);
+            await fetchMetadata();
+            alert("Feature defaults seeded successfully!");
+        } catch (e) {
+            console.error(e);
+            alert("Failed to seed feature defaults.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleSave = async () => {
         if (!selectedCatalog) return;
         setIsSaving(true);
@@ -217,6 +251,13 @@ export default function MetadataPage() {
                         className="px-4 py-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors shadow-sm"
                     >
                         Seed Service Catalog
+                    </button>
+                    <button
+                        onClick={seedFeatureDefaults}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors shadow-sm"
+                    >
+                        Seed Feature Defaults
                     </button>
                     <button
                         onClick={seedEquipmentDefaults}

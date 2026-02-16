@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { TechnicalFeature } from "@/src/lib/types";
+import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 
 interface FeatureModalProps {
     feature: TechnicalFeature | null;
@@ -22,6 +23,11 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
         }
     );
     const [saving, setSaving] = useState(false);
+    const { metadata: featureMetadata, loading: metadataLoading } = useCatalogMetadata("feature_catalog");
+
+    const categories = useMemo(() => {
+        return featureMetadata?.fields?.feature_categories?.values || [];
+    }, [featureMetadata]);
 
     if (!isOpen) return null;
 
@@ -69,14 +75,30 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.category || ""}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="e.g. Routing"
-                            />
+                            {metadataLoading ? (
+                                <div className="animate-pulse h-9 bg-zinc-100 dark:bg-zinc-800 rounded-lg"></div>
+                            ) : categories.length > 0 ? (
+                                <select
+                                    required
+                                    value={formData.category || ""}
+                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all appearance-none"
+                                >
+                                    <option value="" disabled>Select a category</option>
+                                    {categories.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.category || ""}
+                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                    placeholder="e.g. Routing"
+                                />
+                            )}
                         </div>
                     </div>
 
