@@ -51,6 +51,18 @@ export default function AdminLayout({
                                 >
                                     Features
                                 </Link>
+                                <Link
+                                    href="/admin/site-definitions"
+                                    className="border-transparent hover:border-blue-500 text-zinc-900 dark:text-zinc-100 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
+                                >
+                                    Site Types
+                                </Link>
+                                <Link
+                                    href="/admin/bom-logic"
+                                    className="border-transparent hover:border-blue-500 text-zinc-900 dark:text-zinc-100 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
+                                >
+                                    BOM Logic
+                                </Link>
                             </div>
                         </div>
                         <div className="flex items-center">

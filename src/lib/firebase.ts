@@ -269,6 +269,8 @@ interface SystemDefaults {
     services: Service[];
     packages: Package[];
     metadata: CatalogMetadata[];
+    workflowSteps?: import("./types").WorkflowStep[];
+    bomRules?: import("./bom-types").BOMLogicRule[];
 }
 
 export const SystemDefaultsService = {
@@ -278,13 +280,47 @@ export const SystemDefaultsService = {
         await setDoc(docRef, cleaned);
     },
 
-    getDefaults: async (): Promise<SystemDefaults | null> => {
+    async getDefaults(): Promise<SystemDefaults | null> {
         const docRef = doc(db, DEFAULTS_COLLECTION, "global");
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
             return snapshot.data() as SystemDefaults;
         }
         return null;
+    },
+
+    updateServiceInDefaults: async (service: Service) => {
+        const docRef = doc(db, DEFAULTS_COLLECTION, "global");
+        const snapshot = await getDoc(docRef);
+
+        if (snapshot.exists()) {
+            const defaults = snapshot.data() as SystemDefaults;
+            const services = defaults.services || [];
+
+            // Find index of existing service
+            const index = services.findIndex(s => s.id === service.id);
+
+            if (index !== -1) {
+                // Update existing
+                services[index] = service;
+            } else {
+                // Add new
+                services.push(service);
+            }
+
+            const cleaned = cleanObject({ ...defaults, services });
+            await setDoc(docRef, cleaned);
+        }
+    },
+
+    async getWorkflowSteps(): Promise<import("./types").WorkflowStep[] | null> {
+        const defaults = await this.getDefaults();
+        return defaults?.workflowSteps || null;
+    },
+
+    async saveWorkflowSteps(steps: import("./types").WorkflowStep[]) {
+        const docRef = doc(db, DEFAULTS_COLLECTION, "global");
+        await setDoc(docRef, { workflowSteps: steps }, { merge: true });
     }
 };
 
@@ -346,6 +382,38 @@ export const ProjectService = {
 import { SiteType } from "./site-types";
 
 const SITE_DEFINITIONS_COLLECTION = "site_definitions";
+
+const BOM_RULES_COLLECTION = "bom_rules";
+
+export const BOMService = {
+    saveRule: async (rule: import("./bom-types").BOMLogicRule) => {
+        const docRef = doc(db, BOM_RULES_COLLECTION, rule.id);
+        const cleaned = cleanObject(rule);
+        await setDoc(docRef, cleaned, { merge: true });
+        return rule.id;
+    },
+
+    getAllRules: async (): Promise<import("./bom-types").BOMLogicRule[]> => {
+        const snapshot = await getDocs(collection(db, BOM_RULES_COLLECTION));
+        return snapshot.docs
+            .map((doc) => doc.data() as import("./bom-types").BOMLogicRule)
+            .sort((a, b) => b.priority - a.priority);
+    },
+
+    getRuleById: async (id: string): Promise<import("./bom-types").BOMLogicRule | null> => {
+        const docRef = doc(db, BOM_RULES_COLLECTION, id);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+            return snapshot.data() as import("./bom-types").BOMLogicRule;
+        }
+        return null;
+    },
+
+    deleteRule: async (id: string) => {
+        const docRef = doc(db, BOM_RULES_COLLECTION, id);
+        await deleteDoc(docRef);
+    }
+};
 
 export const SiteDefinitionService = {
     saveSiteDefinition: async (siteDef: SiteType) => {

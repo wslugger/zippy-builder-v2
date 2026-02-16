@@ -1,19 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
 import { BOMEngine } from "@/src/lib/bom-engine";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
-import { SEED_PACKAGES, SEED_SERVICES } from "@/src/lib/seed-data";
+import { PackageService, ServiceService } from "@/src/lib/firebase";
 import { BOM, Site } from "@/src/lib/bom-types";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
+import { Package, Service } from "@/src/lib/types";
 
 export default function BOMBuilderPage() {
     const [parsedSites, setParsedSites] = useState<Site[]>([]);
     const [generatedBOM, setGeneratedBOM] = useState<BOM | null>(null);
-    const [selectedPackageId, setSelectedPackageId] = useState<string>("cost_centric");
+    const [selectedPackageId, setSelectedPackageId] = useState<string>("");
     const [activeTab, setActiveTab] = useState<"upload" | "sites" | "bom">("upload");
+    const [packages, setPackages] = useState<Package[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [pkgs, svcs] = await Promise.all([
+                    PackageService.getAllPackages(),
+                    ServiceService.getAllServices(),
+                ]);
+                setPackages(pkgs);
+                setServices(svcs);
+                if (pkgs.length > 0) {
+                    setSelectedPackageId(pkgs[0].id);
+                }
+            } catch (e) {
+                console.error("Failed to load BOM data:", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -30,14 +55,11 @@ export default function BOMBuilderPage() {
     };
 
     const handleGenerateBOM = () => {
-        const pkg = SEED_PACKAGES.find(p => p.id === selectedPackageId);
+        const pkg = packages.find(p => p.id === selectedPackageId);
         if (!pkg) return;
 
         const engine = new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT);
-
-        // We need to pass the services list to the engine so it can map IDs
-        // The engine's signature: generateBOM(projectId, sites, package, services, siteTypes)
-        const bom = engine.generateBOM("demo-project", parsedSites, pkg, SEED_SERVICES, ALL_SITE_TYPES);
+        const bom = engine.generateBOM("demo-project", parsedSites, pkg, services, ALL_SITE_TYPES);
 
         setGeneratedBOM(bom);
         setActiveTab("bom");
@@ -103,7 +125,7 @@ export default function BOMBuilderPage() {
                             onChange={(e) => setSelectedPackageId(e.target.value)}
                             className="block w-full max-w-xs rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
                         >
-                            {SEED_PACKAGES.map(p => (
+                            {packages.map(p => (
                                 <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                         </select>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Service, ServiceOption } from "@/src/lib/types";
-import { ServiceService } from "@/src/lib/firebase";
+import { ServiceService, SystemDefaultsService } from "@/src/lib/firebase";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -59,6 +59,10 @@ export default function ServiceIngestion() {
 
         try {
             await ServiceService.saveService(previewData);
+
+            // Also update the system defaults (snapshot)
+            await SystemDefaultsService.updateServiceInDefaults(previewData);
+
             setStatusMessage("🚀 Success! Service saved to Catalog.");
 
             // Redirect to editor for final touches

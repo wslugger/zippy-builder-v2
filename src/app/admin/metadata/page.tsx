@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { MetadataService } from "@/src/lib/firebase";
-import { CatalogMetadata } from "@/src/lib/types";
+import { MetadataService, SystemDefaultsService } from "@/src/lib/firebase";
+import { CatalogMetadata, WorkflowStep } from "@/src/lib/types";
+import { DEFAULT_WORKFLOW_STEPS } from "@/src/lib/workflow-defaults";
 
 export default function MetadataPage() {
     const [metadata, setMetadata] = useState<CatalogMetadata[]>([]);
@@ -14,17 +15,28 @@ export default function MetadataPage() {
     const [showNewFieldModal, setShowNewFieldModal] = useState(false);
     const [newFieldKey, setNewFieldKey] = useState("");
 
+    // Workflow Tab State
+    const [activeTab, setActiveTab] = useState<'catalogs' | 'workflow'>('catalogs');
+    const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
+    const [originalWorkflowSteps, setOriginalWorkflowSteps] = useState<WorkflowStep[]>([]);
+
     const fetchMetadata = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await MetadataService.getAllCatalogMetadata();
-            setMetadata(data);
+            const [catalogData, stepsData] = await Promise.all([
+                MetadataService.getAllCatalogMetadata(),
+                SystemDefaultsService.getWorkflowSteps()
+            ]);
+
+            setMetadata(catalogData);
+            setWorkflowSteps(stepsData || []);
+            setOriginalWorkflowSteps(stepsData || []);
+
             // Only auto-select if nothing is currently selected
             setSelectedCatalog(prev => {
-                if (!prev && data.length > 0) return data[0];
-                // If something was selected, try to find it in the new data to keep it in sync
+                if (!prev && catalogData.length > 0) return catalogData[0];
                 if (prev) {
-                    return data.find(m => m.id === prev.id) || prev;
+                    return catalogData.find(m => m.id === prev.id) || prev;
                 }
                 return prev;
             });
@@ -33,7 +45,7 @@ export default function MetadataPage() {
         } finally {
             setLoading(false);
         }
-    }, []); // Removed selectedCatalog from dependencies
+    }, []);
 
     useEffect(() => {
         fetchMetadata();
@@ -174,7 +186,7 @@ export default function MetadataPage() {
     };
 
     const bootstrapDefaults = async () => {
-        if (!confirm("This will read the hardcoded 'seed-data.ts' file and save it to the 'system_defaults' collection in the database. This is a one-time migration. Continue?")) return;
+        if (!confirm("This will take a snapshot of your current database (Services, Features, Packages, Metadata) and save it as the system defaults. 'Seed Full Database' will restore from this snapshot. Continue?")) return;
         setIsSaving(true);
         try {
             const res = await fetch("/api/admin/bootstrap", { method: "POST" });
@@ -191,6 +203,11 @@ export default function MetadataPage() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const seedWorkflowDefaults = async () => {
+        if (workflowSteps.length > 0 && !confirm("Overwrite current workflow steps with defaults?")) return;
+        setWorkflowSteps(DEFAULT_WORKFLOW_STEPS);
     };
 
     const handleSave = async () => {
@@ -279,6 +296,48 @@ export default function MetadataPage() {
         });
     };
 
+    // Workflow Logic
+    const handleSaveWorkflow = async () => {
+        setIsSaving(true);
+        try {
+            await SystemDefaultsService.saveWorkflowSteps(workflowSteps);
+            setOriginalWorkflowSteps(workflowSteps);
+            alert("Workflow steps saved successfully!");
+        } catch (e) {
+            console.error(e);
+            alert("Failed to save workflow steps.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const addWorkflowStep = () => {
+        const newId = `step_${workflowSteps.length + 1}`;
+        setWorkflowSteps([...workflowSteps, { id: newId, label: "New Step", path: newId }]);
+    };
+
+    const updateWorkflowStep = (index: number, field: keyof WorkflowStep, value: string) => {
+        const newSteps = [...workflowSteps];
+        newSteps[index] = { ...newSteps[index], [field]: value };
+        setWorkflowSteps(newSteps);
+    };
+
+    const removeWorkflowStep = (index: number) => {
+        if (!confirm("Remove this step?")) return;
+        const newSteps = workflowSteps.filter((_, i) => i !== index);
+        setWorkflowSteps(newSteps);
+    };
+
+    const moveWorkflowStep = (index: number, direction: 'up' | 'down') => {
+        if (direction === 'up' && index === 0) return;
+        if (direction === 'down' && index === workflowSteps.length - 1) return;
+
+        const newSteps = [...workflowSteps];
+        const swapIndex = direction === 'up' ? index - 1 : index + 1;
+        [newSteps[index], newSteps[swapIndex]] = [newSteps[swapIndex], newSteps[index]];
+        setWorkflowSteps(newSteps);
+    };
+
     const createNewCatalog = () => {
         if (!newCatalogId) return;
         const newCatalog: CatalogMetadata = {
@@ -303,8 +362,8 @@ export default function MetadataPage() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative">
             <div className="flex justify-between items-center mb-10">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Catalog Metadata</h1>
-                    <p className="mt-1 text-zinc-500 dark:text-zinc-400">Manage dynamic dropdowns and field options across your catalogs.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">System Configuration</h1>
+                    <p className="mt-1 text-zinc-500 dark:text-zinc-400">Manage catalog metadata and project workflow steps.</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -340,7 +399,7 @@ export default function MetadataPage() {
                         disabled={isSaving}
                         className="px-4 py-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors shadow-sm border border-purple-200 dark:border-purple-800"
                     >
-                        Ingest Code to DB Defaults
+                        Set Defaults
                     </button>
                     <button
                         onClick={() => setShowNewCatalogModal(true)}
@@ -351,107 +410,231 @@ export default function MetadataPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                {/* Catalog Sidebar */}
-                <div className="md:col-span-1 space-y-2">
-                    <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-2 mb-4">Catalogs</h2>
-                    {metadata.length === 0 ? (
-                        <p className="text-sm text-zinc-500 px-2">No catalogs defined.</p>
-                    ) : (
-                        metadata.map((catalog) => (
-                            <button
-                                key={catalog.id}
-                                onClick={() => setSelectedCatalog(catalog)}
-                                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedCatalog?.id === catalog.id
-                                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shadow-sm"
-                                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-200"
-                                    }`}
-                            >
-                                {catalog.id}
-                            </button>
-                        ))
-                    )}
-                </div>
+            {/* Tabs */}
+            <div className="border-b border-zinc-200 dark:border-zinc-800 mb-8">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button
+                        onClick={() => setActiveTab('catalogs')}
+                        className={`${activeTab === 'catalogs' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                    >
+                        Catalogs
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('workflow')}
+                        className={`${activeTab === 'workflow' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                    >
+                        Workflow Steps
+                    </button>
+                </nav>
+            </div>
 
-                {/* Fields Editor */}
-                <div className="md:col-span-3">
-                    {selectedCatalog ? (
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
-                            <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50">
-                                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{selectedCatalog.id} Fields</h3>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setShowNewFieldModal(true)}
-                                        className="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                                    >
-                                        + Add Field
-                                    </button>
-                                    <button
-                                        onClick={handleSave}
-                                        disabled={isSaving}
-                                        className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
-                                    >
-                                        {isSaving ? "Saving..." : "Save Changes"}
-                                    </button>
+            {activeTab === 'catalogs' && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    {/* Catalog Sidebar */}
+                    <div className="md:col-span-1 space-y-2">
+                        <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-2 mb-4">Catalogs</h2>
+                        {metadata.length === 0 ? (
+                            <p className="text-sm text-zinc-500 px-2">No catalogs defined.</p>
+                        ) : (
+                            metadata.map((catalog) => (
+                                <button
+                                    key={catalog.id}
+                                    onClick={() => setSelectedCatalog(catalog)}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedCatalog?.id === catalog.id
+                                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shadow-sm"
+                                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-200"
+                                        }`}
+                                >
+                                    {catalog.id}
+                                </button>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Fields Editor */}
+                    <div className="md:col-span-3">
+                        {selectedCatalog ? (
+                            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+                                <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50">
+                                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{selectedCatalog.id} Fields</h3>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setShowNewFieldModal(true)}
+                                            className="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                        >
+                                            + Add Field
+                                        </button>
+                                        <button
+                                            onClick={handleSave}
+                                            disabled={isSaving}
+                                            className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
+                                        >
+                                            {isSaving ? "Saving..." : "Save Changes"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 space-y-8">
+                                    {Object.keys(selectedCatalog.fields).length === 0 ? (
+                                        <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-800">
+                                            <p className="text-sm text-zinc-500">No fields defined for this catalog.</p>
+                                            <button onClick={() => setShowNewFieldModal(true)} className="mt-4 text-blue-600 text-sm font-medium hover:underline">+ Add your first field</button>
+                                        </div>
+                                    ) : (
+                                        Object.entries(selectedCatalog.fields).map(([key, field]) => (
+                                            <div key={key} className="group relative bg-zinc-50/30 dark:bg-zinc-950/30 p-4 rounded-lg border border-zinc-100 dark:border-zinc-800">
+                                                <button
+                                                    onClick={() => removeField(key)}
+                                                    className="absolute top-4 right-4 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                                    title="Delete Field"
+                                                >
+                                                    ✕
+                                                </button>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block mb-1">Field ID</label>
+                                                            <code className="text-xs text-blue-600 dark:text-blue-400 font-mono">{key}</code>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block mb-1">Display Label</label>
+                                                            <input
+                                                                type="text"
+                                                                value={field.label}
+                                                                onChange={(e) => updateFieldLabel(key, e.target.value)}
+                                                                className="w-full text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block mb-1">Options (One per line)</label>
+                                                        <textarea
+                                                            rows={6}
+                                                            value={field.values.join("\n")}
+                                                            onChange={(e) => updateFieldValues(key, e.target.value)}
+                                                            className="w-full text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
+                                                            placeholder="Enter options..."
+                                                        />
+                                                        <p className="mt-1 text-[10px] text-zinc-500">These will populate dropdowns and multi-select lists in the app.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
+                        ) : (
+                            <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center min-h-[600px]">
+                                <p className="text-zinc-500">Select or create a catalog to manage its metadata.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
-                            <div className="p-6 space-y-8">
-                                {Object.keys(selectedCatalog.fields).length === 0 ? (
-                                    <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-800">
-                                        <p className="text-sm text-zinc-500">No fields defined for this catalog.</p>
-                                        <button onClick={() => setShowNewFieldModal(true)} className="mt-4 text-blue-600 text-sm font-medium hover:underline">+ Add your first field</button>
-                                    </div>
-                                ) : (
-                                    Object.entries(selectedCatalog.fields).map(([key, field]) => (
-                                        <div key={key} className="group relative bg-zinc-50/30 dark:bg-zinc-950/30 p-4 rounded-lg border border-zinc-100 dark:border-zinc-800">
+            {activeTab === 'workflow' && (
+                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-800/50">
+                        <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Project Workflow Steps</h3>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={seedWorkflowDefaults}
+                                className="px-4 py-1.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 text-xs font-medium transition-colors"
+                            >
+                                Load Defaults
+                            </button>
+                            <button
+                                onClick={handleSaveWorkflow}
+                                disabled={isSaving}
+                                className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
+                            >
+                                {isSaving ? "Saving..." : "Save Changes"}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="p-6">
+                        {workflowSteps.length === 0 ? (
+                            <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-800">
+                                <p className="text-sm text-zinc-500">No workflow steps defined.</p>
+                                <button onClick={addWorkflowStep} className="mt-4 text-blue-600 text-sm font-medium hover:underline">+ Add first step</button>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-zinc-400 uppercase tracking-widest px-4">
+                                    <div className="col-span-1">Order</div>
+                                    <div className="col-span-3">Step ID</div>
+                                    <div className="col-span-4">Display Label</div>
+                                    <div className="col-span-3">URL Path Part</div>
+                                    <div className="col-span-1">Actions</div>
+                                </div>
+                                {workflowSteps.map((step, index) => (
+                                    <div key={index} className="grid grid-cols-12 gap-4 items-center bg-zinc-50/50 dark:bg-zinc-950/30 p-4 rounded-lg border border-zinc-100 dark:border-zinc-800">
+                                        <div className="col-span-1 flex flex-col gap-1">
                                             <button
-                                                onClick={() => removeField(key)}
-                                                className="absolute top-4 right-4 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
-                                                title="Delete Field"
+                                                onClick={() => moveWorkflowStep(index, 'up')}
+                                                disabled={index === 0}
+                                                className="text-zinc-400 hover:text-blue-600 disabled:opacity-30"
+                                            >
+                                                ▲
+                                            </button>
+                                            <button
+                                                onClick={() => moveWorkflowStep(index, 'down')}
+                                                disabled={index === workflowSteps.length - 1}
+                                                className="text-zinc-400 hover:text-blue-600 disabled:opacity-30"
+                                            >
+                                                ▼
+                                            </button>
+                                        </div>
+                                        <div className="col-span-3">
+                                            <input
+                                                type="text"
+                                                value={step.id}
+                                                onChange={(e) => updateWorkflowStep(index, 'id', e.target.value)}
+                                                className="w-full text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                                placeholder="e.g. package-selection"
+                                            />
+                                        </div>
+                                        <div className="col-span-4">
+                                            <input
+                                                type="text"
+                                                value={step.label}
+                                                onChange={(e) => updateWorkflowStep(index, 'label', e.target.value)}
+                                                className="w-full text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                                placeholder="e.g. 1. Package Selection"
+                                            />
+                                        </div>
+                                        <div className="col-span-3">
+                                            <input
+                                                type="text"
+                                                value={step.path}
+                                                onChange={(e) => updateWorkflowStep(index, 'path', e.target.value)}
+                                                className="w-full text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                                placeholder="e.g. package-selection"
+                                            />
+                                        </div>
+                                        <div className="col-span-1 text-right">
+                                            <button
+                                                onClick={() => removeWorkflowStep(index)}
+                                                className="text-zinc-400 hover:text-red-500 p-2"
+                                                title="Remove Step"
                                             >
                                                 ✕
                                             </button>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block mb-1">Field ID</label>
-                                                        <code className="text-xs text-blue-600 dark:text-blue-400 font-mono">{key}</code>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block mb-1">Display Label</label>
-                                                        <input
-                                                            type="text"
-                                                            value={field.label}
-                                                            onChange={(e) => updateFieldLabel(key, e.target.value)}
-                                                            className="w-full text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest block mb-1">Options (One per line)</label>
-                                                    <textarea
-                                                        rows={6}
-                                                        value={field.values.join("\n")}
-                                                        onChange={(e) => updateFieldValues(key, e.target.value)}
-                                                        className="w-full text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-mono"
-                                                        placeholder="Enter options..."
-                                                    />
-                                                    <p className="mt-1 text-[10px] text-zinc-500">These will populate dropdowns and multi-select lists in the app.</p>
-                                                </div>
-                                            </div>
                                         </div>
-                                    ))
-                                )}
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={addWorkflowStep}
+                                    className="w-full py-3 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg text-sm text-zinc-500 hover:text-zinc-900 hover:border-zinc-300 dark:hover:text-zinc-300 dark:hover:border-zinc-700 transition-colors"
+                                >
+                                    + Add Step
+                                </button>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center min-h-[600px]">
-                            <p className="text-zinc-500">Select or create a catalog to manage its metadata.</p>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* New Catalog Modal */}
             {showNewCatalogModal && (

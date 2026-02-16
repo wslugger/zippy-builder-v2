@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { Service, ServiceItem, SERVICE_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
-import { ServiceService, MetadataService } from "@/src/lib/firebase";
+import { ServiceService, MetadataService, SystemDefaultsService } from "@/src/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ServiceItemForm from "@/src/components/admin/ServiceItemForm";
@@ -89,6 +89,10 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
             }
 
             await ServiceService.saveService(finalService);
+
+            // Also update the system defaults (snapshot)
+            await SystemDefaultsService.updateServiceInDefaults(finalService);
+
             alert("Service saved successfully!");
             if (isNew) {
                 router.push(`/admin/services/${finalService.id}`);

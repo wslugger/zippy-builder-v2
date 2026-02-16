@@ -74,7 +74,7 @@ export default function PackageSummaryPage({ params }: { params: Promise<{ id: s
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-2 text-blue-400 font-medium text-sm uppercase tracking-wider">
                             <span className="bg-blue-900/50 px-2 py-1 rounded">Selected Package</span>
-                            {project.packageConfidenceScore && project.packageConfidenceScore > 0 && (
+                            {(project.packageConfidenceScore ?? 0) > 0 && (
                                 <span className="text-green-400">
                                     {project.packageConfidenceScore}% AI Match
                                 </span>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { MetadataService, FeatureService, ServiceService, PackageService, SystemDefaultsService, SiteDefinitionService } from "@/src/lib/firebase";
+import { MetadataService, FeatureService, ServiceService, PackageService, SystemDefaultsService, SiteDefinitionService, BOMService } from "@/src/lib/firebase";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
+import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 
 export async function GET() {
     try {
@@ -19,26 +20,32 @@ export async function GET() {
             }
         }
 
-        // 4. Seed Technical Features
+        // 3. Seed Technical Features
         console.log("Seeding features from DB defaults...");
         await FeatureService.saveFeatureBatch(defaults.features);
 
-        // 5. Seed Services
+        // 4. Seed Services
         console.log("Seeding services from DB defaults...");
         for (const service of defaults.services) {
             await ServiceService.saveService(service);
         }
 
-        // 6. Seed Packages
+        // 5. Seed Packages
         console.log("Seeding packages from DB defaults...");
         for (const pkg of defaults.packages) {
             await PackageService.savePackage(pkg);
         }
 
-        // 7. Seed Site Definitions (from code constants for now, or could be in SystemDefaults)
+        // 7. Seed Site Definitions
         console.log("Seeding site definitions...");
         for (const siteType of ALL_SITE_TYPES) {
             await SiteDefinitionService.saveSiteDefinition(siteType);
+        }
+
+        // 8. Seed BOM Rules
+        console.log("Seeding BOM rules...");
+        for (const rule of SEED_BOM_RULES) {
+            await BOMService.saveRule(rule);
         }
 
         return NextResponse.json({ success: true, message: "Database seeded successfully! Catalog populated with Services, Features, Packages, and Site Definitions." });

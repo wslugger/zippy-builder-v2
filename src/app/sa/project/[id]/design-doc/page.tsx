@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { Project, Package, Service } from '@/src/lib/types';
 import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
+import Link from 'next/link';
 
 export default function DesignDocPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
@@ -170,36 +171,28 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
                 </div>
             </section>
 
-            {/* Next Steps */}
-            <section className="mb-12 break-inside-avoid">
-                <h2 className="text-2xl font-bold text-blue-900 mb-4 border-b border-neutral-200 pb-2">3. Next Steps</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-4 bg-neutral-50 rounded border border-neutral-200">
-                        <span className="block text-2xl font-bold mb-2 text-neutral-300">01</span>
-                        <h3 className="font-bold mb-1">BOM Generation</h3>
-                        <p className="text-sm text-neutral-600">Convert this design into a detailed bill of materials and pricing.</p>
-                    </div>
-                    <div className="p-4 bg-neutral-50 rounded border border-neutral-200">
-                        <span className="block text-2xl font-bold mb-2 text-neutral-300">02</span>
-                        <h3 className="font-bold mb-1">Approvals</h3>
-                        <p className="text-sm text-neutral-600">Review with technical and commercial stakeholders.</p>
-                    </div>
-                    <div className="p-4 bg-neutral-50 rounded border border-neutral-200">
-                        <span className="block text-2xl font-bold mb-2 text-neutral-300">03</span>
-                        <h3 className="font-bold mb-1">Provisioning</h3>
-                        <p className="text-sm text-neutral-600">Hand off to delivery teams for implementation.</p>
-                    </div>
-                </div>
-            </section>
+
 
             {/* Print Button (Hide in Print) */}
-            <div className="fixed bottom-8 right-8 print:hidden">
-                <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 bg-blue-900 text-white px-6 py-3 rounded-full font-bold shadow-xl hover:bg-blue-800 transition-all hover:scale-105"
-                >
-                    <span>🖨️</span> Print PDF
-                </button>
+            {/* Main Action Button */}
+            <div className="flex justify-between items-center mt-12 pt-8 border-t border-neutral-200">
+                <div className="print:hidden">
+                    <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+                    >
+                        <span>🖨️</span> Print PDF
+                    </button>
+                </div>
+
+                <div className="print:hidden">
+                    <Link
+                        href="/tools/bom-builder"
+                        className="flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all hover:scale-105 text-lg"
+                    >
+                        Continue to BOM Builder &rarr;
+                    </Link>
+                </div>
             </div>
         </div>
     );

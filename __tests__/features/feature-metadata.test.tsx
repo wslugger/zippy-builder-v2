@@ -11,6 +11,10 @@ jest.mock('@/src/lib/firebase', () => ({
         saveCatalogMetadata: jest.fn(),
         getCatalogMetadata: jest.fn(),
     },
+    SystemDefaultsService: {
+        getWorkflowSteps: jest.fn().mockResolvedValue([]),
+        saveWorkflowSteps: jest.fn(),
+    }
 }));
 
 describe('Feature Metadata Management', () => {

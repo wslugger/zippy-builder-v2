@@ -2,13 +2,13 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { SystemDefaultsService } from '@/src/lib/firebase';
+import { WorkflowStep } from '@/src/lib/types';
 
-const STEPS = [
-    { id: 'package-selection', label: '1. Package Selection', path: 'package-selection' },
-    { id: 'summary', label: '2. Review Package', path: 'summary' },
-    { id: 'customize', label: '3. Customize', path: 'customize' },
-    { id: 'design-doc', label: '4. Design Doc', path: 'design-doc' },
-];
+import { DEFAULT_WORKFLOW_STEPS } from '@/src/lib/workflow-defaults';
+
+const DEFAULT_STEPS = DEFAULT_WORKFLOW_STEPS;
 
 
 
@@ -18,9 +18,24 @@ export default function ProjectLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const [steps, setSteps] = useState<WorkflowStep[]>(DEFAULT_STEPS);
+
+    useEffect(() => {
+        const fetchSteps = async () => {
+            try {
+                const dynamicSteps = await SystemDefaultsService.getWorkflowSteps();
+                if (dynamicSteps && dynamicSteps.length > 0) {
+                    setSteps(dynamicSteps);
+                }
+            } catch (error) {
+                console.error("Failed to fetch workflow steps:", error);
+            }
+        };
+        fetchSteps();
+    }, []);
 
     // Determine current step index
-    const currentStepIndex = STEPS.findIndex(step => pathname.includes(step.path));
+    const currentStepIndex = steps.findIndex(step => pathname.includes(step.path));
 
     return (
         <div className="flex flex-col h-full min-h-[calc(100vh-64px)]">
@@ -47,11 +62,11 @@ export default function ProjectLayout({
                         {/* Active Line (approximate based on step) */}
                         <div
                             className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-600 transition-all duration-500 -z-10 rounded-full"
-                            style={{ width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%` }}
+                            style={{ width: `${(currentStepIndex / (steps.length - 1)) * 100}%` }}
                         />
 
                         <div className="flex justify-between w-full">
-                            {STEPS.map((step, index) => {
+                            {steps.map((step, index) => {
                                 const isActive = index === currentStepIndex;
                                 const isCompleted = index < currentStepIndex;
 

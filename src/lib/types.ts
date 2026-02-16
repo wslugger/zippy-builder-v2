@@ -167,6 +167,12 @@ export interface CatalogMetadata {
 
 // --- Solutions Architect (SA) Flow Types ---
 
+export interface WorkflowStep {
+  id: string;
+  label: string;
+  path: string;
+}
+
 export interface Project {
   id: string; // UUID
   userId: string; // Owner (SA)
