@@ -1,5 +1,5 @@
-
-import { Service, Package, TechnicalFeature, ServiceItem, ServiceOption, DesignOption } from "./types";
+import { Service, Package, TechnicalFeature, ServiceOption, DesignOption, CatalogMetadata } from "./types";
+import { EQUIPMENT_PURPOSES, VENDOR_IDS, SERVICE_CATEGORIES, DESIGN_OPTION_CATEGORIES } from "./types";
 
 // --- Technical Features ---
 export const SEED_FEATURES: TechnicalFeature[] = [
@@ -50,6 +50,12 @@ export const SEED_FEATURES: TechnicalFeature[] = [
         name: "Wi-Fi 6 (802.11ax)",
         category: "Wireless",
         description: "Latest Wi-Fi generation delivering higher throughput, lower latency, and better performance in dense environments."
+    },
+    {
+        id: "dhcp",
+        name: "DHCP",
+        category: "Network Services",
+        description: "Dynamic Host Configuration Protocol service for automatic IP address assignment."
     }
 ];
 
@@ -70,7 +76,7 @@ const createDesignOption = (id: string, name: string, description: string, categ
     supported_features: []
 });
 
-const createServiceOption = (id: string, name: string, description: string, designs: DesignOption[]): ServiceOption => ({
+const createServiceOption = (id: string, name: string, description: string, designs: DesignOption[], features?: string[]): ServiceOption => ({
     id,
     name,
     short_description: description.substring(0, 50) + "...",
@@ -78,7 +84,7 @@ const createServiceOption = (id: string, name: string, description: string, desi
     design_options: designs,
     caveats: [],
     assumptions: [],
-    supported_features: []
+    supported_features: features || []
 });
 
 export const SEED_SERVICES: Service[] = [
@@ -86,32 +92,22 @@ export const SEED_SERVICES: Service[] = [
         id: "managed_sdwan",
         name: "Managed SD-WAN",
         active: true,
-        short_description: "Comprehensive software-defined WAN solution for optimized performance, security, and simplified operations.",
-        detailed_description: "A fully managed SD-WAN service that leverages diverse transport links (MPLS, Broadband, LTE) to intelligently route traffic. Includes centralized management, integrated security features, and 24/7 monitoring to ensure high availability and application performance across all branch locations.",
-        metadata: { category: "Connectivity" },
-        caveats: ["Requires compatible CPE hardware usage."],
-        assumptions: ["Customer provides internet circuits unless bundled."],
-        supported_features: ["app_aware_routing", "auto_vpn", "cloud_mgmt", "lte_failover"],
+        short_description: "Software-defined wide area networking for secure, optimized branch connectivity.",
+        detailed_description: "Our Managed SD-WAN service leverages industry-leading platforms to provide secure, agile, and cost-effective connectivity. It features centralized management, application-aware routing, and integrated security to ensure your business-critical applications perform optimally over any transport.",
+        metadata: { category: "Managed Services" },
+        caveats: [],
+        assumptions: [],
+        supported_features: ["app_aware_routing", "auto_vpn", "cloud_mgmt"],
         service_options: [
             createServiceOption(
-                "sdwan_standard",
-                "Standard Tier",
-                "Essential SD-WAN features for small branches. Includes application-based routing and basic firewalling.",
-                [
-                    createDesignOption("internet_breakout_local", "Local Internet Breakout", "Traffic destined for the internet exits directly from the branch router.", "Internet Breakout"),
-                    createDesignOption("internet_breakout_datacenter", "Backhaul to DC", "Internet traffic is routed back to a central data center for inspection.", "Internet Breakout")
-                ]
-            ),
-            createServiceOption(
-                "sdwan_advanced",
-                "Advanced Tier",
-                "Enhanced SD-WAN for mission-critical sites. Includes advanced security (NGFW, IPS), cellular failover support, and prioritizing real-time voice/video traffic.",
-                [
-                    createDesignOption("ha_pair", "High Availability Pair", "Dual router configuration for hardware redundancy.", "Topology")
-                ]
+                "sdwan_edge",
+                "Edge Connectivity",
+                "Primary SD-WAN appliances for branch sites.",
+                []
             )
         ]
     },
+
     {
         id: "managed_lan",
         name: "Managed LAN",
@@ -176,14 +172,23 @@ export const SEED_PACKAGES: Package[] = [
         active: true,
         short_description: "Essential connectivity and security focused on affordability and value.",
         detailed_description: "The Cost Centric package is designed for lean organizations or smaller branch offices that require reliable connectivity without advanced enterprise features. It prioritizes cost-effective hardware (e.g., Meraki MX67, standard switches) and essential service levels. It provides a solid foundation for business operations with standard SD-WAN capabilities, basic security/firewalling, and cost-efficient internet breakout options, ensuring a low Total Cost of Ownership (TCO).",
+        throughput_basis: "vpn_throughput_mbps",
         items: [
-            // Example item: Managed SD-WAN - Standard Tier
             {
-                service_id: "managed_sdwan",
-                service_option_id: "sdwan_standard",
-                design_option_id: "internet_breakout_local",
-                enabled_features: [{ feature_id: "auto_vpn", inclusion_type: "standard" }],
-                inclusion_type: "required"
+                service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [
+                    { feature_id: "auto_vpn", inclusion_type: "standard" },
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
+            },
+            {
+                service_id: "managed_lan", inclusion_type: "standard", enabled_features: [
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
+            },
+            {
+                service_id: "managed_wifi", inclusion_type: "optional", enabled_features: [
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
             }
         ]
     },
@@ -193,13 +198,26 @@ export const SEED_PACKAGES: Package[] = [
         active: true,
         short_description: "High-throughput and redundant architecture for mission-critical applications.",
         detailed_description: "Tailored for locations with heavy data usage, real-time applications (VoIP, Video), or critical uptime requirements. This package leverages high-performance hardware, dual-wan links with sub-second failover, and Application Aware Routing to guarantee Quality of Experience (QoE). Includes High Availability (HA) configurations and advanced analytics for deep network visibility.",
+        throughput_basis: "vpn_throughput_mbps",
         items: [
             {
-                service_id: "managed_sdwan",
-                service_option_id: "sdwan_advanced",
-                design_option_id: "ha_pair",
-                enabled_features: [{ feature_id: "app_aware_routing", inclusion_type: "standard" }],
-                inclusion_type: "required"
+                service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [
+                    { feature_id: "app_aware_routing", inclusion_type: "standard" },
+                    { feature_id: "auto_vpn", inclusion_type: "standard" },
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
+            },
+            {
+                service_id: "managed_lan", inclusion_type: "required", enabled_features: [
+                    { feature_id: "poe_plus", inclusion_type: "standard" },
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
+            },
+            {
+                service_id: "managed_wifi", inclusion_type: "standard", enabled_features: [
+                    { feature_id: "wifi_6", inclusion_type: "standard" },
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
             }
         ]
     },
@@ -209,13 +227,91 @@ export const SEED_PACKAGES: Package[] = [
         active: true,
         short_description: "Zero Trust approach with advanced threat protection and compliant architecture.",
         detailed_description: "Provides the highest level of network security, integrating Next-Generation Firewall (NGFW), Intrusion Prevention (IPS), and advanced malware protection directly into the network fabric. Ideal for regulated industries or data-sensitive environments. Includes secure segmentation for IoT devices and encrypted site-to-site communications by default.",
+        throughput_basis: "adv_sec_throughput_mbps",
         items: [
             {
-                service_id: "managed_sdwan",
-                service_option_id: "sdwan_advanced",
-                enabled_features: [{ feature_id: "ngfw", inclusion_type: "standard" }, { feature_id: "ids_ips", inclusion_type: "standard" }],
-                inclusion_type: "required"
+                service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [
+                    { feature_id: "app_aware_routing", inclusion_type: "standard" },
+                    { feature_id: "auto_vpn", inclusion_type: "standard" },
+                    { feature_id: "ngfw", inclusion_type: "standard" },
+                    { feature_id: "ids_ips", inclusion_type: "standard" },
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
+            },
+            {
+                service_id: "managed_lan", inclusion_type: "standard", enabled_features: [
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
+            },
+            {
+                service_id: "managed_wifi", inclusion_type: "standard", enabled_features: [
+                    { feature_id: "cloud_mgmt", inclusion_type: "standard" }
+                ]
             }
         ]
+    }
+];
+
+export const SEED_METADATA: CatalogMetadata[] = [
+    {
+        id: "equipment_catalog",
+        fields: {
+            purposes: {
+                label: "Equipment Purposes",
+                values: [...EQUIPMENT_PURPOSES]
+            },
+            vendors: {
+                label: "Vendors",
+                values: [...VENDOR_IDS]
+            },
+            statuses: {
+                label: "Support Statuses",
+                values: ["Supported", "In development", "Not supported"]
+            },
+            cellular_types: {
+                label: "Cellular Generations",
+                values: ["LTE", "5G", "LTE/5G"]
+            },
+            wifi_standards: {
+                label: "Wi-Fi Standards",
+                values: ["Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"]
+            },
+            mounting_options: {
+                label: "Mounting Options",
+                values: ["Rack", "Wall", "DIN Rail", "Desktop"]
+            }
+        }
+    },
+    {
+        id: "service_catalog",
+        fields: {
+            service_categories: {
+                label: "Service Categories",
+                values: [...SERVICE_CATEGORIES]
+            },
+            design_option_categories: {
+                label: "Design Option Categories",
+                values: [...DESIGN_OPTION_CATEGORIES]
+            }
+        }
+    },
+    {
+        id: "feature_catalog",
+        fields: {
+            feature_categories: {
+                label: "Feature Categories",
+                values: [
+                    "Routing",
+                    "Security",
+                    "Management",
+                    "SD-WAN",
+                    "High Availability",
+                    "Cloud Integration",
+                    "Monitoring",
+                    "Performance",
+                    "QoS"
+                ]
+            }
+        }
     }
 ];

@@ -10,11 +10,15 @@ jest.mock('next/navigation', () => ({
     }),
 }));
 
-jest.mock('react', () => ({
-    ...jest.requireActual('react'),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    use: (promise: any) => promise,
-}));
+jest.mock('react', () => {
+    const ActualReact = jest.requireActual('react');
+    return {
+        ...ActualReact,
+        use: jest.fn(),
+    };
+});
+
+const mockedUse = React.use as jest.Mock;
 
 jest.mock('@/src/lib/firebase', () => ({
     ProjectService: {
@@ -88,6 +92,7 @@ describe('CustomizeProjectPage Filtering', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedUse.mockReturnValue({ id: mockProjectId });
         (ProjectService.getProject as jest.Mock).mockResolvedValue(mockProject);
         (PackageService.getPackageById as jest.Mock).mockResolvedValue(mockPackage);
         (ServiceService.getAllServices as jest.Mock).mockResolvedValue(mockServices);

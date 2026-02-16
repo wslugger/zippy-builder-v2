@@ -111,10 +111,10 @@ export const MetadataService = {
         return null;
     },
 
-    saveCatalogMetadata: async (metadata: CatalogMetadata) => {
+    saveCatalogMetadata: async (metadata: CatalogMetadata, overwrite: boolean = false) => {
         const docRef = doc(db, METADATA_COLLECTION, metadata.id);
         const { id, ...data } = metadata;
-        await setDoc(docRef, data, { merge: true });
+        await setDoc(docRef, data, { merge: !overwrite });
         return id;
     },
 
@@ -262,6 +262,31 @@ export const PackageService = {
 };
 
 const PROJECTS_COLLECTION = "projects";
+const DEFAULTS_COLLECTION = "system_defaults";
+
+interface SystemDefaults {
+    features: TechnicalFeature[];
+    services: Service[];
+    packages: Package[];
+    metadata: CatalogMetadata[];
+}
+
+export const SystemDefaultsService = {
+    saveDefaults: async (defaults: SystemDefaults) => {
+        const docRef = doc(db, DEFAULTS_COLLECTION, "global");
+        const cleaned = cleanObject(defaults);
+        await setDoc(docRef, cleaned);
+    },
+
+    getDefaults: async (): Promise<SystemDefaults | null> => {
+        const docRef = doc(db, DEFAULTS_COLLECTION, "global");
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+            return snapshot.data() as SystemDefaults;
+        }
+        return null;
+    }
+};
 
 export const ProjectService = {
     createProject: async (project: Project): Promise<string> => {
@@ -315,6 +340,38 @@ export const ProjectService = {
             console.error("Requirements Upload Error:", error);
             throw error;
         }
+    }
+};
+
+import { SiteType } from "./site-types";
+
+const SITE_DEFINITIONS_COLLECTION = "site_definitions";
+
+export const SiteDefinitionService = {
+    saveSiteDefinition: async (siteDef: SiteType) => {
+        const docRef = doc(db, SITE_DEFINITIONS_COLLECTION, siteDef.id);
+        const cleaned = cleanObject(siteDef);
+        await setDoc(docRef, cleaned, { merge: true });
+        return siteDef.id;
+    },
+
+    getAllSiteDefinitions: async (): Promise<SiteType[]> => {
+        const snapshot = await getDocs(collection(db, SITE_DEFINITIONS_COLLECTION));
+        return snapshot.docs.map((doc) => doc.data() as SiteType);
+    },
+
+    getSiteDefinitionById: async (id: string): Promise<SiteType | null> => {
+        const docRef = doc(db, SITE_DEFINITIONS_COLLECTION, id);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+            return snapshot.data() as SiteType;
+        }
+        return null;
+    },
+
+    deleteSiteDefinition: async (id: string) => {
+        const docRef = doc(db, SITE_DEFINITIONS_COLLECTION, id);
+        await deleteDoc(docRef);
     }
 };
 

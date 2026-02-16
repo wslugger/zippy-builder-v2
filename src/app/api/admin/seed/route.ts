@@ -1,57 +1,47 @@
 import { NextResponse } from "next/server";
-import { MetadataService, FeatureService, ServiceService, PackageService } from "@/src/lib/firebase";
-import { EQUIPMENT_PURPOSES, VENDOR_IDS, SERVICE_CATEGORIES, DESIGN_OPTION_CATEGORIES } from "@/src/lib/types";
-import { SEED_FEATURES, SEED_SERVICES, SEED_PACKAGES } from "@/src/lib/seed-data";
+import { MetadataService, FeatureService, ServiceService, PackageService, SystemDefaultsService, SiteDefinitionService } from "@/src/lib/firebase";
+import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 
 export async function GET() {
     try {
-        // 1. Seed Equipment Metadata
-        await MetadataService.saveCatalogMetadata({
-            id: "equipment_catalog",
-            fields: {
-                purposes: {
-                    label: "Purposes",
-                    values: [...EQUIPMENT_PURPOSES],
-                },
-                vendors: {
-                    label: "Vendors",
-                    values: [...VENDOR_IDS]
-                }
-            },
-        });
+        // 1. Get System Defaults from DB
+        const defaults = await SystemDefaultsService.getDefaults();
 
-        // 2. Seed Service Catalog Metadata
-        await MetadataService.saveCatalogMetadata({
-            id: "service_catalog",
-            fields: {
-                service_categories: {
-                    label: "Service Categories",
-                    values: [...SERVICE_CATEGORIES]
-                },
-                design_option_categories: {
-                    label: "Design Option Categories",
-                    values: [...DESIGN_OPTION_CATEGORIES]
-                }
+        if (!defaults) {
+            throw new Error("System defaults not found! Please run the bootstrap process first.");
+        }
+
+        // 2. Reset Metadata (Full Overwrite)
+        if (defaults.metadata) {
+            console.log("Resetting metadata from DB defaults...");
+            for (const metadata of defaults.metadata) {
+                await MetadataService.saveCatalogMetadata(metadata, true);
             }
-        });
+        }
 
-        // 3. Seed Technical Features
-        console.log("Seeding features...");
-        await FeatureService.saveFeatureBatch(SEED_FEATURES);
+        // 4. Seed Technical Features
+        console.log("Seeding features from DB defaults...");
+        await FeatureService.saveFeatureBatch(defaults.features);
 
-        // 4. Seed Services
-        console.log("Seeding services...");
-        for (const service of SEED_SERVICES) {
+        // 5. Seed Services
+        console.log("Seeding services from DB defaults...");
+        for (const service of defaults.services) {
             await ServiceService.saveService(service);
         }
 
-        // 5. Seed Packages
-        console.log("Seeding packages...");
-        for (const pkg of SEED_PACKAGES) {
+        // 6. Seed Packages
+        console.log("Seeding packages from DB defaults...");
+        for (const pkg of defaults.packages) {
             await PackageService.savePackage(pkg);
         }
 
-        return NextResponse.json({ success: true, message: "Database seeded successfully! Catalog populated with Services, Features, and Packages." });
+        // 7. Seed Site Definitions (from code constants for now, or could be in SystemDefaults)
+        console.log("Seeding site definitions...");
+        for (const siteType of ALL_SITE_TYPES) {
+            await SiteDefinitionService.saveSiteDefinition(siteType);
+        }
+
+        return NextResponse.json({ success: true, message: "Database seeded successfully! Catalog populated with Services, Features, Packages, and Site Definitions." });
     } catch (error) {
         console.error("Seeding error:", error);
         return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -61,21 +51,6 @@ export async function GET() {
 export async function DELETE() {
     try {
         console.log("Cleaning up seeded data...");
-
-        // 1. Delete Packages
-        for (const pkg of SEED_PACKAGES) {
-            await PackageService.deletePackage(pkg.id);
-        }
-
-        // 2. Delete Services
-        for (const service of SEED_SERVICES) {
-            await ServiceService.deleteService(service.id);
-        }
-
-        // 3. Delete Features
-        for (const feature of SEED_FEATURES) {
-            await FeatureService.deleteFeature(feature.id);
-        }
 
         return NextResponse.json({
             success: true,

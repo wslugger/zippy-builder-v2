@@ -287,6 +287,19 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                     placeholder="Detailed value proposition..."
                                 />
                             </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-zinc-500 mb-1">Throughput Matching Basis</label>
+                                <select
+                                    value={pkg.throughput_basis || "vpn_throughput_mbps"}
+                                    onChange={(e) => setPkg({ ...pkg, throughput_basis: e.target.value as "ngfw_throughput_mbps" | "vpn_throughput_mbps" | "adv_sec_throughput_mbps" })}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                                >
+                                    <option value="vpn_throughput_mbps">VPN Throughput (Standard)</option>
+                                    <option value="ngfw_throughput_mbps">NGFW Throughput</option>
+                                    <option value="adv_sec_throughput_mbps">Advanced Security Throughput</option>
+                                </select>
+                                <p className="text-xs text-zinc-400 mt-1">Determines which equipment spec is compared against site bandwidth.</p>
+                            </div>
                         </div>
                     </section>
 

@@ -1,0 +1,18 @@
+
+> zippy-builder-v2@0.1.0 lint
+> eslint
+
+
+/Users/scottdunn/zippy-builder-v2/__tests__/features/consultant-chat.test.tsx
+  2:26  warning  'fireEvent' is defined but never used  @typescript-eslint/no-unused-vars
+  2:37  warning  'waitFor' is defined but never used    @typescript-eslint/no-unused-vars
+  4:10  warning  'AIService' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/scottdunn/zippy-builder-v2/src/app/admin/site-definitions/[id]/page.tsx
+  226:50  warning  'idx' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/scottdunn/zippy-builder-v2/src/app/admin/site-definitions/page.tsx
+  44:18  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (0 errors, 5 warnings)
+

@@ -19,15 +19,21 @@ export default function MetadataPage() {
         try {
             const data = await MetadataService.getAllCatalogMetadata();
             setMetadata(data);
-            if (data.length > 0 && !selectedCatalog) {
-                setSelectedCatalog(data[0]);
-            }
+            // Only auto-select if nothing is currently selected
+            setSelectedCatalog(prev => {
+                if (!prev && data.length > 0) return data[0];
+                // If something was selected, try to find it in the new data to keep it in sync
+                if (prev) {
+                    return data.find(m => m.id === prev.id) || prev;
+                }
+                return prev;
+            });
         } catch (e) {
             console.error(e);
         } finally {
             setLoading(false);
         }
-    }, [selectedCatalog]);
+    }, []); // Removed selectedCatalog from dependencies
 
     useEffect(() => {
         fetchMetadata();
@@ -147,12 +153,67 @@ export default function MetadataPage() {
         }
     };
 
+    const seedFullDatabase = async () => {
+        if (!confirm("WARNING: This will overwrite ALL Services, Features, and Packages with the default seed data. This action cannot be undone. Are you sure?")) return;
+        setIsSaving(true);
+        try {
+            const res = await fetch("/api/admin/seed");
+            const data = await res.json();
+            if (data.success) {
+                await fetchMetadata();
+                alert(data.message);
+            } else {
+                throw new Error(data.error || "Unknown error occurred");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Failed to seed full database: " + String(e));
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const bootstrapDefaults = async () => {
+        if (!confirm("This will read the hardcoded 'seed-data.ts' file and save it to the 'system_defaults' collection in the database. This is a one-time migration. Continue?")) return;
+        setIsSaving(true);
+        try {
+            const res = await fetch("/api/admin/bootstrap", { method: "POST" });
+            const data = await res.json();
+            if (data.success) {
+                await fetchMetadata();
+                alert(data.message);
+            } else {
+                throw new Error(data.error || "Unknown error occurred");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Failed to bootstrap defaults: " + String(e));
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleSave = async () => {
         if (!selectedCatalog) return;
         setIsSaving(true);
         try {
-            await MetadataService.saveCatalogMetadata(selectedCatalog);
-            setMetadata(metadata.map(m => m.id === selectedCatalog.id ? selectedCatalog : m));
+            // Clean up the data before saving: trim whitespace and remove empty lines
+            const cleanedCatalog: CatalogMetadata = {
+                ...selectedCatalog,
+                fields: Object.fromEntries(
+                    Object.entries(selectedCatalog.fields).map(([k, f]) => [
+                        k,
+                        { ...f, values: f.values.map(v => v.trim()).filter(v => v !== "") }
+                    ])
+                )
+            };
+
+            await MetadataService.saveCatalogMetadata(cleanedCatalog);
+
+            // Update local state with cleaned data
+            setMetadata(metadata.map(m => m.id === selectedCatalog.id ? cleanedCatalog : m));
+            setSelectedCatalog(cleanedCatalog);
+
             alert("Metadata saved successfully!");
         } catch (e) {
             console.error(e);
@@ -164,7 +225,8 @@ export default function MetadataPage() {
 
     const updateFieldValues = (fieldKey: string, valueString: string) => {
         if (!selectedCatalog) return;
-        const values = valueString.split("\n").map(v => v.trim()).filter(v => v !== "");
+        // Don't trim or filter yet, so the user can type spaces and newlines freely
+        const values = valueString.split("\n");
         setSelectedCatalog({
             ...selectedCatalog,
             fields: {
@@ -265,6 +327,20 @@ export default function MetadataPage() {
                         className="px-4 py-2 bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors shadow-sm"
                     >
                         Seed Equipment Defaults
+                    </button>
+                    <button
+                        onClick={seedFullDatabase}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors shadow-sm border border-red-200 dark:border-red-800"
+                    >
+                        Seed Full Database (Reset)
+                    </button>
+                    <button
+                        onClick={bootstrapDefaults}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors shadow-sm border border-purple-200 dark:border-purple-800"
+                    >
+                        Ingest Code to DB Defaults
                     </button>
                     <button
                         onClick={() => setShowNewCatalogModal(true)}

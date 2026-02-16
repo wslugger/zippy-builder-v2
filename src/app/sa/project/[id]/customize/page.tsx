@@ -19,42 +19,40 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
     const [items, setItems] = useState<PackageItem[]>([]);
 
     useEffect(() => {
-        loadData();
-    }, [projectId]);
+        const loadData = async () => {
+            try {
+                const proj = await ProjectService.getProject(projectId);
+                setProject(proj);
 
-    const loadData = async () => {
-        try {
-            const proj = await ProjectService.getProject(projectId);
-            setProject(proj);
+                if (proj?.selectedPackageId) {
+                    const [packageData, servicesData] = await Promise.all([
+                        PackageService.getPackageById(proj.selectedPackageId),
+                        ServiceService.getAllServices()
+                    ]);
 
-            if (proj?.selectedPackageId) {
-                const [packageData, servicesData] = await Promise.all([
-                    PackageService.getPackageById(proj.selectedPackageId),
-                    ServiceService.getAllServices()
-                ]);
+                    setPkg(packageData);
+                    setServices(servicesData);
 
-                setPkg(packageData);
-                setServices(servicesData);
-
-                // Initialize items if not already customized
-                if (proj.customizedItems && proj.customizedItems.length > 0) {
-                    setItems(proj.customizedItems);
-                } else if (packageData) {
-                    // Seed from package
-                    // Default logic: Include Required and Standard. Exclude Optional (unless we want to show them as unchecked).
-                    // Actually, we should probably keep Optional items in the list but maybe mark them? 
-                    // No, the list defines what IS included. So if it's not in the list, it's not included.
-                    // So we filter in Required/Standard.
-                    const initialItems = packageData.items.filter(i => i.inclusion_type !== 'optional');
-                    setItems(initialItems);
+                    // Initialize items if not already customized
+                    if (proj.customizedItems && proj.customizedItems.length > 0) {
+                        setItems(proj.customizedItems);
+                    } else if (packageData) {
+                        // Seed from package
+                        const initialItems = packageData.items.filter(i => i.inclusion_type !== 'optional');
+                        setItems(initialItems);
+                    }
                 }
+            } catch (error) {
+                console.error("Failed to load data:", error);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Failed to load data:", error);
-        } finally {
-            setLoading(false);
+        };
+
+        if (projectId) {
+            loadData();
         }
-    };
+    }, [projectId]);
 
     const handleSave = async (gotoNext = false) => {
         if (!project) return;

@@ -119,6 +119,7 @@ export interface Package {
   items: PackageItem[];
   collateral?: PackageCollateral[];
   active: boolean;
+  throughput_basis?: "ngfw_throughput_mbps" | "vpn_throughput_mbps" | "adv_sec_throughput_mbps";
 }
 
 export interface ServiceItem {

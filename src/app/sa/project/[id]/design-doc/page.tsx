@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { Project, Package, Service, PackageItem } from '@/src/lib/types';
+import { Project, Package, Service } from '@/src/lib/types';
 import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
 
 export default function DesignDocPage({ params }: { params: Promise<{ id: string }> }) {
@@ -13,28 +13,30 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadData();
-    }, [projectId]);
+        const loadData = async () => {
+            try {
+                const proj = await ProjectService.getProject(projectId);
+                setProject(proj);
 
-    const loadData = async () => {
-        try {
-            const proj = await ProjectService.getProject(projectId);
-            setProject(proj);
-
-            if (proj?.selectedPackageId) {
-                const [packageData, servicesData] = await Promise.all([
-                    PackageService.getPackageById(proj.selectedPackageId),
-                    ServiceService.getAllServices()
-                ]);
-                setPkg(packageData);
-                setServices(servicesData);
+                if (proj?.selectedPackageId) {
+                    const [packageData, servicesData] = await Promise.all([
+                        PackageService.getPackageById(proj.selectedPackageId),
+                        ServiceService.getAllServices()
+                    ]);
+                    setPkg(packageData);
+                    setServices(servicesData);
+                }
+            } catch (error) {
+                console.error("Failed to load data:", error);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Failed to load data:", error);
-        } finally {
-            setLoading(false);
+        };
+
+        if (projectId) {
+            loadData();
         }
-    };
+    }, [projectId]);
 
     if (loading || !project || !pkg) return <div className="p-10 text-center">Generating Design Document...</div>;
 

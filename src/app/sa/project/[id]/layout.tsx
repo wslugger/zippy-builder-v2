@@ -10,18 +10,14 @@ const STEPS = [
     { id: 'design-doc', label: '4. Design Doc', path: 'design-doc' },
 ];
 
-import { use } from 'react';
+
 
 export default function ProjectLayout({
     children,
-    params,
 }: {
     children: React.ReactNode;
-    params: Promise<{ id: string }>;
 }) {
     const pathname = usePathname();
-    const resolvedParams = use(params);
-    const projectId = resolvedParams.id;
 
     // Determine current step index
     const currentStepIndex = STEPS.findIndex(step => pathname.includes(step.path));
