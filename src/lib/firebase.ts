@@ -96,8 +96,8 @@ export const ServiceService = {
     },
 
     deleteService: async (id: string) => {
-        // Note: Actual delete might need dedicated API or Admin SDK depending on security rules
-        console.log("Delete service requested for ID:", id);
+        const docRef = doc(db, SERVICE_COLLECTION, id);
+        await deleteDoc(docRef);
     }
 };
 

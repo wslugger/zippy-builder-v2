@@ -1,4 +1,4 @@
-import { Project, AIAnalysisResult, Package } from "@/src/lib/types";
+import { Project, AIAnalysisResult, Package, Service } from "@/src/lib/types";
 
 export const AIService = {
     /**
@@ -44,8 +44,27 @@ export const AIService = {
      * NOTE: This is still client-side or needs a similar API wrapper if we want to secure the key.
      * For now, keep as is or convert to server call if requested.
      */
-    chatWithConsultant: async (_message: string, _projectContext: Project, _history: { role: 'user' | 'model', parts: string }[]) => {
-        // Placeholder or future implementation via Server Action/API
-        return "I am currently being upgraded to use a secure server-side connection. Please try selection for now!";
+    chatWithConsultant: async (
+        message: string,
+        context: Project,
+        history: { role: string; content: string }[],
+        packages: Package[],
+        services: Service[]
+    ): Promise<string> => {
+        try {
+            const response = await fetch('/api/sa/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message, history, context, packages, services })
+            });
+
+            if (!response.ok) throw new Error('Chat API call failed');
+
+            const data = await response.json();
+            return data.response;
+        } catch (error) {
+            console.error("Chat Error:", error);
+            throw error;
+        }
     }
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Project, Package, Service } from '@/src/lib/types';
 import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
@@ -14,11 +14,7 @@ export default function PackageSummaryPage({ params }: { params: Promise<{ id: s
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadData();
-    }, [projectId]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             const proj = await ProjectService.getProject(projectId);
             setProject(proj);
@@ -36,7 +32,11 @@ export default function PackageSummaryPage({ params }: { params: Promise<{ id: s
         } finally {
             setLoading(false);
         }
-    };
+    }, [projectId]);
+
+    useEffect(() => {
+        loadData();
+    }, [projectId, loadData]);
 
     const handleContinue = async () => {
         if (!project) return;

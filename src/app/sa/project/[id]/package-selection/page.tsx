@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Project, Package, AIAnalysisResult } from '@/src/lib/types';
-import { ProjectService, PackageService } from '@/src/lib/firebase';
+import { Project, Package, AIAnalysisResult, Service } from '@/src/lib/types';
+import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
+import ConsultantChat from '@/src/components/sa/ConsultantChat';
 import { AIService } from '@/src/lib/ai-service';
 
 export default function PackageSelectionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -12,6 +13,7 @@ export default function PackageSelectionPage({ params }: { params: Promise<{ id:
     const projectId = resolvedParams.id;
     const [project, setProject] = useState<Project | null>(null);
     const [packages, setPackages] = useState<Package[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
@@ -19,24 +21,27 @@ export default function PackageSelectionPage({ params }: { params: Promise<{ id:
     const [selectedTab, setSelectedTab] = useState<'upload' | 'chat' | 'manual'>('upload');
     const [requirementsText, setRequirementsText] = useState(''); // Simple text input for now, could be file upload + OCR
 
-    useEffect(() => {
-        loadData();
-    }, [projectId]);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
-            const [proj, pkgs] = await Promise.all([
+            const [proj, pkgs, svcs] = await Promise.all([
                 ProjectService.getProject(projectId),
-                PackageService.getAllPackages()
+                PackageService.getAllPackages(),
+                ServiceService.getAllServices()
             ]);
             setProject(proj);
             setPackages(pkgs);
+            setServices(svcs);
         } catch (error) {
             console.error("Failed to load data:", error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [projectId]);
+
+    useEffect(() => {
+        loadData();
+    }, [projectId, loadData]);
 
     const fileToBase64 = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
@@ -203,9 +208,11 @@ export default function PackageSelectionPage({ params }: { params: Promise<{ id:
                             )}
                         </div>
                     ) : (
-                        <div className="h-full flex items-center justify-center text-neutral-500">
-                            <p>Chat interface coming soon...</p>
-                        </div>
+                        <ConsultantChat
+                            project={project}
+                            packages={packages}
+                            services={services}
+                        />
                     )}
                 </div>
             </div>

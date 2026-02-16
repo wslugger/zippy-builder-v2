@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { MetadataService, EquipmentService } from "@/src/lib/firebase";
-import { EQUIPMENT_PURPOSES, VENDOR_IDS } from "@/src/lib/types";
+import { MetadataService, FeatureService, ServiceService, PackageService } from "@/src/lib/firebase";
+import { EQUIPMENT_PURPOSES, VENDOR_IDS, SERVICE_CATEGORIES, DESIGN_OPTION_CATEGORIES } from "@/src/lib/types";
+import { SEED_FEATURES, SEED_SERVICES, SEED_PACKAGES } from "@/src/lib/seed-data";
 
 export async function GET() {
     try {
-        // 1. Seed Metadata
+        // 1. Seed Equipment Metadata
         await MetadataService.saveCatalogMetadata({
             id: "equipment_catalog",
             fields: {
@@ -19,32 +20,69 @@ export async function GET() {
             },
         });
 
-        // 2. Seed a sample Equipment item (Meraki MX67)
-        await EquipmentService.saveEquipment({
-            id: "meraki_mx67",
-            model: "MX67",
-            active: true,
-            status: "Supported",
-            vendor_id: "meraki",
-            purpose: ["SDWAN"],
-            family: "Meraki MX",
-            description: "Cloud-managed security & SD-WAN appliance",
-            specs: {
-                ngfw_throughput_mbps: 450,
-                vpn_throughput_mbps: 200,
-                wan_interfaces_count: 2,
-                wan_interfaces_desc: "1x GbE RJ45, 1x GbE SFP",
-                lan_interfaces_count: 4,
-                lan_interfaces_desc: "4x GbE RJ45",
-                integrated_wifi: false,
-                recommended_use_case: "Small Branch",
-                max_clients: 50,
-            },
+        // 2. Seed Service Catalog Metadata
+        await MetadataService.saveCatalogMetadata({
+            id: "service_catalog",
+            fields: {
+                service_categories: {
+                    label: "Service Categories",
+                    values: [...SERVICE_CATEGORIES]
+                },
+                design_option_categories: {
+                    label: "Design Option Categories",
+                    values: [...DESIGN_OPTION_CATEGORIES]
+                }
+            }
         });
 
-        return NextResponse.json({ success: true, message: "Database seeded successfully! Please refresh the Catalog page." });
+        // 3. Seed Technical Features
+        console.log("Seeding features...");
+        await FeatureService.saveFeatureBatch(SEED_FEATURES);
+
+        // 4. Seed Services
+        console.log("Seeding services...");
+        for (const service of SEED_SERVICES) {
+            await ServiceService.saveService(service);
+        }
+
+        // 5. Seed Packages
+        console.log("Seeding packages...");
+        for (const pkg of SEED_PACKAGES) {
+            await PackageService.savePackage(pkg);
+        }
+
+        return NextResponse.json({ success: true, message: "Database seeded successfully! Catalog populated with Services, Features, and Packages." });
     } catch (error) {
         console.error("Seeding error:", error);
+        return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    }
+}
+
+export async function DELETE() {
+    try {
+        console.log("Cleaning up seeded data...");
+
+        // 1. Delete Packages
+        for (const pkg of SEED_PACKAGES) {
+            await PackageService.deletePackage(pkg.id);
+        }
+
+        // 2. Delete Services
+        for (const service of SEED_SERVICES) {
+            await ServiceService.deleteService(service.id);
+        }
+
+        // 3. Delete Features
+        for (const feature of SEED_FEATURES) {
+            await FeatureService.deleteFeature(feature.id);
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: "Cleanup successful! All seeded Services, Packages, and Features have been removed."
+        });
+    } catch (error) {
+        console.error("Cleanup error:", error);
         return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
     }
 }
