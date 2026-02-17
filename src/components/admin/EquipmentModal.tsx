@@ -80,10 +80,26 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
         setFormData({ ...formData, [field]: value });
     };
 
-    const handleSpecChange = <K extends keyof Equipment['specs']>(field: K, value: string | number | string[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleSpecChange = <K extends keyof Equipment['specs']>(field: K, value: any) => {
+        let finalValue = value;
+
+        // Only convert to number if it's a numeric field and the input is a string that looks like a number
+        const numericFields: (keyof Equipment['specs'])[] = [
+            'ngfw_throughput_mbps', 'adv_sec_throughput_mbps', 'vpn_throughput_mbps',
+            'vpn_tunnels', 'wan_interfaces_count', 'lan_interfaces_count',
+            'power_supply_watts', 'power_load_idle_watts', 'power_load_max_watts',
+            'ports', 'poe_budget', 'power_rating_watts', 'rack_units', 'max_clients',
+            'stacking_bandwidth_gbps', 'forwarding_rate_mpps', 'switching_capacity_gbps'
+        ];
+
+        if (numericFields.includes(field) && typeof value === 'string' && value !== '') {
+            finalValue = Number(value);
+        }
+
         setFormData({
             ...formData,
-            specs: { ...formData.specs, [field]: Number(value) },
+            specs: { ...formData.specs, [field]: finalValue },
         });
     };
 
@@ -596,6 +612,294 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 <option value={formData.specs.power_connector_type}>{formData.specs.power_connector_type} (Custom)</option>
                                             )}
                                         </select>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Switching & Performance Card - Only show for LAN purpose or Catalyst vendor */}
+                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                <h4 className={sectionTitleClass}>Switching & Performance</h4>
+                                <div className="grid grid-cols-3 gap-x-8 gap-y-8">
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Forwarding Rate (Mpps)</label>
+                                        <div className="relative">
+                                            <input type="number" step="0.01" value={formData.specs.forwarding_rate_mpps || 0} onChange={(e) => handleSpecChange("forwarding_rate_mpps", e.target.value)} className={`${inputClass} pr-14`} />
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mpps</span>
+                                        </div>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Switching Capacity (Gbps)</label>
+                                        <div className="relative">
+                                            <input type="number" value={formData.specs.switching_capacity_gbps || 0} onChange={(e) => handleSpecChange("switching_capacity_gbps", e.target.value)} className={`${inputClass} pr-14`} />
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Gbps</span>
+                                        </div>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>PoE Capabilities</label>
+                                        <input type="text" placeholder="e.g. PoE+, UPOE" value={formData.specs.poe_capabilities || ""} onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)} className={inputClass} />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Stacking & High Availability Card */}
+                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                <h4 className={sectionTitleClass}>Stacking & Power Redundancy</h4>
+                                <div className="grid grid-cols-3 gap-x-8 gap-y-8">
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Performance Rating</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Wire Rate"
+                                            value={formData.specs.performance_rating || ""}
+                                            onChange={(e) => handleSpecChange("performance_rating", e.target.value)}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Stacking Support</label>
+                                        <label className="flex items-center gap-3 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.specs.stacking_supported || false}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    specs: { ...formData.specs, stacking_supported: e.target.checked }
+                                                })}
+                                                className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                            />
+                                            <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Stackable</span>
+                                        </label>
+                                    </div>
+                                    {formData.specs.stacking_supported && (
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Stack Bandwidth (Gbps)</label>
+                                            <div className="relative">
+                                                <input type="number" value={formData.specs.stacking_bandwidth_gbps || 0} onChange={(e) => handleSpecChange("stacking_bandwidth_gbps", e.target.value)} className={`${inputClass} pr-14`} />
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Gbps</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Primary Power Supply</label>
+                                        <input type="text" placeholder="Model #" value={formData.specs.primary_power_supply || ""} onChange={(e) => handleSpecChange("primary_power_supply", e.target.value)} className={inputClass} />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Secondary Power Supply</label>
+                                        <input type="text" placeholder="Model #" value={formData.specs.secondary_power_supply || ""} onChange={(e) => handleSpecChange("secondary_power_supply", e.target.value)} className={inputClass} />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Modular Components Sections */}
+                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                <h4 className={sectionTitleClass}>Modular Components & Accessories</h4>
+
+                                {/* Uplink Modules */}
+                                <div className="mb-8">
+                                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+                                        Compatible Uplink Modules
+                                        <button
+                                            onClick={() => setFormData({
+                                                ...formData,
+                                                specs: {
+                                                    ...formData.specs,
+                                                    compatible_uplink_modules: [...(formData.specs.compatible_uplink_modules || []), { part_number: "", description: "", ports: 0, speed: "" }]
+                                                }
+                                            })}
+                                            className="text-blue-500 hover:text-blue-700 normal-case font-bold"
+                                        >
+                                            + Add Module
+                                        </button>
+                                    </h5>
+                                    <div className="space-y-3">
+                                        {formData.specs.compatible_uplink_modules?.map((mod, i) => (
+                                            <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                                                <input
+                                                    type="text" placeholder="Part #"
+                                                    value={mod.part_number}
+                                                    onChange={(e) => {
+                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
+                                                        newMods[i].part_number = e.target.value;
+                                                        handleSpecChange("compatible_uplink_modules", newMods);
+                                                    }}
+                                                    className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <input
+                                                    type="text" placeholder="Description"
+                                                    value={mod.description}
+                                                    onChange={(e) => {
+                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
+                                                        newMods[i].description = e.target.value;
+                                                        handleSpecChange("compatible_uplink_modules", newMods);
+                                                    }}
+                                                    className="col-span-4 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <input
+                                                    type="number" placeholder="Ports"
+                                                    value={mod.ports || 0}
+                                                    onChange={(e) => {
+                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
+                                                        newMods[i].ports = parseInt(e.target.value);
+                                                        handleSpecChange("compatible_uplink_modules", newMods);
+                                                    }}
+                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <input
+                                                    type="text" placeholder="Speed"
+                                                    value={mod.speed}
+                                                    onChange={(e) => {
+                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
+                                                        newMods[i].speed = e.target.value;
+                                                        handleSpecChange("compatible_uplink_modules", newMods);
+                                                    }}
+                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
+                                                        newMods.splice(i, 1);
+                                                        handleSpecChange("compatible_uplink_modules", newMods);
+                                                    }}
+                                                    className="col-span-1 text-red-500 hover:text-red-700"
+                                                >✕</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Power Supplies */}
+                                <div className="mb-8">
+                                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+                                        Compatible Power Supplies Sets
+                                        <button
+                                            onClick={() => setFormData({
+                                                ...formData,
+                                                specs: {
+                                                    ...formData.specs,
+                                                    compatible_power_supplies: [...(formData.specs.compatible_power_supplies || []), { part_number: "", description: "", wattage: 0, poe_budget: 0 }]
+                                                }
+                                            })}
+                                            className="text-blue-500 hover:text-blue-700 normal-case font-bold"
+                                        >
+                                            + Add PSU
+                                        </button>
+                                    </h5>
+                                    <div className="space-y-3">
+                                        {formData.specs.compatible_power_supplies?.map((psu, i) => (
+                                            <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                                                <input
+                                                    type="text" placeholder="Part #"
+                                                    value={psu.part_number}
+                                                    onChange={(e) => {
+                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
+                                                        newPsus[i].part_number = e.target.value;
+                                                        handleSpecChange("compatible_power_supplies", newPsus);
+                                                    }}
+                                                    className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <input
+                                                    type="text" placeholder="Description"
+                                                    value={psu.description}
+                                                    onChange={(e) => {
+                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
+                                                        newPsus[i].description = e.target.value;
+                                                        handleSpecChange("compatible_power_supplies", newPsus);
+                                                    }}
+                                                    className="col-span-4 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <input
+                                                    type="number" placeholder="Watts"
+                                                    value={psu.wattage || 0}
+                                                    onChange={(e) => {
+                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
+                                                        newPsus[i].wattage = parseInt(e.target.value);
+                                                        handleSpecChange("compatible_power_supplies", newPsus);
+                                                    }}
+                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <input
+                                                    type="number" placeholder="PoE (W)"
+                                                    value={psu.poe_budget || 0}
+                                                    onChange={(e) => {
+                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
+                                                        newPsus[i].poe_budget = parseInt(e.target.value);
+                                                        handleSpecChange("compatible_power_supplies", newPsus);
+                                                    }}
+                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
+                                                        newPsus.splice(i, 1);
+                                                        handleSpecChange("compatible_power_supplies", newPsus);
+                                                    }}
+                                                    className="col-span-1 text-red-500 hover:text-red-700"
+                                                >✕</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Stacking Options */}
+                                <div>
+                                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+                                        Stacking Accessories
+                                        <button
+                                            onClick={() => setFormData({
+                                                ...formData,
+                                                specs: {
+                                                    ...formData.specs,
+                                                    compatible_stacking_options: [...(formData.specs.compatible_stacking_options || []), { part_number: "", description: "", length_cm: 0 }]
+                                                }
+                                            })}
+                                            className="text-blue-500 hover:text-blue-700 normal-case font-bold"
+                                        >
+                                            + Add Stacking Item
+                                        </button>
+                                    </h5>
+                                    <div className="space-y-3">
+                                        {formData.specs.compatible_stacking_options?.map((opt, i) => (
+                                            <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                                                <input
+                                                    type="text" placeholder="Part #"
+                                                    value={opt.part_number}
+                                                    onChange={(e) => {
+                                                        const newOpts = [...(formData.specs.compatible_stacking_options || [])];
+                                                        newOpts[i].part_number = e.target.value;
+                                                        handleSpecChange("compatible_stacking_options", newOpts);
+                                                    }}
+                                                    className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <input
+                                                    type="text" placeholder="Description"
+                                                    value={opt.description}
+                                                    onChange={(e) => {
+                                                        const newOpts = [...(formData.specs.compatible_stacking_options || [])];
+                                                        newOpts[i].description = e.target.value;
+                                                        handleSpecChange("compatible_stacking_options", newOpts);
+                                                    }}
+                                                    className="col-span-6 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <input
+                                                    type="number" placeholder="Len (cm)"
+                                                    value={opt.length_cm || 0}
+                                                    onChange={(e) => {
+                                                        const newOpts = [...(formData.specs.compatible_stacking_options || [])];
+                                                        newOpts[i].length_cm = parseInt(e.target.value);
+                                                        handleSpecChange("compatible_stacking_options", newOpts);
+                                                    }}
+                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const newOpts = [...(formData.specs.compatible_stacking_options || [])];
+                                                        newOpts.splice(i, 1);
+                                                        handleSpecChange("compatible_stacking_options", newOpts);
+                                                    }}
+                                                    className="col-span-1 text-red-500 hover:text-red-700"
+                                                >✕</button>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </section>

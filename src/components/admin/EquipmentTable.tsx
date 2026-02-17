@@ -90,6 +90,19 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                             <div className="flex items-center gap-1">
                                                 <span className="opacity-50">🔌</span>
                                                 {item.specs.ports} Ports
+                                                {item.specs.poe_budget && item.specs.poe_budget > 0 && ` (${item.specs.poe_budget}W PoE)`}
+                                            </div>
+                                        )}
+                                        {item.specs.performance_rating && (
+                                            <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                                                <span className="opacity-50">🚀</span>
+                                                {item.specs.performance_rating}
+                                            </div>
+                                        )}
+                                        {item.specs.stacking_supported && (
+                                            <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
+                                                <span className="opacity-50">📚</span>
+                                                Stackable ({item.specs.stacking_bandwidth_gbps || 0}G)
                                             </div>
                                         )}
                                     </div>

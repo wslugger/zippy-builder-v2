@@ -12,6 +12,8 @@ export async function POST(req: NextRequest) {
         const formData = await req.formData();
         const file = formData.get("file") as File;
         const vendorId = formData.get("vendorId") as string;
+        const purposesJson = formData.get("purposes") as string;
+        const userSelectedPurposes = purposesJson ? JSON.parse(purposesJson) : null;
 
         if (!file || !vendorId) {
             return NextResponse.json({ error: "File and Vendor ID are required" }, { status: 400 });
@@ -30,17 +32,21 @@ export async function POST(req: NextRequest) {
 
         const vendorSpecificInstructions = vendorId === "cisco_catalyst"
             ? `
-      1. For Cisco Catalyst: Look at "Forwarding (512B)" for ngfw_throughput_mbps.
-      2. For Cisco Catalyst: Look at "Threat protection (EMIX)" for adv_sec_throughput_mbps.
-      3. For Cisco Catalyst: Look at "IPsec (512B)" for vpn_throughput_mbps.
-      4. For Cisco Catalyst: If a value like "1.2 Gbps" is found, convert to Mbps (1200).
+      1. For Cisco Catalyst Switches (9200/9300): Set "performance_rating" to "Wire Rate".
+      2. For Cisco Catalyst Switches: Locate "Network Modules" or "Uplink Modules" tables. Extract part numbers, descriptions, port counts, and speeds (e.g. C9300-NM-4G, 4x 1G).
+      3. For Cisco Catalyst Switches: Locate "Power Supplies" tables. Extract part numbers, wattages, and the PoE budget they provide (important for BOM sizing).
+      4. For Cisco Catalyst Switches: Locate "Stacking" accessories. Extract cables and kit part numbers.
+      5. For Cisco Catalyst: Focus on port density (24/48), PoE standard (PoE+, UPOE), and uplink flexibility.
             `
-            : `
-      1. For Meraki MX: Look at "NGFW Throughput" for ngfw_throughput_mbps.
-      2. For Meraki MX: Look at "Advanced security services throughput" for adv_sec_throughput_mbps.
-      3. For Meraki MX: Look at "Maximum site-to-site VPN throughput" for vpn_throughput_mbps.
-      4. For Meraki MX: Extract interface descriptions exactly (e.g., "1x GbE RJ45").
-      5. For Meraki MX: For "Power load", split "Idle/Max" (e.g. 5W/14W) into power_load_idle_watts=5 and power_load_max_watts=14.
+            : vendorId === "meraki"
+                ? `
+      1. For Meraki Switches (MS Series): Set "performance_rating" to "Wire Rate".
+      2. For Meraki Switches: Extract SFP/SFP+ uplink module compatibility if listed.
+      3. For Meraki Switches: Extract power supply part numbers and PoE budgets.
+      4. For Meraki Switches: If it's an MX Security appliance, use the previous logic: Look at "NGFW Throughput" for ngfw_throughput_mbps, etc.
+            `
+                : `
+      1. Extract performance metrics as found in documentation.
             `;
 
         const prompt = `
@@ -48,37 +54,36 @@ export async function POST(req: NextRequest) {
       Your task is to extract technical specifications for ALL equipment models listed in the provided datasheet.
       
       Target Vendor: ${vendorId}
+      ${userSelectedPurposes && userSelectedPurposes.length > 0 ? `The items in this document are categorized for the following purposes: ${userSelectedPurposes.join(", ")}. Please prioritize extracting technical specs.` : ''}
       
       The datasheet may contain multiple models in tables. Please extract each unique model as a separate object.
       Return a JSON array of objects adhering to this schema:
       {
         "items": [
           {
-            "model": "Model Name (e.g. MX85)",
-            "description": "Short description of the device",
-            "purpose": ["SDWAN", "WLAN"] (Array of: ${activePurposes.join(", ")}),
-            "family": "Product Family (e.g. MX, Catalyst 8000)",
+            "model": "Model Name (e.g. C9200-24T)",
+            "description": "Short description",
+            "purpose": ["LAN"],
+            "family": "Product Family (e.g. Catalyst 9200)",
             "specs": {
-              "ngfw_throughput_mbps": Number (NGFW Forwarding),
-              "adv_sec_throughput_mbps": Number (Advanced Security/SD-WAN),
-              "vpn_throughput_mbps": Number (Site-to-Site VPN),
-              "vpn_tunnels": Number (Max VPN Tunnels),
-              "wan_interfaces_desc": String (e.g. "1x GbE RJ45", use types from: ${activeInterfaceTypes.join(", ")}),
-              "lan_interfaces_desc": String (e.g. "4x GbE RJ45", use types from: ${activeInterfaceTypes.join(", ")}),
-              "convertible_interfaces_desc": String (e.g. "1x GbE RJ45", use types from: ${activeInterfaceTypes.join(", ")}),
-              "integrated_cellular": Boolean (True if LTE/SIM slot present),
-              "modular_cellular": Boolean (True if supports Pluggable Interface Modules/PIM),
-              "cellular_type": "${activeCellularTypes.join(", ")}",
-              "integrated_wifi": Boolean (True if Wi-Fi/802.11 present),
-              "wifi_standard": "${activeWifiStandards.join(", ")}",
-              "power_supply_watts": Number (Power supply wattage),
-              "power_load_max_watts": Number (Max power load),
-              "power_load_idle_watts": Number (Idle power load),
-              "recommended_use_case": String (Extract from datasheet or suggest from: ${activeUseCases.join(", ")}),
-              "ports": Number (Total LAN interfaces),
-              "poe_budget": Number (if applicable),
-              "rack_units": Number (e.g. 1, only if 'Rack' mounting is supported),
-              "mounting_options": [${activeMountingOptions.map(m => `"${m}"`).join(", ")}] (Array of supported mounting types)
+              "performance_rating": "Wire Rate",
+              "ports": Number,
+              "poe_budget": Number,
+              "poe_capabilities": String (e.g. "PoE+", "UPOE"),
+              "wan_interfaces_desc": String,
+              "lan_interfaces_desc": String,
+              "rack_units": Number,
+              "stacking_supported": Boolean,
+              "stacking_bandwidth_gbps": Number,
+              "compatible_uplink_modules": [
+                { "part_number": String, "description": String, "ports": Number, "speed": String }
+              ],
+              "compatible_power_supplies": [
+                { "part_number": String, "description": String, "wattage": Number, "poe_budget": Number }
+              ],
+              "compatible_stacking_options": [
+                { "part_number": String, "description": String, "length_cm": Number }
+              ]
             }
           }
         ]
@@ -87,11 +92,6 @@ export async function POST(req: NextRequest) {
       CRITICAL INSTRUCTIONS:
       ${vendorSpecificInstructions}
       6. Return ONLY the JSON object. No markdown.
-      7. For "mounting_options": Check datasheet for "Mounting", "Form Factor", or installation guides. If it fits in a rack, add "Rack". If it's desktop, add "Desktop". If wall mountable, add "Wall".
-      8. Detect Integrated Features: If the device has an integrated LTE/4G/5G modem or SIM slot, set "integrated_cellular": true.
-      9. Detect Modular Cellular: If the device supports "PIM", "Pluggable Interface Module", or has a "NIM" slot for cellular, set "modular_cellular": true.
-      10. If either integrated or modular cellular is present, determine "cellular_type" (${activeCellularTypes.join(", ")}).
-      11. If it has integrated Wi-Fi (802.11), set "integrated_wifi": true and determine "wifi_standard" (${activeWifiStandards.join(", ")}).
     `;
 
         const result = await model.generateContent([
@@ -116,12 +116,13 @@ export async function POST(req: NextRequest) {
             const parsedResponse = JSON.parse(jsonString);
             const items = parsedResponse.items || [parsedResponse]; // Fallback to single object if not in array
 
-            const finalItems = items.map((item: { model: string } & Record<string, unknown>) => {
+            const finalItems = items.map((item: { model: string, purpose?: string[] } & Record<string, unknown>) => {
                 const activeId = `${vendorId}_${item.model.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}`;
                 return {
                     ...item,
                     id: activeId,
                     vendor_id: vendorId,
+                    purpose: (userSelectedPurposes && userSelectedPurposes.length > 0) ? userSelectedPurposes : item.purpose || ["LAN"],
                     active: true,
                     status: "Supported"
                 };

@@ -54,6 +54,31 @@ export const EquipmentSchema = z.object({
     mounting_options: z.array(z.string()).optional(),
     max_clients: z.number().optional(),
     power_connector_type: z.string().optional(),
+    stacking_supported: z.boolean().optional(),
+    stacking_bandwidth_gbps: z.number().optional(),
+    forwarding_rate_mpps: z.number().optional(),
+    switching_capacity_gbps: z.number().optional(),
+    primary_power_supply: z.string().optional(),
+    secondary_power_supply: z.string().optional(),
+    poe_capabilities: z.string().optional(),
+    performance_rating: z.string().optional().describe("Fixed to 'Wire Rate' for modern switches"),
+    compatible_uplink_modules: z.array(z.object({
+      part_number: z.string(),
+      description: z.string().optional(),
+      ports: z.number().optional(),
+      speed: z.string().optional()
+    })).optional(),
+    compatible_power_supplies: z.array(z.object({
+      part_number: z.string(),
+      description: z.string().optional(),
+      wattage: z.number().optional(),
+      poe_budget: z.number().optional()
+    })).optional(),
+    compatible_stacking_options: z.array(z.object({
+      part_number: z.string(),
+      description: z.string().optional(),
+      length_cm: z.number().optional()
+    })).optional(),
   }),
   images: z.array(z.string()).optional(),
   datasheet_url: z.string().optional(),

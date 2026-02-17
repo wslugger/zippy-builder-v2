@@ -131,7 +131,12 @@ export const SEED_EQUIPMENT: Equipment[] = [
             ports: 24,
             poe_budget: 370,
             lan_interfaces_desc: "24x GbE PoE+, 4x 1G SFP Uplinks",
-            recommended_use_case: "Standard Access Layer"
+            recommended_use_case: "Standard Access Layer",
+            stacking_supported: true,
+            stacking_bandwidth_gbps: 80,
+            forwarding_rate_mpps: 41.66,
+            switching_capacity_gbps: 56,
+            poe_capabilities: "PoE+"
         }
     },
     {
@@ -147,7 +152,12 @@ export const SEED_EQUIPMENT: Equipment[] = [
             ports: 48,
             poe_budget: 740,
             lan_interfaces_desc: "48x GbE PoE+, 4x 1G SFP Uplinks",
-            recommended_use_case: "High Density Access Layer"
+            recommended_use_case: "High Density Access Layer",
+            stacking_supported: true,
+            stacking_bandwidth_gbps: 80,
+            forwarding_rate_mpps: 77.38,
+            switching_capacity_gbps: 104,
+            poe_capabilities: "PoE+"
         }
     },
 

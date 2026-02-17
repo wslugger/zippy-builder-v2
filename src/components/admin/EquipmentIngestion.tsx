@@ -2,14 +2,23 @@
 
 import { useState } from "react";
 import FirebaseDebug from "./FirebaseDebug";
-import { VENDOR_IDS, VENDOR_LABELS, Equipment } from "@/src/lib/types";
+import { VENDOR_IDS, VENDOR_LABELS, Equipment, EQUIPMENT_PURPOSES } from "@/src/lib/types";
 
 export default function EquipmentIngestion() {
     const [file, setFile] = useState<File | null>(null);
     const [vendorId, setVendorId] = useState<string>(VENDOR_IDS[0]);
+    const [selectedPurposes, setSelectedPurposes] = useState<string[]>(["LAN"]);
     const [isLoading, setIsLoading] = useState(false);
     const [previewData, setPreviewData] = useState<Equipment[] | null>(null);
     const [statusMessage, setStatusMessage] = useState<string>("");
+
+    const handlePurposeChange = (purpose: string) => {
+        if (selectedPurposes.includes(purpose)) {
+            setSelectedPurposes(selectedPurposes.filter(p => p !== purpose));
+        } else {
+            setSelectedPurposes([...selectedPurposes, purpose]);
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -27,6 +36,7 @@ export default function EquipmentIngestion() {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("vendorId", vendorId);
+        formData.append("purposes", JSON.stringify(selectedPurposes));
 
         try {
             const res = await fetch("/api/ingest", {
@@ -113,31 +123,50 @@ export default function EquipmentIngestion() {
         <div className="p-6 bg-white dark:bg-zinc-900 rounded-lg shadow-md max-w-4xl mx-auto mt-10">
             <h2 className="text-2xl font-bold mb-6 text-zinc-900 dark:text-zinc-100">Equipment Ingestion</h2>
 
-            {/* Upload Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div>
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Vendor</label>
-                    <select
-                        value={vendorId}
-                        onChange={(e) => setVendorId(e.target.value)}
-                        className="w-full p-2 border border-zinc-300 rounded-md dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
-                    >
-                        {VENDOR_IDS.map((v) => (
-                            <option key={v} value={v}>
-                                {VENDOR_LABELS[v]}
-                            </option>
-                        ))}
-                    </select>
+            {/* Ingestion Setup */}
+            <div className="space-y-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Vendor</label>
+                        <select
+                            value={vendorId}
+                            onChange={(e) => setVendorId(e.target.value)}
+                            className="w-full p-2 border border-zinc-300 rounded-md dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                        >
+                            {VENDOR_IDS.map((v) => (
+                                <option key={v} value={v}>
+                                    {VENDOR_LABELS[v]}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Datasheet PDF</label>
+                        <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={handleFileChange}
+                            className="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                    </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Datasheet PDF</label>
-                    <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={handleFileChange}
-                        className="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Assign Purpose to all extracted items</label>
+                    <div className="flex flex-wrap gap-4">
+                        {EQUIPMENT_PURPOSES.map((p: string) => (
+                            <label key={p} className="flex items-center gap-2 cursor-pointer bg-zinc-50 dark:bg-zinc-800 px-4 py-2 rounded-md border border-zinc-200 dark:border-zinc-700 hover:border-blue-500 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedPurposes.includes(p)}
+                                    onChange={() => handlePurposeChange(p)}
+                                    className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{p}</span>
+                            </label>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -234,6 +263,11 @@ export default function EquipmentIngestion() {
                                     {item.specs.vpn_tunnels && (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                                             {item.specs.vpn_tunnels} VPN Tunnels
+                                        </span>
+                                    )}
+                                    {item.specs.stacking_supported && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                            Stackable
                                         </span>
                                     )}
                                 </div>
