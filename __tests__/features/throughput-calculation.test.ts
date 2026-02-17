@@ -69,14 +69,17 @@ describe("BOM Engine - Throughput Calculation", () => {
         }
     };
 
-    it("should select MX105 (Gigabit) instead of MX85 (High) when overhead pushes demand over 1000Mbps", () => {
-        // Without overhead: 950Mbps -> MX85 (High Bandwidth Rule: 500-1000)
-        // With overhead: 950 + 100 = 1050Mbps -> MX105 (Gigabit Rule: 1000-2000)
+    it("should select MX105 (Gigabit) instead of MX85 (High) when overhead pushes demand over 1000Mbps Aggregate", () => {
+        // Site: 450 Down / 450 Up = 900 Aggregate (Simplex 450)
+        // With overhead 200: 900 + 200 = 1100 Mbps -> MX105 (Rule: 1000-2000)
+
+        const site: Site = { ...mockSiteHighBW, bandwidthDownMbps: 450, bandwidthUpMbps: 450 };
+        const pkg: Package = { ...mockPackageWithOverhead, throughput_overhead_mbps: 200 };
 
         const bom: BOM = engine.generateBOM(
             "test-project",
-            [mockSiteHighBW],
-            mockPackageWithOverhead,
+            [site],
+            pkg,
             [mockServiceSDWAN],
             [mockSiteType]
         );
@@ -84,22 +87,20 @@ describe("BOM Engine - Throughput Calculation", () => {
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
 
         expect(sdwanItem).toBeDefined();
-        // Expect MX105 because 1050Mbps > 1000Mbps (MX85 limit)
         expect(sdwanItem?.itemId).toBe("meraki_mx105");
-        expect(sdwanItem?.itemName).toContain("MX105");
     });
 
-    it("should select MX85 if overhead is 0 (Control logic check)", () => {
-        const mockPackageNoOverhead: Package = {
-            ...mockPackageWithOverhead,
-            id: "cost_centric",
-            throughput_overhead_mbps: 0
-        };
+    it("should select MX85 if aggregate load is under 1000Mbps", () => {
+        // Site: 450 Down / 450 Up = 900 Aggregate
+        // Overhead 0: 900 Mbps -> MX85 (Rule: 500-1000)
+
+        const site: Site = { ...mockSiteHighBW, bandwidthDownMbps: 450, bandwidthUpMbps: 450 };
+        const pkg: Package = { ...mockPackageWithOverhead, throughput_overhead_mbps: 0 };
 
         const bom: BOM = engine.generateBOM(
             "test-project",
-            [mockSiteHighBW],
-            mockPackageNoOverhead,
+            [site],
+            pkg,
             [mockServiceSDWAN],
             [mockSiteType]
         );
@@ -107,7 +108,6 @@ describe("BOM Engine - Throughput Calculation", () => {
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
 
         expect(sdwanItem).toBeDefined();
-        // Expect MX85 because 950Mbps < 1000Mbps
         expect(sdwanItem?.itemId).toBe("meraki_mx85");
     });
 });

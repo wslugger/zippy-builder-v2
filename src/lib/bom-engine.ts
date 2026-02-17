@@ -105,9 +105,10 @@ export class BOMEngine {
                     }
                 }
 
-                const requiredThroughput = (site.bandwidthDownMbps || 0) + throughputOverhead;
+                // Aggregate model: sum of Down + Up circuit bandwidth
+                const requiredThroughput = (site.bandwidthDownMbps || 0) + (site.bandwidthUpMbps || 0) + throughputOverhead;
 
-                // Create a proxy site object for rule evaluation that effectively has the "required" bandwidth
+                // Create a proxy site object for rule evaluation that effectively has the "required" aggregate bandwidth
                 const ruleEvaluationSite = {
                     ...site,
                     bandwidthDownMbps: requiredThroughput
@@ -322,13 +323,14 @@ export class BOMEngine {
     /**
      * Calculates the throughput utilization percentage for a given site and equipment.
      */
-    public calculateUtilization(site: Site, equipment: Equipment): number {
-        if (!equipment.specs.ngfw_throughput_mbps) return 0;
+    public calculateUtilization(site: Site, equipment: Equipment, basis?: string, overhead: number = 0): number {
+        const throughputField = (basis || "ngfw_throughput_mbps") as keyof Equipment["specs"];
+        const capacity = (equipment.specs[throughputField] as number) || 0;
 
-        // Assume bi-directional traffic max is the bottleneck
-        // Simple model: Compare site bandwidth (down) to equipment throughput
-        const siteLoad = Math.max(site.bandwidthDownMbps, site.bandwidthUpMbps);
-        const capacity = equipment.specs.ngfw_throughput_mbps;
+        if (!capacity) return 0;
+
+        // Aggregate model: sum of Ingress + Egress traffic (Down + Up) plus overhead
+        const siteLoad = (site.bandwidthDownMbps || 0) + (site.bandwidthUpMbps || 0) + overhead;
 
         // Return percentage
         return Math.round((siteLoad / capacity) * 100);

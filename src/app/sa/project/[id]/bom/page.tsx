@@ -75,7 +75,7 @@ function BOMBuilderContent() {
         });
 
         return Object.entries(buckets)
-            .filter(([key, data]) => data.services.length > 0)
+            .filter(([, data]) => data.services.length > 0)
             .map(([key, data]) => ({
                 id: key,
                 label: data.label,
@@ -182,9 +182,24 @@ function BOMBuilderContent() {
     const currentSDWANItem = siteBOMItems.find(i => i.serviceId === "managed_sdwan" && i.itemType === "equipment");
     const currentSDWANEquipment = catalog.find(e => e.id === currentSDWANItem?.itemId);
 
+    // Calculate overhead for the utilization bar
+    const sdwanPackageItem = pkg?.items.find(i => i.service_id === "managed_sdwan");
+    let sdwanOverhead = (pkg?.throughput_overhead_mbps || 0);
+    if (sdwanPackageItem?.design_option_id && services.length > 0) {
+        const service = services.find(s => s.id === "managed_sdwan");
+        const designOption = service?.service_options
+            .flatMap(so => so.design_options)
+            .find(d => d.id === sdwanPackageItem.design_option_id);
+        if (designOption?.throughput_overhead_mbps) {
+            sdwanOverhead += designOption.throughput_overhead_mbps;
+        }
+    }
+
     const utilization = selectedSite && currentSDWANEquipment
-        ? engine.calculateUtilization(selectedSite, currentSDWANEquipment)
+        ? engine.calculateUtilization(selectedSite, currentSDWANEquipment, pkg?.throughput_basis, sdwanOverhead)
         : 0;
+
+    const totalLoad = selectedSite ? (selectedSite.bandwidthDownMbps || 0) + (selectedSite.bandwidthUpMbps || 0) + sdwanOverhead : 0;
 
     const poeWarnings = selectedSite ? engine.validatePOE(selectedSite, siteBOMItems) : [];
 
@@ -462,8 +477,8 @@ function BOMBuilderContent() {
                                                             ></div>
                                                         </div>
                                                         <div className="flex justify-between text-xs mt-1 text-slate-400">
-                                                            <span>Total Load: {Math.max(selectedSite.bandwidthDownMbps, selectedSite.bandwidthUpMbps)} Mbps</span>
-                                                            <span>Capacity: {currentSDWANEquipment.specs.ngfw_throughput_mbps} Mbps</span>
+                                                            <span>Total Load: {totalLoad} Mbps (Aggregate)</span>
+                                                            <span>Capacity: {currentSDWANEquipment.specs[(pkg?.throughput_basis || "ngfw_throughput_mbps") as keyof typeof currentSDWANEquipment.specs] || 0} Mbps ({(pkg?.throughput_basis || "ngfw_throughput_mbps").replace(/_/g, ' ').toUpperCase()})</span>
                                                         </div>
                                                     </div>
                                                 </div>

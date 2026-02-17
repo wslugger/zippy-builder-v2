@@ -65,8 +65,8 @@ describe("BOM Engine Logic", () => {
     it("should select Meraki MX67 for small bandwidth site", () => {
         const site: Site = {
             name: "Small Site",
-            bandwidthDownMbps: 100, // < 200
-            bandwidthUpMbps: 100,
+            bandwidthDownMbps: 50, // Aggregate 100 < 200
+            bandwidthUpMbps: 50,
             userCount: 10,
             siteTypeId: "small_office",
             address: "Test",
@@ -89,8 +89,8 @@ describe("BOM Engine Logic", () => {
     it("should select Meraki MX68 for medium bandwidth site", () => {
         const site: Site = {
             name: "Medium Site",
-            bandwidthDownMbps: 300, // 200-500
-            bandwidthUpMbps: 300,
+            bandwidthDownMbps: 150, // Aggregate 300 (200-500)
+            bandwidthUpMbps: 150,
             userCount: 50,
             siteTypeId: "small_office",
             address: "Test",
@@ -113,8 +113,8 @@ describe("BOM Engine Logic", () => {
     it("should select Meraki MX85 for large bandwidth site", () => {
         const site: Site = {
             name: "Large Site",
-            bandwidthDownMbps: 1000, // > 500
-            bandwidthUpMbps: 1000,
+            bandwidthDownMbps: 600, // Aggregate 1200 (1000-2000)
+            bandwidthUpMbps: 600,
             userCount: 50,
             siteTypeId: "small_office",
             address: "Test",
