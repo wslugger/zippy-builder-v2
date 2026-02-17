@@ -478,7 +478,7 @@ function BOMBuilderContent() {
                                                         </div>
                                                         <div className="flex justify-between text-xs mt-1 text-slate-400">
                                                             <span>Total Load: {totalLoad} Mbps (Aggregate)</span>
-                                                            <span>Capacity: {currentSDWANEquipment.specs[(pkg?.throughput_basis || "ngfw_throughput_mbps") as keyof typeof currentSDWANEquipment.specs] || 0} Mbps ({(pkg?.throughput_basis || "ngfw_throughput_mbps").replace(/_/g, ' ').toUpperCase()})</span>
+                                                            <span>Capacity: {currentSDWANEquipment.specs[(pkg?.throughput_basis || "vpn_throughput_mbps") as keyof typeof currentSDWANEquipment.specs] || 0} Mbps ({(pkg?.throughput_basis || "vpn_throughput_mbps").replace(/_/g, ' ').toUpperCase()})</span>
                                                         </div>
                                                     </div>
                                                 </div>

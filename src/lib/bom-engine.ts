@@ -230,6 +230,9 @@ export class BOMEngine {
                         quantity = 2;
                     }
 
+                    const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
+                    const deviceThroughput = bestFit.specs[throughputField] || bestFit.specs.vpn_throughput_mbps || 0;
+
                     bomItems.push({
                         id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
                         siteName: site.name,
@@ -239,7 +242,7 @@ export class BOMEngine {
                         itemName: `${VENDOR_LABELS[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,
                         itemType: "equipment",
                         quantity: quantity,
-                        reasoning: `${matchType}: Vendor=${vendorId}, Throughput=${bestFit.specs.vpn_throughput_mbps || 'N/A'}, Redundancy=${quantity > 1 ? 'Dual' : 'Single'}`
+                        reasoning: `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps, Redundancy=${quantity > 1 ? 'Dual' : 'Single'}`
                     });
                 }
             }
@@ -324,7 +327,7 @@ export class BOMEngine {
      * Calculates the throughput utilization percentage for a given site and equipment.
      */
     public calculateUtilization(site: Site, equipment: Equipment, basis?: string, overhead: number = 0): number {
-        const throughputField = (basis || "ngfw_throughput_mbps") as keyof Equipment["specs"];
+        const throughputField = (basis || "vpn_throughput_mbps") as keyof Equipment["specs"];
         const capacity = (equipment.specs[throughputField] as number) || 0;
 
         if (!capacity) return 0;

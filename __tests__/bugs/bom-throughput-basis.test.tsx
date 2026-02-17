@@ -1,0 +1,104 @@
+import { BOMEngine } from "@/src/lib/bom-engine";
+import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
+import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
+import { Site, BOM } from "@/src/lib/bom-types";
+import { Package, Service } from "@/src/lib/types";
+import { SiteType } from "@/src/lib/site-types";
+
+describe("Bug Reproduction: BOM Throughput Basis", () => {
+    let engine: BOMEngine;
+
+    beforeEach(() => {
+        engine = new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT);
+    });
+
+    const mockServiceSDWAN: Service = {
+        id: "managed_sdwan",
+        name: "Managed SD-WAN",
+        short_description: "SD-WAN",
+        detailed_description: "",
+        caveats: [],
+        assumptions: [],
+        service_options: [],
+        active: true,
+        metadata: { category: "wan" }
+    };
+
+    const mockSite: Site = {
+        name: "Test Site",
+        address: "123 Test St",
+        userCount: 10,
+        bandwidthDownMbps: 100,
+        bandwidthUpMbps: 100,
+        redundancyModel: "Single CPE",
+        wanLinks: 1,
+        lanPorts: 0,
+        poePorts: 0,
+        indoorAPs: 0,
+        outdoorAPs: 0,
+        primaryCircuit: "Broadband",
+        notes: ""
+    };
+
+    const mockSiteType: SiteType = {
+        id: "generic",
+        name: "Generic Branch",
+        category: "SD-WAN",
+        description: "Generic",
+        constraints: [],
+        defaults: {
+            redundancy: { cpe: "Single", circuit: "Single" },
+            slo: 99.9,
+            requiredServices: ["managed_sdwan"]
+        }
+    };
+
+    it("should use the throughput basis from the package if provided in fallback logic", () => {
+        const pkg: Package = {
+            id: "dynamic_package", // Changed from cost_centric to avoid rule match
+            name: "Dynamic Package",
+            short_description: "Desc",
+            detailed_description: "Detailed",
+            active: true,
+            throughput_basis: "ngfw_throughput_mbps",
+            items: [
+                {
+                    service_id: "managed_sdwan",
+                    inclusion_type: "required",
+                    enabled_features: []
+                }
+            ]
+        };
+
+        // MX67 specs: VPN=450, NGFW=250
+        // Aggregate Load: 100 + 100 = 200 Mbps
+
+        // If it uses VPN basis, it should definitely pick MX67 (200 < 450)
+        // If it uses NGFW basis, it should still pick MX67 (200 < 250)
+
+        // Let's force a scenario where it differs.
+        // MX67: VPN=450, NGFW=250
+        // Let's set load to 300 Mbps.
+        // VPN basis (450) -> MX67 is fine.
+        // NGFW basis (250) -> MX67 is NOT enough, should pick MX68 (NGFW=450)
+
+        const highLoadSite: Site = { ...mockSite, bandwidthDownMbps: 150, bandwidthUpMbps: 150 }; // 300 Mbps aggregate
+
+        // Test with VPN basis
+        const pkgVPN: Package = { ...pkg, throughput_basis: "vpn_throughput_mbps" };
+        const bomVPN = engine.generateBOM("proj", [highLoadSite], pkgVPN, [mockServiceSDWAN], [mockSiteType]);
+        const itemVPN = bomVPN.items.find(i => i.serviceId === "managed_sdwan");
+
+        // Test with NGFW basis
+        const pkgNGFW: Package = { ...pkg, throughput_basis: "ngfw_throughput_mbps" };
+        const bomNGFW = engine.generateBOM("proj", [highLoadSite], pkgNGFW, [mockServiceSDWAN], [mockSiteType]);
+        const itemNGFW = bomNGFW.items.find(i => i.serviceId === "managed_sdwan");
+
+        // These should differ if the basis is respected
+        console.log(`VPN Basis Item: ${itemVPN?.itemId}`);
+        console.log(`NGFW Basis Item: ${itemNGFW?.itemId}`);
+
+        expect(itemVPN?.reasoning).toContain("VPN THROUGHPUT MBPS=500 Mbps");
+        expect(itemNGFW?.reasoning).toContain("NGFW THROUGHPUT MBPS=450 Mbps");
+    });
+});
