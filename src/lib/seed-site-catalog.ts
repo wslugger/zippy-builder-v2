@@ -69,7 +69,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
     // --- 3. Standard Branch Tiers ---
     {
         id: "large_office",
-        name: "Large Office (200+ Users)",
+        name: "Gold (Large Office)",
         category: "SD-WAN",
         description: "Significant branch operations. Major Branch role.",
         constraints: [
@@ -84,7 +84,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
     },
     {
         id: "medium_office",
-        name: "Medium Office (50-200 Users)",
+        name: "Silver (Medium Office)",
         category: "SD-WAN",
         description: "Typical branch office.",
         constraints: [
@@ -98,7 +98,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
     },
     {
         id: "small_office",
-        name: "Small Office / Retail (<50 Users)",
+        name: "Bronze (Small Office / Retail)",
         category: "SD-WAN",
         description: "Lean operations, kiosks, or small shops. Small Branch role.",
         constraints: [

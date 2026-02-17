@@ -31,10 +31,12 @@ export class BOMEngine {
         const bomItems: BOMLineItem[] = [];
 
         for (const site of sites) {
+            console.log(`[BOMEngine] Processing site: ${site.name}`, { siteTypeId: site.siteTypeId });
             let siteDef = siteTypes.find(t => t.id === site.siteTypeId);
 
             // Fallback to a generic site definition if not found or not provided
             if (!siteDef) {
+                console.warn(`[BOMEngine] Site definition not found for ID: ${site.siteTypeId}. Using generic.`);
                 siteDef = {
                     id: "generic",
                     name: "Generic Branch",
@@ -65,14 +67,11 @@ export class BOMEngine {
                     const equip = this.equipmentCatalog.find(e => e.id === manualOverrideId);
                     if (equip) {
                         let quantity = 1;
-                        // Still respect redundancy for quantity if applicable, or just default to 1?
-                        // Let's assume manual selection implies the *device model*, but quantity might still be derived
-                        // from redundancy rules OR we just stick to 1 unless it's a dual CPE site.
-                        // For simplicity/consistency with auto-logic:
                         if (canonicalServiceId === "managed_sdwan") {
                             quantity = this.calculateCPEQuantity(site, siteDef);
                         }
 
+                        console.log(`[BOMEngine] Manual override found: ${equip.model}`);
                         bomItems.push({
                             id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
                             siteName: site.name,
@@ -89,12 +88,8 @@ export class BOMEngine {
                 }
 
                 // --- 0.5 CALCULATE THROUGHPUT REQUIREMENT ---
-                // Calculate overhead from Package and Design Options
                 let throughputOverhead = selectedPackage.throughput_overhead_mbps || 0;
-
-                // Add overhead from selected design options for this service
                 if (pkgItem.design_option_id) {
-                    // Find the DesignOption object in the Service
                     const designOption = service.service_options
                         .flatMap(so => so.design_options)
                         .find(d => d.id === pkgItem.design_option_id);
@@ -104,10 +99,8 @@ export class BOMEngine {
                     }
                 }
 
-                // Aggregate model: sum of Down + Up circuit bandwidth
-                const requiredThroughput = (site.bandwidthDownMbps || 0) + (site.bandwidthUpMbps || 0) + throughputOverhead;
+                const requiredThroughput = (Number(site.bandwidthDownMbps) || 0) + (Number(site.bandwidthUpMbps) || 0) + throughputOverhead;
 
-                // Create a proxy site object for rule evaluation that effectively has the "required" aggregate bandwidth
                 const ruleEvaluationSite = {
                     ...site,
                     bandwidthDownMbps: requiredThroughput
@@ -115,6 +108,7 @@ export class BOMEngine {
 
                 // --- 1. TRY RULES ENGINE FIRST ---
                 const matchingRules = this.findMatchingRules(ruleEvaluationSite, selectedPackage.id, canonicalServiceId);
+
                 const equipmentAction = matchingRules
                     .flatMap(r => r.actions)
                     .find(a => a.type === "select_equipment");
@@ -123,8 +117,6 @@ export class BOMEngine {
                     const equip = this.equipmentCatalog.find(e => e.id === equipmentAction.targetId);
                     if (equip) {
                         let finalQuantity = equipmentAction.quantity || 1;
-
-                        // Override quantity if site specifies Dual CPE and it's an edge device
                         if (canonicalServiceId === "managed_sdwan") {
                             finalQuantity = this.calculateCPEQuantity(site, siteDef);
                         }
@@ -136,6 +128,7 @@ export class BOMEngine {
                             }
                         }
 
+                        console.log(`[BOMEngine] Rule selected equip: ${equip.model}, qty: ${finalQuantity}`);
                         bomItems.push({
                             id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
                             siteName: site.name,
@@ -148,19 +141,17 @@ export class BOMEngine {
                             reasoning: `Rule Match: ${matchingRules[0].name}${finalQuantity === 2 ? ' (Redundant)' : ''}`
                         });
                         continue; // Skip fallback
+                    } else {
+                        console.warn(`[BOMEngine] Rule target equipment not found in catalog: ${equipmentAction.targetId}`);
                     }
                 }
 
                 // --- 2. FALLBACK TO DIRECT MATCHING ---
-                // A. Determine Target Vendor for this Service/Package
                 const vendorId = this.resolveVendorForService(selectedPackage, service.id);
 
-                // B. Filter Equipment Candidates
                 const candidates = this.equipmentCatalog.filter(e => {
-                    // 1. Matches Vendor
                     if (e.vendor_id !== vendorId) return false;
 
-                    // 2. Matches Purpose (Category)
                     const purposeMapping: Record<string, string> = {
                         "managed_sdwan": "SDWAN",
                         "managed_lan": "LAN",
@@ -169,15 +160,11 @@ export class BOMEngine {
                     const requiredPurpose = purposeMapping[canonicalServiceId];
                     if (requiredPurpose && !e.purpose.includes(requiredPurpose as (typeof EQUIPMENT_PURPOSES)[number])) return false;
 
-                    // 3. Matches Constraints (Rugged, Virtual, etc.)
                     if (!this.matchesConstraints(e, siteDef.constraints)) return false;
 
-                    // 4. Matches Basic Performance (Throughput)
                     if (requiredPurpose === "SDWAN") {
-                        // Use calculated requiredThroughput including overhead
                         const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
                         const deviceThroughput = e.specs[throughputField] ?? e.specs.vpn_throughput_mbps ?? 0;
-
                         if (deviceThroughput < requiredThroughput) return false;
                     }
 
@@ -189,7 +176,6 @@ export class BOMEngine {
                     return true;
                 });
 
-                // C. Select Best Fit
                 let bestFit = candidates.sort((a, b) => {
                     const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
                     const valA = (a.specs[throughputField] ?? a.specs.vpn_throughput_mbps ?? 0) || a.specs.ports || 0;
@@ -199,8 +185,8 @@ export class BOMEngine {
 
                 let matchType = "Dynamic match";
 
-                // D. Fallback: If no candidate meets requirements, pick the highest performing device of that vendor/purpose
                 if (!bestFit) {
+                    // Last-resort fallback: Pick the LARGEST available device if everything is too small
                     const allPurposeCandidates = this.equipmentCatalog.filter(e => {
                         if (e.vendor_id !== vendorId) return false;
                         const purposeMapping: Record<string, string> = {
@@ -216,11 +202,11 @@ export class BOMEngine {
                         const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
                         const valA = (a.specs[throughputField] ?? a.specs.vpn_throughput_mbps ?? 0) || a.specs.ports || 0;
                         const valB = (b.specs[throughputField] ?? b.specs.vpn_throughput_mbps ?? 0) || b.specs.ports || 0;
-                        return valB - valA; // HIGHEST first for fallback
+                        return valB - valA; // High performance first for fallback
                     })[0];
 
                     if (bestFit) {
-                        matchType = "Fallback (Best available)";
+                        matchType = "Fallback (Best available effort)";
                     }
                 }
 
@@ -242,7 +228,7 @@ export class BOMEngine {
                         itemName: `${VENDOR_LABELS[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,
                         itemType: "equipment",
                         quantity: quantity,
-                        reasoning: `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps, Redundancy=${quantity > 1 ? 'Dual' : 'Single'}`
+                        reasoning: `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`
                     });
                 }
             }
@@ -261,15 +247,23 @@ export class BOMEngine {
 
     private calculateCPEQuantity(site: Site, siteDef: SiteType): number {
         const siteModel = (site.redundancyModel || "").toLowerCase();
+        const profileRedundancy = (siteDef.defaults.redundancy?.cpe || "").toLowerCase();
 
-        // 1. Explicit Site-level override: Dual
-        if (siteModel.includes("dual")) return 2;
+        // 1. If SiteType is NOT generic, it should be the primary source of truth for standardization
+        // unless the site model explicitly says else. But for SA choice, SiteDef usually wins.
+        if (siteDef.id !== "generic" && profileRedundancy) {
+            if (profileRedundancy.includes("dual") || profileRedundancy.includes("ha") || profileRedundancy.includes("redundant") || profileRedundancy.includes("active")) return 2;
+            if (profileRedundancy.includes("single")) return 1;
+        }
 
-        // 2. Explicit Site-level override: Single
+        // 2. Explicit Site-level override (e.g. from CSV)
+        if (siteModel.includes("dual") || siteModel.includes("ha") || siteModel.includes("redundant") || siteModel.includes("active")) return 2;
         if (siteModel.includes("single")) return 1;
 
-        // 3. Default to Site Type profile
-        return siteDef.defaults.redundancy.cpe === "Dual" ? 2 : 1;
+        // 3. Last fallback: Check if profile has anything at all
+        if (profileRedundancy.includes("dual") || profileRedundancy.includes("ha") || profileRedundancy.includes("redundant")) return 2;
+
+        return 1; // Default to single
     }
 
     private resolveVendorForService(pkg: Package, serviceId: string): string {

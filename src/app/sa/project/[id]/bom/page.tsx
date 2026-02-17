@@ -140,7 +140,16 @@ function BOMBuilderContent() {
             setServices(s);
 
             const st = await SiteDefinitionService.getAllSiteDefinitions();
-            setSiteTypes(st);
+            console.log('Loaded site types from Firestore:', st.length, st.map(t => ({ id: t.id, name: t.name, redundancy: t.defaults?.redundancy })));
+
+            // Fallback to seed data if Firestore is empty
+            if (st.length === 0) {
+                console.warn('No site definitions in Firestore! Using seed data as fallback.');
+                const { ALL_SITE_TYPES } = await import('@/src/lib/seed-site-catalog');
+                setSiteTypes(ALL_SITE_TYPES);
+            } else {
+                setSiteTypes(st);
+            }
 
             const eq = await EquipmentService.getAllEquipment();
             if (eq.length > 0) setCatalog(eq);
@@ -348,9 +357,18 @@ function BOMBuilderContent() {
                                     <div className="font-medium text-slate-900 truncate">{site.name}</div>
                                     <div className="text-xs text-slate-500 truncate">{site.address}</div>
                                     <div className="mt-1 flex items-center space-x-2">
-                                        <span className="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                                            {site.siteTypeId ? siteTypes.find(t => t.id === site.siteTypeId)?.name : "Generic Branch"}
+                                        <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                            {site.siteTypeId ? (siteTypes.find(t => t.id === site.siteTypeId)?.name || site.siteTypeId) : "Generic Branch"}
                                         </span>
+                                        {(() => {
+                                            const siteBOM = bom?.items.filter(i => i.siteName === site.name && i.serviceId === "managed_sdwan" && i.itemType === "equipment");
+                                            const qty = siteBOM?.[0]?.quantity || 1;
+                                            return qty > 1 ? (
+                                                <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                                    {qty} x CPE
+                                                </span>
+                                            ) : null;
+                                        })()}
                                     </div>
                                 </div>
                                 {/* Status Indicator */}
@@ -458,6 +476,38 @@ function BOMBuilderContent() {
                                             <p className="mt-2 text-xs text-slate-500 italic">
                                                 {siteTypes.find(t => t.id === selectedSite.siteTypeId)?.description || "Standard branch deployment based on user count."}
                                             </p>
+                                            {(() => {
+                                                const siteDef = siteTypes.find(t => t.id === selectedSite.siteTypeId);
+                                                if (!siteDef) return null;
+
+                                                // Debug logging
+                                                console.log('Site Definition for badges:', {
+                                                    id: siteDef.id,
+                                                    name: siteDef.name,
+                                                    redundancy: siteDef.defaults?.redundancy
+                                                });
+
+                                                return (
+                                                    <div className="mt-3 flex space-x-4">
+                                                        <div className="flex items-center text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                                            <span className="mr-1.5">🛡️</span> {(() => {
+                                                                const cpe = (siteDef.defaults?.redundancy?.cpe || "").toLowerCase();
+                                                                const isDual = cpe.includes("dual") || cpe.includes("ha") || cpe.includes("active") || cpe.includes("redundant");
+                                                                console.log('CPE check:', { cpe, isDual });
+                                                                return isDual ? "2 x CPE (High Availability)" : "1 x CPE (Standard)";
+                                                            })()}
+                                                        </div>
+                                                        <div className="flex items-center text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                                                            <span className="mr-1.5">🧬</span> {(() => {
+                                                                const circuit = (siteDef.defaults?.redundancy?.circuit || "").toLowerCase();
+                                                                const isDual = circuit.includes("dual") || circuit.includes("diverse") || circuit.includes("hybrid") || circuit.includes("multi");
+                                                                console.log('Circuit check:', { circuit, isDual });
+                                                                return isDual ? "Dual Circuit (Diverse)" : "Single Circuit";
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
 
@@ -501,7 +551,10 @@ function BOMBuilderContent() {
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex justify-between">
-                                                        <h4 className="text-lg font-bold text-slate-900">{currentSDWANEquipment.model}</h4>
+                                                        <h4 className="text-lg font-bold text-slate-900">
+                                                            {currentSDWANItem?.quantity && currentSDWANItem.quantity > 1 ? `${currentSDWANItem.quantity} x ` : ''}
+                                                            {currentSDWANEquipment.model}
+                                                        </h4>
                                                         <button
                                                             onClick={() => setSelectedSpecsItem(currentSDWANEquipment)}
                                                             className="text-sm text-blue-600 hover:underline"

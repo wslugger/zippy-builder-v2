@@ -29,3 +29,23 @@
 - **Decision**: Firebase is retained for **Backend-as-a-Service** (Firestore, Auth), while Vercel handles the **Frontend & Compute** (Next.js Application).
 - **Benefit**: Zero-config support for Server Actions, better build performance, and native Next.js integration.
 - **Migration**: Removed `hosting` config from `firebase.json` and added `vercel.json` / Vercel dashboard configuration.
+
+## 6. Site Classification Precedence
+**Issue**: The BOM engine initially prioritized "dirty" CSV import data (e.g., generic "Single CPE" redundancy) over explicitly selected Site Profiles (e.g., "Platinum" which mandates "Dual CPE"). This led to incorrect hardware suggestions that ignored organizational standards.
+**Solution**: Inverted the precedence logic in `BOMEngine`.
+- **Key Insight**: When a user selects a standardized profile (Site Type), that standard must be the single source of truth unless an explicit, intentional override is detected. Implicit or imported defaults should never downgrade a chosen standard.
+
+## 7. Robust Catalog String Matching
+**Issue**: Relying on exact string matches for catalog values (e.g., `redundancy === "Dual"`) caused failures when catalog descriptions evolved to be more user-friendly (e.g., "Dual CPE (HA)").
+**Solution**: Implemented flexible, case-insensitive partial matching (e.g., `.includes("dual")`, `.includes("ha")`).
+- **Lesson**: Internal logic should never be tightly coupled to cosmetic, human-readable strings. Tokenization or robust keyword matching is essential for long-term maintainability.
+
+## 8. Resource Contention Fallbacks
+**Issue**: Sites with extreme requirements (e.g., 20Gbps throughput) received *no suggestions* because no single device met the criteria, leading to a confusing "empty" state.
+**Solution**: Implemented a "Best Effort" fallback strategy.
+- **Key Insight**: It is better to suggest the highest-capacity available option with a clear warning ("Load exceeds capacity") than to fail silently. This empowers the user to make an informed decision (e.g., cluster multiple devices) rather than blocking their workflow.
+
+## 9. Catalog Integrity & hardcoded Rules 
+**Issue**: Hardcoded logic rules referenced database IDs (`meraki_c8455_g2_mx`) that did not exist in the active environment, causing silent failures.
+**Solution**: Added defensive coding to gracefully handle missing catalog references and improved seed scripts to ensure critical high-end devices are always present.
+- **Lesson**: Any code that references database content by ID must assume that content might be missing.

@@ -1,0 +1,41 @@
+  console.log
+    [BOMEngine] Processing site: Dual Default Site { siteTypeId: 'large_office' }
+
+      at BOMEngine.generateBOM (src/lib/bom-engine.ts:32:21)
+
+  console.log
+    [BOMEngine] Rule selected equip: MX68, qty: 2
+
+      at BOMEngine.generateBOM (src/lib/bom-engine.ts:117:33)
+
+  console.log
+    [BOMEngine] Processing site: Override Dual with Single { siteTypeId: 'large_office' }
+
+      at BOMEngine.generateBOM (src/lib/bom-engine.ts:32:21)
+
+  console.log
+    [BOMEngine] Rule selected equip: MX68, qty: 2
+
+      at BOMEngine.generateBOM (src/lib/bom-engine.ts:117:33)
+
+  console.log
+    [BOMEngine] Processing site: Override Single with Dual { siteTypeId: 'small_office' }
+
+      at BOMEngine.generateBOM (src/lib/bom-engine.ts:32:21)
+
+  console.log
+    [BOMEngine] Rule selected equip: MX68, qty: 1
+
+      at BOMEngine.generateBOM (src/lib/bom-engine.ts:117:33)
+
+PASS __tests__/features/bom-site-type-redundancy.test.tsx
+  BOM Site Type Redundancy Logic
+    ✓ should respect Site Type default redundancy (Dual) when site redundancy is undefined (14 ms)
+    ✓ should prioritize Site Type default redundancy (Dual) over Site redundancy override (Single) (3 ms)
+    ✓ should prioritize Site Type default redundancy (Single) over Site redundancy override (Dual) (2 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       3 passed, 3 total
+Snapshots:   0 total
+Time:        0.471 s, estimated 1 s
+Ran all test suites matching __tests__/features/bom-site-type-redundancy.test.tsx.

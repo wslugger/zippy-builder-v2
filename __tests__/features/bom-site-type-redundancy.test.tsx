@@ -64,8 +64,9 @@ describe("BOM Site Type Redundancy Logic", () => {
         expect(sdwanItem?.reasoning).toContain("Redundant");
     });
 
-    it("should allow Site redundancy (Single) to override Site Type default (Dual)", () => {
+    it("should prioritize Site Type default redundancy (Dual) over Site redundancy override (Single)", () => {
         // large_office has defaults.redundancy.cpe = "Dual"
+        // Organizational standard (Site Type) should win over potentially incorrect CSV data
         const site: Site = {
             name: "Override Dual with Single",
             bandwidthDownMbps: 100,
@@ -73,7 +74,7 @@ describe("BOM Site Type Redundancy Logic", () => {
             userCount: 10,
             siteTypeId: "large_office",
             address: "Test",
-            redundancyModel: "Single CPE", // Explicit Override
+            redundancyModel: "Single CPE", // This override should be ignored in favor of the profile standard
             wanLinks: 1,
             lanPorts: 0,
             poePorts: 0,
@@ -86,11 +87,12 @@ describe("BOM Site Type Redundancy Logic", () => {
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
 
         expect(sdwanItem).toBeDefined();
-        expect(sdwanItem?.quantity).toBe(1);
+        expect(sdwanItem?.quantity).toBe(2); // Profile standard wins
     });
 
-    it("should allow Site redundancy (Dual) to override Site Type default (Single)", () => {
+    it("should prioritize Site Type default redundancy (Single) over Site redundancy override (Dual)", () => {
         // small_office has defaults.redundancy.cpe = "Single"
+        // Organizational standard (Site Type) should win
         const site: Site = {
             name: "Override Single with Dual",
             bandwidthDownMbps: 100,
@@ -98,7 +100,7 @@ describe("BOM Site Type Redundancy Logic", () => {
             userCount: 10,
             siteTypeId: "small_office",
             address: "Test",
-            redundancyModel: "Dual CPE", // Explicit Override
+            redundancyModel: "Dual CPE", // This override should be ignored in favor of the profile standard
             wanLinks: 2,
             lanPorts: 0,
             poePorts: 0,
@@ -111,6 +113,6 @@ describe("BOM Site Type Redundancy Logic", () => {
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
 
         expect(sdwanItem).toBeDefined();
-        expect(sdwanItem?.quantity).toBe(2);
+        expect(sdwanItem?.quantity).toBe(1); // Profile standard wins
     });
 });

@@ -1,0 +1,346 @@
+PASS __tests__/features/bom-engine.test.ts
+  ● Console
+
+    console.log
+      [BOMEngine] Processing site: Small Site { siteTypeId: 'small_office' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX67, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Processing site: Medium Site { siteTypeId: 'small_office' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX68, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Processing site: Large Site { siteTypeId: 'small_office' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX105, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Processing site: Wifi Site { siteTypeId: 'small_office' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX68, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Rule selected equip: MR44, qty: 5
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Processing site: Data Center { siteTypeId: 'large_office' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: C8455-G2-MX, qty: 2
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+PASS __tests__/bugs/cpe-redundancy-catalog-sync.test.tsx
+  ● Console
+
+    console.log
+      [BOMEngine] Processing site: Elite Site { siteTypeId: 'platinum_profile' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX68, qty: 2
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Processing site: Retail Shop { siteTypeId: 'bronze_profile' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX67, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+PASS __tests__/bugs/bom-throughput-basis.test.tsx
+  ● Console
+
+    console.log
+      [BOMEngine] Processing site: Test Site { siteTypeId: undefined }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.warn
+      [BOMEngine] Site definition not found for ID: undefined. Using generic.
+
+      37 |             // Fallback to a generic site definition if not found or not provided
+      38 |             if (!siteDef) {
+    > 39 |                 console.warn(`[BOMEngine] Site definition not found for ID: ${site.siteTypeId}. Using generic.`);
+         |                         ^
+      40 |                 siteDef = {
+      41 |                     id: "generic",
+      42 |                     name: "Generic Branch",
+
+      at BOMEngine.warn [as generateBOM] (src/lib/bom-engine.ts:39:25)
+      at Object.generateBOM (__tests__/bugs/bom-throughput-basis.test.tsx:89:31)
+
+    console.log
+      [BOMEngine] Processing site: Test Site { siteTypeId: undefined }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.warn
+      [BOMEngine] Site definition not found for ID: undefined. Using generic.
+
+      37 |             // Fallback to a generic site definition if not found or not provided
+      38 |             if (!siteDef) {
+    > 39 |                 console.warn(`[BOMEngine] Site definition not found for ID: ${site.siteTypeId}. Using generic.`);
+         |                         ^
+      40 |                 siteDef = {
+      41 |                     id: "generic",
+      42 |                     name: "Generic Branch",
+
+      at BOMEngine.warn [as generateBOM] (src/lib/bom-engine.ts:39:25)
+      at Object.generateBOM (__tests__/bugs/bom-throughput-basis.test.tsx:94:32)
+
+    console.log
+      VPN Basis Item: meraki_mx85
+
+      at Object.log (__tests__/bugs/bom-throughput-basis.test.tsx:98:17)
+
+    console.log
+      NGFW Basis Item: meraki_mx67
+
+      at Object.log (__tests__/bugs/bom-throughput-basis.test.tsx:99:17)
+
+FAIL __tests__/features/bom-site-type-redundancy.test.tsx
+  ● Console
+
+    console.log
+      [BOMEngine] Processing site: Dual Default Site { siteTypeId: 'large_office' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX68, qty: 2
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Processing site: Override Dual with Single { siteTypeId: 'large_office' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX68, qty: 2
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Processing site: Override Single with Dual { siteTypeId: 'small_office' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX68, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+  ● BOM Site Type Redundancy Logic › should allow Site redundancy (Single) to override Site Type default (Dual)
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+      87 |
+      88 |         expect(sdwanItem).toBeDefined();
+    > 89 |         expect(sdwanItem?.quantity).toBe(1);
+         |                                     ^
+      90 |     });
+      91 |
+      92 |     it("should allow Site redundancy (Dual) to override Site Type default (Single)", () => {
+
+      at Object.toBe (__tests__/features/bom-site-type-redundancy.test.tsx:89:37)
+
+  ● BOM Site Type Redundancy Logic › should allow Site redundancy (Dual) to override Site Type default (Single)
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 1
+
+      112 |
+      113 |         expect(sdwanItem).toBeDefined();
+    > 114 |         expect(sdwanItem?.quantity).toBe(2);
+          |                                     ^
+      115 |     });
+      116 | });
+      117 |
+
+      at Object.toBe (__tests__/features/bom-site-type-redundancy.test.tsx:114:37)
+
+PASS __tests__/features/throughput-calculation.test.ts
+  ● Console
+
+    console.log
+      [BOMEngine] Processing site: Site-High { siteTypeId: undefined }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.warn
+      [BOMEngine] Site definition not found for ID: undefined. Using generic.
+
+      37 |             // Fallback to a generic site definition if not found or not provided
+      38 |             if (!siteDef) {
+    > 39 |                 console.warn(`[BOMEngine] Site definition not found for ID: ${site.siteTypeId}. Using generic.`);
+         |                         ^
+      40 |                 siteDef = {
+      41 |                     id: "generic",
+      42 |                     name: "Generic Branch",
+
+      at BOMEngine.warn [as generateBOM] (src/lib/bom-engine.ts:39:25)
+      at Object.generateBOM (__tests__/features/throughput-calculation.test.ts:79:33)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX105, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+    console.log
+      [BOMEngine] Processing site: Site-High { siteTypeId: undefined }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.warn
+      [BOMEngine] Site definition not found for ID: undefined. Using generic.
+
+      37 |             // Fallback to a generic site definition if not found or not provided
+      38 |             if (!siteDef) {
+    > 39 |                 console.warn(`[BOMEngine] Site definition not found for ID: ${site.siteTypeId}. Using generic.`);
+         |                         ^
+      40 |                 siteDef = {
+      41 |                     id: "generic",
+      42 |                     name: "Generic Branch",
+
+      at BOMEngine.warn [as generateBOM] (src/lib/bom-engine.ts:39:25)
+      at Object.generateBOM (__tests__/features/throughput-calculation.test.ts:100:33)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX85, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+PASS __tests__/features/improve-feature-catalog.test.tsx
+  ● Console
+
+    console.warn
+      Firebase Configuration Warning: The following keys are missing: apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId. This may cause issues with Firebase services.
+
+      20 |
+      21 | if (missingKeys.length > 0 && typeof window !== 'undefined') {
+    > 22 |     console.warn(`Firebase Configuration Warning: The following keys are missing: ${missingKeys.join(', ')}. This may cause issues with Firebase services.`);
+         |             ^
+      23 | }
+      24 |
+      25 | // Initialize Firebase (Singleton pattern)
+
+      at Object.warn (src/lib/firebase.ts:22:13)
+      at Object.<anonymous> (src/components/admin/FeatureList.tsx:13:19)
+      at Object.<anonymous> (__tests__/features/improve-feature-catalog.test.tsx:7:61)
+
+PASS __tests__/bugs/package-content-filtering.test.tsx
+PASS __tests__/features/service-catalog-metadata.test.tsx
+PASS __tests__/bugs/selected-package-zero.test.tsx
+PASS __tests__/bugs/bom-edge-device-selection.test.tsx
+  ● Console
+
+    console.log
+      [BOMEngine] Processing site: High Bandwidth Site { siteTypeId: 'generic' }
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:34:21)
+
+    console.warn
+      [BOMEngine] Site definition not found for ID: generic. Using generic.
+
+      37 |             // Fallback to a generic site definition if not found or not provided
+      38 |             if (!siteDef) {
+    > 39 |                 console.warn(`[BOMEngine] Site definition not found for ID: ${site.siteTypeId}. Using generic.`);
+         |                         ^
+      40 |                 siteDef = {
+      41 |                     id: "generic",
+      42 |                     name: "Generic Branch",
+
+      at BOMEngine.warn [as generateBOM] (src/lib/bom-engine.ts:39:25)
+      at Object.generateBOM (__tests__/bugs/bom-edge-device-selection.test.tsx:60:28)
+
+    console.log
+      [BOMEngine] Rule selected equip: MX250, qty: 1
+
+      at BOMEngine.log [as generateBOM] (src/lib/bom-engine.ts:131:33)
+
+PASS __tests__/features/feature-metadata.test.tsx
+PASS __tests__/bugs/metadata-input-focus-loss.test.tsx
+PASS __tests__/features/consultant-chat.test.tsx
+PASS __tests__/features/feature-catalog-search.test.tsx
+  ● Console
+
+    console.warn
+      Firebase Configuration Warning: The following keys are missing: apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId. This may cause issues with Firebase services.
+
+      20 |
+      21 | if (missingKeys.length > 0 && typeof window !== 'undefined') {
+    > 22 |     console.warn(`Firebase Configuration Warning: The following keys are missing: ${missingKeys.join(', ')}. This may cause issues with Firebase services.`);
+         |             ^
+      23 | }
+      24 |
+      25 | // Initialize Firebase (Singleton pattern)
+
+      at Object.warn (src/lib/firebase.ts:22:13)
+      at Object.<anonymous> (src/components/admin/FeatureList.tsx:13:19)
+      at Object.<anonymous> (__tests__/features/feature-catalog-search.test.tsx:7:61)
+
+PASS __tests__/bugs/site-definition-redundancy.test.tsx
+PASS __tests__/bugs/null-match-error.test.ts
+PASS __tests__/features/enable-sa-flow.test.tsx
+PASS __tests__/bugs/sa-flow-navigation.test.tsx
+  ● Console
+
+    console.warn
+      Firebase Configuration Warning: The following keys are missing: apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId. This may cause issues with Firebase services.
+
+      20 |
+      21 | if (missingKeys.length > 0 && typeof window !== 'undefined') {
+    > 22 |     console.warn(`Firebase Configuration Warning: The following keys are missing: ${missingKeys.join(', ')}. This may cause issues with Firebase services.`);
+         |             ^
+      23 | }
+      24 |
+      25 | // Initialize Firebase (Singleton pattern)
+
+      at Object.warn (src/lib/firebase.ts:22:13)
+      at Object.<anonymous> (src/app/sa/project/[id]/layout.tsx:16:19)
+      at Object.<anonymous> (__tests__/bugs/sa-flow-navigation.test.tsx:21:56)
+
+
+Test Suites: 1 failed, 1 skipped, 17 passed, 18 of 19 total
+Tests:       2 failed, 1 skipped, 36 passed, 39 total
+Snapshots:   0 total
+Time:        2.207 s
+Ran all test suites.
