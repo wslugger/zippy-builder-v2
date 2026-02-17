@@ -59,7 +59,7 @@ export class BOMEngine {
                 const canonicalServiceId = normalizeServiceId(service.id);
 
                 // --- 0. CHECK MANUAL SELECTION ---
-                const selectionKey = `${site.name}:${service.id}`;
+                const selectionKey = `${site.name}:${canonicalServiceId}`;
                 const manualOverrideId = manualSelections[selectionKey];
 
                 if (manualOverrideId) {
@@ -258,18 +258,17 @@ export class BOMEngine {
 
     private resolveVendorForService(pkg: Package, serviceId: string): string {
         const pkgItem = pkg.items.find(i => i.service_id === serviceId);
-        if (pkgItem?.design_option_id) {
-            const doId = pkgItem.design_option_id.toLowerCase();
-            if (doId.includes("meraki")) return "meraki";
-            if (doId.includes("cisco")) return "cisco_catalyst";
-            if (doId.includes("catalyst")) return "cisco_catalyst";
-        }
 
-        // Package-level inference
-        if (pkg.id === "cost_centric") return "meraki";
-        if (pkg.id === "performance_centric") return "cisco_catalyst";
+        // Determine from option IDs first (design option or service option)
+        const optionId = (pkgItem?.design_option_id || pkgItem?.service_option_id || "").toLowerCase();
 
-        return "meraki"; // Default
+        if (optionId.includes("meraki")) return "meraki";
+        if (optionId.includes("cisco") || optionId.includes("catalyst")) return "cisco_catalyst";
+        if (optionId.includes("fortinet")) return "fortinet";
+        if (optionId.includes("palo_alto") || optionId.includes("paloalto")) return "palo_alto";
+
+        // Fallback or default
+        return "meraki";
     }
 
     private matchesConstraints(equipment: Equipment, constraints: { type: string; description?: string }[]): boolean {
@@ -331,8 +330,8 @@ export class BOMEngine {
         const siteLoad = Math.max(site.bandwidthDownMbps, site.bandwidthUpMbps);
         const capacity = equipment.specs.ngfw_throughput_mbps;
 
-        // Return percentage (0-100)
-        return Math.min(100, Math.round((siteLoad / capacity) * 100));
+        // Return percentage
+        return Math.round((siteLoad / capacity) * 100);
     }
 
     /**

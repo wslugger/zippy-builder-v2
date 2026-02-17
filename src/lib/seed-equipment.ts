@@ -97,6 +97,25 @@ export const SEED_EQUIPMENT: Equipment[] = [
         },
         images: ["/assets/equipment/meraki_mx250.png"]
     },
+    {
+        id: "meraki_c8455_g2_mx",
+        vendor_id: "meraki",
+        model: "C8455-G2-MX",
+        active: true,
+        status: "Supported",
+        purpose: ["SDWAN", "Security"],
+        family: "Catalyst 8400",
+        description: "Ultra-high performance fixed-platform SD-WAN appliance.",
+        specs: {
+            ngfw_throughput_mbps: 10000,
+            vpn_throughput_mbps: 5000,
+            wan_interfaces_desc: "2x 10G SFP+, 8x 1G RJ45",
+            lan_interfaces_desc: "High-density modular interfaces",
+            max_clients: 5000,
+            recommended_use_case: "Large Data Center / Regional Hub",
+        },
+        images: ["/assets/equipment/cisco_c8455.png"]
+    },
 
     // --- Cisco Catalyst Switches (Managed LAN) ---
     {

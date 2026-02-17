@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ProjectService, PackageService, ServiceService, SiteDefinitionService } from "@/src/lib/firebase";
-import { Project, Package, Service } from "@/src/lib/types";
+import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService } from "@/src/lib/firebase";
+import { Project, Package, Service, Equipment, VENDOR_LABELS } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
@@ -33,10 +33,68 @@ function BOMBuilderContent() {
     const [services, setServices] = useState<Service[]>([]);
     const [siteTypes, setSiteTypes] = useState<SiteType[]>([]);
     const [sites, setSites] = useState<Site[]>([]);
+    const [catalog, setCatalog] = useState<Equipment[]>(SEED_EQUIPMENT);
     const [selectedSiteIndex, setSelectedSiteIndex] = useState<number>(0);
-    const [activeTab, setActiveTab] = useState<string>("sdwan");
-    const [engine] = useState(() => new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT));
+    const [activeTab, setActiveTab] = useState<string>("WAN");
+
+    // Derived Tabs from Project Services
+    // For demo, we hardcode tabs based on standard services found in seed data
+    // In real app, iterate project.customizedItems -> serviceId
+    const availableTabs = useMemo(() => {
+        interface Tab { id: string, label: string, serviceIds: string[], primaryServiceId: string, icon: string };
+        if (!pkg || services.length === 0) return [
+            { id: "WAN", label: "WAN", serviceIds: ["managed_sdwan"], primaryServiceId: "managed_sdwan", icon: "🌐" },
+            { id: "LAN", label: "LAN", serviceIds: ["managed_lan"], primaryServiceId: "managed_lan", icon: "🔌" },
+            { id: "WLAN", label: "WLAN", serviceIds: ["managed_wifi"], primaryServiceId: "managed_wifi", icon: "📶" }
+        ] as Tab[];
+
+        const buckets: Record<string, { label: string, services: string[], icon: string }> = {
+            "WAN": { label: "WAN", services: [], icon: "🌐" },
+            "LAN": { label: "LAN", services: [], icon: "🔌" },
+            "WLAN": { label: "WLAN", services: [], icon: "📶" },
+            "SERVICES": { label: "SERVICES", services: [], icon: "🔧" }
+        };
+
+        pkg.items.forEach(pItem => {
+            const serviceId = pItem.service_id;
+            const service = services.find(s => s.id === serviceId);
+            if (!service) return;
+
+            const name = service.name.toLowerCase();
+            const category = (service.metadata?.category || "").toLowerCase();
+
+            if (name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || category.includes("wan")) {
+                if (!buckets["WAN"].services.includes(serviceId)) buckets["WAN"].services.push(serviceId);
+            } else if (name.includes("lan") || name.includes("switch") || category.includes("lan")) {
+                if (!buckets["LAN"].services.includes(serviceId)) buckets["LAN"].services.push(serviceId);
+            } else if (name.includes("wifi") || name.includes("wlan") || name.includes("wireless") || category.includes("wifi")) {
+                if (!buckets["WLAN"].services.includes(serviceId)) buckets["WLAN"].services.push(serviceId);
+            } else {
+                if (!buckets["SERVICES"].services.includes(serviceId)) buckets["SERVICES"].services.push(serviceId);
+            }
+        });
+
+        return Object.entries(buckets)
+            .filter(([key, data]) => data.services.length > 0)
+            .map(([key, data]) => ({
+                id: key,
+                label: data.label,
+                serviceIds: data.services,
+                primaryServiceId: data.services[0],
+                icon: data.icon
+            }));
+    }, [pkg, services]);
+
+    // Make engine reactive to live catalog
+    const engine = useMemo(() => new BOMEngine(SEED_BOM_RULES, catalog), [catalog]);
+
+    // Sync activeTab with availableTabs if it's missing (during render)
+    const isValid = availableTabs.some(t => t.id === activeTab);
+    if (availableTabs.length > 0 && !isValid) {
+        setActiveTab(availableTabs[0].id);
+    }
     const [manualSelections, setManualSelections] = useState<Record<string, string>>({});
+    const [selectedSpecsItem, setSelectedSpecsItem] = useState<Equipment | null>(null);
 
     // Load Project Data
     useEffect(() => {
@@ -77,6 +135,9 @@ function BOMBuilderContent() {
 
             const st = await SiteDefinitionService.getAllSiteDefinitions();
             setSiteTypes(st);
+
+            const eq = await EquipmentService.getAllEquipment();
+            if (eq.length > 0) setCatalog(eq);
         }
         loadData();
     }, [projectId]);
@@ -106,7 +167,6 @@ function BOMBuilderContent() {
     }, [searchParams]);
 
     // Re-generate BOM when sites change or logic changes
-    // Re-generate BOM when sites change or logic changes
     const bom: BOM | null = useMemo(() => {
         if (sites.length > 0 && pkg && services.length > 0 && siteTypes.length > 0) {
             return engine.generateBOM(projectId, sites, pkg, services, siteTypes, manualSelections);
@@ -120,7 +180,7 @@ function BOMBuilderContent() {
 
     // Calculate Utilization & Alerts
     const currentSDWANItem = siteBOMItems.find(i => i.serviceId === "managed_sdwan" && i.itemType === "equipment");
-    const currentSDWANEquipment = SEED_EQUIPMENT.find(e => e.id === currentSDWANItem?.itemId);
+    const currentSDWANEquipment = catalog.find(e => e.id === currentSDWANItem?.itemId);
 
     const utilization = selectedSite && currentSDWANEquipment
         ? engine.calculateUtilization(selectedSite, currentSDWANEquipment)
@@ -128,14 +188,23 @@ function BOMBuilderContent() {
 
     const poeWarnings = selectedSite ? engine.validatePOE(selectedSite, siteBOMItems) : [];
 
-    // Derived Tabs from Project Services
-    // For demo, we hardcode tabs based on standard services found in seed data
-    // In real app, iterate project.customizedItems -> serviceId
-    const availableTabs = [
-        { id: "sdwan", label: "WAN", serviceId: "managed_sdwan" },
-        { id: "lan", label: "LAN", serviceId: "managed_lan" },
-        { id: "wlan", label: "WLAN", serviceId: "managed_wifi" }
-    ].filter(t => pkg?.items.some(i => i.service_id === t.serviceId) || true); // Default true for demo if pkg not fully loaded
+
+    // Helper to determine vendor from package data
+    const getVendorForService = (serviceId: string): string => {
+        if (!pkg) return "meraki";
+        const pkgItem = pkg.items.find(i => i.service_id === serviceId);
+
+        // Determine from option IDs first (design option or service option)
+        const optionId = (pkgItem?.design_option_id || pkgItem?.service_option_id || "").toLowerCase();
+        if (optionId.includes("meraki")) return "meraki";
+        if (optionId.includes("cisco") || optionId.includes("catalyst")) return "cisco_catalyst";
+        if (optionId.includes("fortinet")) return "fortinet";
+        if (optionId.includes("palo_alto") || optionId.includes("paloalto")) return "palo_alto";
+
+        // Fallback or default
+        return "meraki";
+    };
+
 
     if (!project) return <div className="p-8">Loading Project...</div>;
 
@@ -289,9 +358,7 @@ function BOMBuilderContent() {
                                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                                             }`}
                                     >
-                                        {tab.serviceId === "managed_sdwan" && <span className="mr-2">🌐</span>}
-                                        {tab.serviceId === "managed_lan" && <span className="mr-2">🔌</span>}
-                                        {tab.serviceId === "managed_wifi" && <span className="mr-2">📡</span>}
+                                        <span className="mr-2">{tab.icon}</span>
                                         {tab.label}
                                     </button>
                                 ))}
@@ -300,7 +367,7 @@ function BOMBuilderContent() {
 
                         {/* Tab Content */}
                         <div className="p-6">
-                            {activeTab === "sdwan" && (
+                            {activeTab === "WAN" && (
                                 <div className="space-y-6">
                                     {/* Section: SD-WAN Site Profile (Redundant with header but more detailed) */}
                                     <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
@@ -333,13 +400,10 @@ function BOMBuilderContent() {
                                             <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Edge Device</h3>
 
                                             {/* Manual Selection Dropdown */}
-                                            <div className="flex items-center space-x-2">
-                                                <label className="text-xs text-slate-500 font-medium">Model:</label>
-                                                <select
-                                                    className="text-xs border-slate-200 rounded-md py-1 pl-2 pr-8 focus:ring-blue-500 focus:border-blue-500"
+                                            <div className="flex items-center space-x-2 relative z-10 w-full max-w-[200px]">
+                                                <ManualDeviceSelector
                                                     value={manualSelections[`${selectedSite.name}:managed_sdwan`] || ""}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
+                                                    onChange={(val: string) => {
                                                         setManualSelections(prev => {
                                                             const next = { ...prev };
                                                             const key = `${selectedSite.name}:managed_sdwan`;
@@ -348,15 +412,17 @@ function BOMBuilderContent() {
                                                             return next;
                                                         });
                                                     }}
-                                                >
-                                                    <option value="">-- Auto-detect --</option>
-                                                    {SEED_EQUIPMENT
-                                                        .filter(e => e.purpose.includes("SDWAN"))
-                                                        .map(e => (
-                                                            <option key={e.id} value={e.id}>{e.model}</option>
-                                                        ))
-                                                    }
-                                                </select>
+                                                    options={catalog
+                                                        .filter(e => {
+                                                            const isSDWAN = e.purpose.includes("SDWAN");
+                                                            if (!isSDWAN) return false;
+
+                                                            // Data-driven vendor check
+                                                            const allowedVendor = getVendorForService("managed_sdwan");
+                                                            return e.vendor_id === allowedVendor;
+                                                        })
+                                                        .map(e => ({ value: e.id, label: e.model }))}
+                                                />
                                             </div>
                                         </div>
 
@@ -369,11 +435,18 @@ function BOMBuilderContent() {
                                                 <div className="flex-1">
                                                     <div className="flex justify-between">
                                                         <h4 className="text-lg font-bold text-slate-900">{currentSDWANEquipment.model}</h4>
-                                                        <button className="text-sm text-blue-600 hover:underline">View Specs</button>
+                                                        <button
+                                                            onClick={() => setSelectedSpecsItem(currentSDWANEquipment)}
+                                                            className="text-sm text-blue-600 hover:underline"
+                                                        >
+                                                            View Specs
+                                                        </button>
                                                     </div>
                                                     <p className="text-sm text-slate-600 mt-1">{currentSDWANEquipment.description}</p>
                                                     {manualSelections[`${selectedSite.name}:managed_sdwan`] && (
-                                                        <p className="text-xs text-amber-600 mt-1 font-medium">⚠️ Manually Selected</p>
+                                                        <p className="text-xs text-amber-600 mt-2 font-semibold flex items-center">
+                                                            <span className="mr-1">⚠️</span> Manually Selected
+                                                        </p>
                                                     )}
 
                                                     {/* Utilization Bar */}
@@ -385,7 +458,7 @@ function BOMBuilderContent() {
                                                         <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                                                             <div
                                                                 className={`h-2.5 rounded-full ${utilization > 80 ? 'bg-red-500' : 'bg-amber-500'}`}
-                                                                style={{ width: `${utilization}%` }}
+                                                                style={{ width: `${Math.min(100, utilization)}%` }}
                                                             ></div>
                                                         </div>
                                                         <div className="flex justify-between text-xs mt-1 text-slate-400">
@@ -436,7 +509,7 @@ function BOMBuilderContent() {
                                 </div>
                             )}
 
-                            {activeTab === "lan" && (
+                            {activeTab === "LAN" && (
                                 <div className="space-y-6">
                                     <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
                                         <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">LAN Infrastructure</h3>
@@ -466,7 +539,7 @@ function BOMBuilderContent() {
                                 </div>
                             )}
 
-                            {activeTab === "wlan" && (
+                            {activeTab === "WLAN" && (
                                 <div className="space-y-6">
                                     <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
                                         <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Wireless Coverage</h3>
@@ -501,6 +574,12 @@ function BOMBuilderContent() {
                         Select a site from the sidebar or upload a CSV to begin.
                     </div>
                 )}
+                {selectedSpecsItem && (
+                    <SpecsModal
+                        item={selectedSpecsItem}
+                        onClose={() => setSelectedSpecsItem(null)}
+                    />
+                )}
             </div>
         </div>
     );
@@ -508,8 +587,160 @@ function BOMBuilderContent() {
 
 export default function BOMBuilderPage() {
     return (
-        <Suspense fallback={<div className="p-8">Loading BOM Builder...</div>}>
+        <Suspense fallback={<div className="p-8 text-slate-500">Loading BOM Builder...</div>}>
             <BOMBuilderContent />
         </Suspense>
+    );
+}
+
+interface ManualDeviceSelectorProps {
+    value: string;
+    onChange: (value: string) => void;
+    options: { value: string; label: string }[];
+}
+
+function ManualDeviceSelector({ value, onChange, options }: ManualDeviceSelectorProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const selectedOption = options.find(o => o.value === value);
+
+    // Close on click outside (simple backdrop)
+    useEffect(() => {
+        if (!isOpen) return;
+        const close = () => setIsOpen(false);
+        document.addEventListener('click', close);
+        return () => document.removeEventListener('click', close);
+    }, [isOpen]);
+
+    return (
+        <div className="relative" onClick={e => e.stopPropagation()}>
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full bg-white border border-slate-200 text-slate-700 py-2 px-3 rounded-lg shadow-sm text-left text-sm flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-slate-300"
+            >
+                <span className={!selectedOption ? "text-slate-500 italic" : "font-medium"}>
+                    {selectedOption ? selectedOption.label : "Auto-detect"}
+                </span>
+                <svg className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            {isOpen && (
+                <div className="absolute z-50 mt-1 w-[200px] bg-white rounded-lg shadow-lg border border-slate-100 py-1 max-h-60 overflow-y-auto left-0 sm:left-auto sm:right-0">
+                    <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-50">
+                        Select Edge Device...
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => { onChange(""); setIsOpen(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center justify-between group ${!value ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
+                    >
+                        <span className={!value ? "font-semibold" : ""}>-- Auto-detect --</span>
+                        {!value && <CheckIcon />}
+                    </button>
+                    {options.map(option => (
+                        <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => { onChange(option.value); setIsOpen(false); }}
+                            className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center justify-between group ${value === option.value ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
+                        >
+                            <span className={value === option.value ? "font-semibold" : ""}>{option.label}</span>
+                            {value === option.value && <CheckIcon />}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function SpecsModal({ item, onClose }: { item: Equipment; onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-slate-900">Equipment Specifications</h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div className="p-6">
+                    <div className="flex items-start space-x-6 mb-8">
+                        <div className="w-32 h-32 bg-slate-100 rounded-lg flex items-center justify-center border border-slate-200 flex-shrink-0">
+                            <svg className="w-16 h-16 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div className="inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 mb-2">
+                                {VENDOR_LABELS[item.vendor_id] || item.vendor_id}
+                            </div>
+                            <h4 className="text-2xl font-bold text-slate-900">{item.model}</h4>
+                            <p className="text-slate-600 mt-2">{item.description}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 pb-6 border-b border-slate-100">
+                        <div>
+                            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Performance</h5>
+                            <dl className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <dt className="text-slate-500">VPN Throughput</dt>
+                                    <dd className="font-semibold text-slate-900">{item.specs.vpn_throughput_mbps} Mbps</dd>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <dt className="text-slate-500">NGFW Throughput</dt>
+                                    <dd className="font-semibold text-slate-900">{item.specs.ngfw_throughput_mbps || 0} Mbps</dd>
+                                </div>
+                                {item.specs.adv_sec_throughput_mbps && (
+                                    <div className="flex justify-between text-sm">
+                                        <dt className="text-slate-500">AdvSec Throughput</dt>
+                                        <dd className="font-semibold text-slate-900">{item.specs.adv_sec_throughput_mbps} Mbps</dd>
+                                    </div>
+                                )}
+                            </dl>
+                        </div>
+                        <div>
+                            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Hardware</h5>
+                            <dl className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <dt className="text-slate-500">Total Ports</dt>
+                                    <dd className="font-semibold text-slate-900">{item.specs.ports || "N/A"}</dd>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <dt className="text-slate-500">WAN Interfaces</dt>
+                                    <dd className="font-semibold text-slate-900">{item.specs.wan_interfaces_count || 2}</dd>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <dt className="text-slate-500">Form Factor</dt>
+                                    <dd className="font-semibold text-slate-900 uppercase text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">Desktop / Rack</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={onClose}
+                            className="px-6 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                        >
+                            Close Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function CheckIcon() {
+    return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
     );
 }
