@@ -69,8 +69,8 @@ export class BOMEngine {
                         // Let's assume manual selection implies the *device model*, but quantity might still be derived
                         // from redundancy rules OR we just stick to 1 unless it's a dual CPE site.
                         // For simplicity/consistency with auto-logic:
-                        if (canonicalServiceId === "managed_sdwan" && (site.redundancyModel?.toLowerCase().includes("dual") || siteDef.defaults.redundancy.cpe === "Dual")) {
-                            quantity = 2;
+                        if (canonicalServiceId === "managed_sdwan") {
+                            quantity = this.calculateCPEQuantity(site, siteDef);
                         }
 
                         bomItems.push({
@@ -125,8 +125,8 @@ export class BOMEngine {
                         let finalQuantity = equipmentAction.quantity || 1;
 
                         // Override quantity if site specifies Dual CPE and it's an edge device
-                        if (canonicalServiceId === "managed_sdwan" && (site.redundancyModel?.toLowerCase().includes("dual") || siteDef.defaults.redundancy.cpe === "Dual")) {
-                            finalQuantity = 2;
+                        if (canonicalServiceId === "managed_sdwan") {
+                            finalQuantity = this.calculateCPEQuantity(site, siteDef);
                         }
 
                         if (equipmentAction.quantityMultiplierField) {
@@ -226,8 +226,8 @@ export class BOMEngine {
 
                 if (bestFit) {
                     let quantity = 1;
-                    if (canonicalServiceId === "managed_sdwan" && (site.redundancyModel?.toLowerCase().includes("dual") || siteDef.defaults.redundancy.cpe === "Dual")) {
-                        quantity = 2;
+                    if (canonicalServiceId === "managed_sdwan") {
+                        quantity = this.calculateCPEQuantity(site, siteDef);
                     }
 
                     const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
@@ -257,6 +257,19 @@ export class BOMEngine {
                 siteCount: sites.length,
             }
         };
+    }
+
+    private calculateCPEQuantity(site: Site, siteDef: SiteType): number {
+        const siteModel = (site.redundancyModel || "").toLowerCase();
+
+        // 1. Explicit Site-level override: Dual
+        if (siteModel.includes("dual")) return 2;
+
+        // 2. Explicit Site-level override: Single
+        if (siteModel.includes("single")) return 1;
+
+        // 3. Default to Site Type profile
+        return siteDef.defaults.redundancy.cpe === "Dual" ? 2 : 1;
     }
 
     private resolveVendorForService(pkg: Package, serviceId: string): string {

@@ -1,4 +1,6 @@
 import { Project, AIAnalysisResult, Package, Service } from "@/src/lib/types";
+import { Site } from "@/src/lib/bom-types";
+import { SiteType } from "@/src/lib/site-types";
 
 export const AIService = {
     /**
@@ -64,6 +66,28 @@ export const AIService = {
             return data.response;
         } catch (error) {
             console.error("Chat Error:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Classifies a list of sites into Site Types using Gemini.
+     */
+    classifySites: async (sites: Site[], availableSiteTypes: SiteType[]): Promise<{ siteIndex: number, siteTypeId: string, confidence: number, reasoning: string }[]> => {
+        try {
+            const response = await fetch('/api/sa/classify-sites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sites, availableSiteTypes })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.details || errorData.error || "Classification failed");
+            }
+            return await response.json();
+        } catch (error) {
+            console.error("AI Site Classification Failed:", error);
             throw error;
         }
     }

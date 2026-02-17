@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService } from "@/src/lib/firebase";
 import { Project, Package, Service, Equipment, VENDOR_LABELS } from "@/src/lib/types";
@@ -10,6 +10,8 @@ import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { BOMEngine } from "@/src/lib/bom-engine";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
+import { AIService } from "@/src/lib/ai-service";
+import { SiteImportReviewModal } from "@/src/components/sa/SiteImportReviewModal";
 
 // Sample data for testing
 const SAMPLE_CSV = `Site Name,Address,User Count,Bandwidth Down (Mbps),Bandwidth Up (Mbps),Redundancy Model,WAN Links,LAN Ports,PoE Ports,Indoor APs,Outdoor APs,Primary Circuit,Secondary Circuit,Notes
@@ -96,6 +98,10 @@ function BOMBuilderContent() {
     const [manualSelections, setManualSelections] = useState<Record<string, string>>({});
     const [selectedSpecsItem, setSelectedSpecsItem] = useState<Equipment | null>(null);
 
+    // AI Classification States
+    const [isClassifying, setIsClassifying] = useState(false);
+    const [previewSites, setPreviewSites] = useState<(Site & { recommendedType?: string, confidence?: number, reasoning?: string })[] | null>(null);
+
     // Load Project Data
     useEffect(() => {
         async function loadData() {
@@ -142,29 +148,75 @@ function BOMBuilderContent() {
         loadData();
     }, [projectId]);
 
-    // Handle CSV Upload (Simulated for now if not present in project)
+    // Handle CSV Upload with AI Classification
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             const text = event.target?.result as string;
             const parsed = parseSiteListCSV(text);
-            setSites(parsed);
+
+            if (parsed.length > 0) {
+                console.log("Starting AI Classification for sites:", parsed);
+                setIsClassifying(true);
+                try {
+                    const analysis = await AIService.classifySites(parsed, siteTypes);
+                    console.log("AI analysis result:", analysis);
+                    const previewData = parsed.map((site, idx) => {
+                        const rec = analysis.find(a => a.siteIndex === idx);
+                        return {
+                            ...site,
+                            recommendedType: rec?.siteTypeId,
+                            confidence: rec?.confidence,
+                            reasoning: rec?.reasoning
+                        };
+                    });
+                    setPreviewSites(previewData);
+                } catch (err) {
+                    console.error("AI Classification failed", err);
+                    setSites(parsed); // Fallback to raw import
+                } finally {
+                    setIsClassifying(false);
+                }
+            }
         };
         reader.readAsText(file);
     };
 
-    const loadSampleData = () => {
+    const loadSampleData = useCallback(async () => {
         const parsed = parseSiteListCSV(SAMPLE_CSV);
-        setSites(parsed);
-    };
+        if (parsed.length > 0) {
+            console.log("Loading sample data with AI classification...");
+            setIsClassifying(true);
+            try {
+                const analysis = await AIService.classifySites(parsed, siteTypes);
+                console.log("AI analysis result (sample):", analysis);
+                const previewData = parsed.map((site, idx) => {
+                    const rec = analysis.find(a => a.siteIndex === idx);
+                    return {
+                        ...site,
+                        recommendedType: rec?.siteTypeId,
+                        confidence: rec?.confidence,
+                        reasoning: rec?.reasoning
+                    };
+                });
+                setPreviewSites(previewData);
+            } catch (err) {
+                console.error("AI Classification failed", err);
+                setSites(parsed);
+            } finally {
+                setIsClassifying(false);
+            }
+        }
+    }, [siteTypes]);
 
     useEffect(() => {
         if (searchParams.get("loadSample") === "true") {
-            setTimeout(loadSampleData, 500);
+            const timer = setTimeout(loadSampleData, 500);
+            return () => clearTimeout(timer);
         }
-    }, [searchParams]);
+    }, [searchParams, loadSampleData]);
 
     // Re-generate BOM when sites change or logic changes
     const bom: BOM | null = useMemo(() => {
@@ -593,6 +645,37 @@ function BOMBuilderContent() {
                     <SpecsModal
                         item={selectedSpecsItem}
                         onClose={() => setSelectedSpecsItem(null)}
+                    />
+                )}
+
+                {/* AI Classification Loading Overlay */}
+                {isClassifying && (
+                    <div className="fixed inset-0 z-[110] bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center space-y-4 max-w-xs text-center border border-slate-100">
+                            <div className="relative">
+                                <div className="w-16 h-16 border-4 border-blue-50 border-t-blue-600 rounded-full animate-spin"></div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-xl">🤖</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-slate-900 text-lg">Classifying Sites...</h4>
+                                <p className="text-xs text-slate-500 mt-1">Gemini AI is analyzing your data to match the best deployment profiles.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* AI Review Modal */}
+                {previewSites && (
+                    <SiteImportReviewModal
+                        sites={previewSites}
+                        siteTypes={siteTypes}
+                        onCancel={() => setPreviewSites(null)}
+                        onConfirm={(finalSites) => {
+                            setSites(finalSites);
+                            setPreviewSites(null);
+                        }}
                     />
                 )}
             </div>

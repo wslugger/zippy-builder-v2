@@ -34,18 +34,20 @@ export function parseSiteListCSV(csvContent: string): Site[] {
         if (row.length < headers.length) continue; // Skip malformed lines
 
         try {
+            const parseNum = (val: string) => parseInt((val || "0").replace(/,/g, ''), 10);
+
             const site: Site = {
                 name: row[idxName] || `Site ${i}`,
                 address: row[idxAddress] || "",
-                userCount: parseInt(row[idxUsers] || "0", 10),
-                bandwidthDownMbps: parseInt(row[idxBwDown] || "0", 10),
-                bandwidthUpMbps: parseInt(row[idxBwUp] || "0", 10),
+                userCount: parseNum(row[idxUsers]),
+                bandwidthDownMbps: parseNum(row[idxBwDown]),
+                bandwidthUpMbps: parseNum(row[idxBwUp]),
                 redundancyModel: row[idxRedundancy] || "Single CPE",
-                wanLinks: parseInt(row[idxWanLinks] || "1", 10),
-                lanPorts: parseInt(row[idxLanPorts] || "0", 10),
-                poePorts: parseInt(row[idxPoePorts] || "0", 10),
-                indoorAPs: parseInt(row[idxIndoorAPs] || "0", 10),
-                outdoorAPs: parseInt(row[idxOutdoorAPs] || "0", 10),
+                wanLinks: parseNum(row[idxWanLinks] || "1"),
+                lanPorts: parseNum(row[idxLanPorts]),
+                poePorts: parseNum(row[idxPoePorts]),
+                indoorAPs: parseNum(row[idxIndoorAPs]),
+                outdoorAPs: parseNum(row[idxOutdoorAPs]),
                 primaryCircuit: row[idxPriCircuit] || "Internet",
                 secondaryCircuit: row[idxSecCircuit] || undefined,
                 notes: row[idxNotes] || undefined

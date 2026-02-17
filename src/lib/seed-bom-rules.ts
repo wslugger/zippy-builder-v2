@@ -66,10 +66,25 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         conditions: [
             { field: "packageId", operator: "equals", value: "cost_centric" },
             { field: "serviceId", operator: "equals", value: "managed_sdwan" },
-            { field: "bandwidthDownMbps", operator: "greater_than", value: 1999 }
+            { field: "bandwidthDownMbps", operator: "greater_than", value: 1999 },
+            { field: "bandwidthDownMbps", operator: "less_than", value: 5000 }
         ],
         actions: [
             { type: "select_equipment", targetId: "meraki_mx250", quantity: 1 }
+        ]
+    },
+    {
+        id: "rule_sdwan_ultra_high",
+        name: "Cost Centric - DC / Regional Hub SDWAN",
+        priority: 55, // Lower priority than Multi-Gig? No, higher priority or mutually exclusive is better.
+        // Actually, let's keep priorities descending by specificity or bandwidth.
+        conditions: [
+            { field: "packageId", operator: "equals", value: "cost_centric" },
+            { field: "serviceId", operator: "equals", value: "managed_sdwan" },
+            { field: "bandwidthDownMbps", operator: "greater_than", value: 4999 }
+        ],
+        actions: [
+            { type: "select_equipment", targetId: "meraki_c8455_g2_mx", quantity: 1 }
         ]
     },
 

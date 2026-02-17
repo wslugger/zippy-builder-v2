@@ -170,4 +170,28 @@ describe("BOM Engine Logic", () => {
         expect(wifiItem?.quantity).toBe(5);
         expect(wifiItem?.itemId).toBe("meraki_mr44");
     });
+
+    it("should select C8455-G2-MX for 10G DC hub site", () => {
+        const site: Site = {
+            name: "Data Center",
+            bandwidthDownMbps: 10000,
+            bandwidthUpMbps: 10000,
+            userCount: 50,
+            siteTypeId: "large_office",
+            address: "Test",
+            redundancyModel: "Dual CPE",
+            wanLinks: 2,
+            lanPorts: 0,
+            poePorts: 0,
+            indoorAPs: 0,
+            outdoorAPs: 0,
+            primaryCircuit: "DIA"
+        };
+
+        const bom = engine.generateBOM("test-project", [site], mockPackage, mockServices, ALL_SITE_TYPES);
+
+        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        expect(sdwanItem).toBeDefined();
+        expect(sdwanItem?.itemId).toBe("meraki_c8455_g2_mx");
+    });
 });
