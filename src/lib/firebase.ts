@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, FirebaseStorage } from "firebase/storage";
 import { Equipment, CatalogMetadata, Service, TechnicalFeature, Package, Project } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
 
@@ -13,6 +13,15 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Validate config
+const missingKeys = Object.entries(firebaseConfig)
+    .filter(([__, value]) => !value)
+    .map(([key]) => key);
+
+if (missingKeys.length > 0 && typeof window !== 'undefined') {
+    console.warn(`Firebase Configuration Warning: The following keys are missing: ${missingKeys.join(', ')}. This may cause issues with Firebase services.`);
+}
+
 // Initialize Firebase (Singleton pattern)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
@@ -20,7 +29,15 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = initializeFirestore(app, {
     experimentalForceLongPolling: true,
 });
-const storage = getStorage(app);
+
+let storage: FirebaseStorage;
+try {
+    storage = getStorage(app);
+} catch (error) {
+    console.error("Failed to initialize Firebase Storage. Ensure NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is set.", error);
+    // @ts-expect-error - storage might be undefined if initialization fails
+    storage = undefined;
+}
 
 // Collection References
 const EQUIPMENT_COLLECTION = "equipment_catalog";
