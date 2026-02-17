@@ -7,7 +7,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "data_center",
         name: "Data Center (DC)",
         category: "SD-WAN",
-        tier: "Infrastructure",
         description: "Centralized application hosting and primary hub. Core Hub role.",
         constraints: [
             { id: "cpe_redundancy_active_active", description: "Dual CPE (Active/Active HA)", type: "redundancy", rule: { field: "redundancyModel", operator: "equals", value: "Dual Active/Active" } },
@@ -24,7 +23,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "colocation",
         name: "Colocation (CoLo)",
         category: "SD-WAN",
-        tier: "Infrastructure",
         description: "Cloud on-ramp and regional traffic transit. Regional Hub role.",
         constraints: [
             { id: "cpe_redundancy_active_active", description: "Dual CPE (Active/Active HA)", type: "redundancy" },
@@ -40,7 +38,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "regional_hq",
         name: "Regional HQ",
         category: "SD-WAN",
-        tier: "Core",
         description: "High-density user environment with local services. Headquarters role.",
         constraints: [
             { id: "cpe_redundancy_dual", description: "Dual CPE (Active/Standby or Active/Active)", type: "redundancy" },
@@ -58,7 +55,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "cloud_instance",
         name: "Cloud Instance (vCPE)",
         category: "SD-WAN",
-        tier: "Cloud",
         description: "Connecting VPCs/VNets directly to the SD-WAN fabric. Virtual Edge role.",
         constraints: [
             { id: "virtual_ha", description: "Virtual HA (Deployed across Availability Zones)", type: "redundancy" }
@@ -75,7 +71,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "large_office",
         name: "Large Office (200+ Users)",
         category: "SD-WAN",
-        tier: "Standard Branch",
         description: "Significant branch operations. Major Branch role.",
         constraints: [
             { id: "cpe_redundancy_dual", description: "Dual CPE", type: "redundancy", rule: { field: "redundancyModel", operator: "equals", value: "Dual CPE" } },
@@ -91,7 +86,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "medium_office",
         name: "Medium Office (50-200 Users)",
         category: "SD-WAN",
-        tier: "Standard Branch",
         description: "Typical branch office.",
         constraints: [
             { id: "lte_required", description: "Require LTE/5G Option as a secondary/tertiary link", type: "circuit" }
@@ -106,7 +100,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "small_office",
         name: "Small Office / Retail (<50 Users)",
         category: "SD-WAN",
-        tier: "Small Branch",
         description: "Lean operations, kiosks, or small shops. Small Branch role.",
         constraints: [
             { id: "cpe_single", description: "Single CPE", type: "redundancy" },
@@ -124,7 +117,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "micro_branch",
         name: "Micro-Branch / SOHO",
         category: "SD-WAN",
-        tier: "Specialized",
         description: "Executive home office or temporary pop-up. SOHO role.",
         constraints: [
             { id: "fanless", description: "Fanless Design Hardware Constraint", type: "hardware" },
@@ -140,7 +132,6 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
         id: "mobile_vehicular",
         name: "Mobile / Vehicular",
         category: "SD-WAN",
-        tier: "Specialized",
         description: "Emergency services, clinics, or field units. Mobile Unit role.",
         constraints: [
             { id: "ruggedized", description: "Ruggedized Hardware Required", type: "hardware" },
@@ -161,7 +152,6 @@ export const LAN_SITE_TYPES: SiteType[] = [
         id: "3_tier_campus",
         name: "3-Tier Campus (Core/Aggregation/Access)",
         category: "LAN",
-        tier: "Core",
         description: "Large HQs or Regional Hubs with multiple buildings or floors. Headquarters LAN role.",
         constraints: [
             { id: "redundant_uplinks", description: "Dual-homed links from Access to Aggregation", type: "redundancy" },
@@ -177,7 +167,6 @@ export const LAN_SITE_TYPES: SiteType[] = [
         id: "2_tier_collapsed",
         name: "2-Tier Collapsed Core",
         category: "LAN",
-        tier: "Standard Branch",
         description: "Medium offices or single-building sites. Branch LAN role.",
         constraints: [
             { id: "sfp_uplinks", description: "Require SFP+ uplinks between layers", type: "hardware" },
@@ -195,7 +184,6 @@ export const LAN_SITE_TYPES: SiteType[] = [
         id: "stacked_edge",
         name: "Stacked Edge (Horizontal Expansion)",
         category: "LAN",
-        tier: "Standard Branch",
         description: "Sites needing high port density (2-3 switches) without 2-tier complexity. Dense Branch LAN role.",
         constraints: [
             { id: "stacking_required", description: "Must be stacked", type: "hardware" }
@@ -210,7 +198,6 @@ export const LAN_SITE_TYPES: SiteType[] = [
         id: "integrated_branch",
         name: "Integrated Branch (Router-Switch)",
         category: "LAN",
-        tier: "Small Branch",
         description: "Small or remote sites using internal switch modules. Small Office LAN role.",
         constraints: [
             { id: "no_stacking", description: "No physical stacking support", type: "hardware" },
@@ -228,7 +215,6 @@ export const LAN_SITE_TYPES: SiteType[] = [
         id: "flat_network_l2",
         name: "Flat Network (Layer 2 Only)",
         category: "LAN",
-        tier: "Small Branch",
         description: "Small branch or Retail shop. Retail LAN role.",
         constraints: [
             { id: "vlan_limit", description: "Limited to <3 VLANs", type: "vlan", rule: { field: "vlanCount", operator: "max", value: 3 } }
@@ -243,7 +229,6 @@ export const LAN_SITE_TYPES: SiteType[] = [
         id: "industrial_iot",
         name: "Industrial / IoT (OT)",
         category: "LAN",
-        tier: "Specialized",
         description: "Warehouses, plants, or utility sites. Industrial LAN role.",
         constraints: [
             { id: "ruggedized", description: "Fanless / Ruggedized Hardware", type: "hardware" },

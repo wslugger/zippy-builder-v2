@@ -65,7 +65,7 @@ export default function SiteDefinitionsListPage() {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">Site Definitions</h1>
-                    <p className="text-slate-500">Manage site types, tiers, and constraints.</p>
+                    <p className="text-slate-500">Manage site types and technical constraints.</p>
                 </div>
                 <div className="space-x-4">
                     <button
@@ -90,7 +90,6 @@ export default function SiteDefinitionsListPage() {
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Category</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tier</th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -106,7 +105,6 @@ export default function SiteDefinitionsListPage() {
                                         {def.category}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{def.tier}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <Link href={`/admin/site-definitions/${def.id}`} className="text-blue-600 hover:text-blue-900 mr-4">
                                         Edit

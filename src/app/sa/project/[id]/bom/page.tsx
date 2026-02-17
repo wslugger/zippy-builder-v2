@@ -532,7 +532,7 @@ function BOMBuilderContent() {
                                             <label className="block text-xs font-medium text-slate-500 uppercase mb-1">Switch Profile</label>
                                             <select
                                                 className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                defaultValue={siteTypes.find(t => t.category === "LAN" && t.tier === "Standard Branch")?.id}
+                                                defaultValue={siteTypes.find(t => t.category === "LAN")?.id}
                                             >
                                                 {siteTypes.filter(t => t.category === "LAN").map(t => (
                                                     <option key={t.id} value={t.id}>{t.name}</option>

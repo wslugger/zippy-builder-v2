@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { SiteDefinitionService } from "@/src/lib/firebase";
+import { SiteDefinitionService, MetadataService } from "@/src/lib/firebase";
 import { SiteType, SiteConstraint } from "@/src/lib/site-types";
+import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 
 export default function EditSiteDefinitionPage() {
     const { id } = useParams();
@@ -14,6 +15,13 @@ export default function EditSiteDefinitionPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    const { metadata: siteMetadata, loading: metadataLoading } = useCatalogMetadata("site_type_catalog");
+
+    // Helper to get values from catalog or fallback to empty array
+    const getCatalogValues = (fieldKey: string) => {
+        return siteMetadata?.fields[fieldKey]?.values || [];
+    };
+
     useEffect(() => {
         const init = async () => {
             if (id === "new") {
@@ -21,12 +29,11 @@ export default function EditSiteDefinitionPage() {
                     id: "",
                     name: "New Site Type",
                     category: "SD-WAN",
-                    tier: "Standard Branch",
                     description: "",
                     constraints: [],
                     defaults: {
                         requiredServices: [],
-                        redundancy: { cpe: "Single", circuit: "Single" },
+                        redundancy: { cpe: "Single CPE", circuit: "Single Circuit" },
                         slo: 99.9
                     }
                 });
@@ -83,9 +90,10 @@ export default function EditSiteDefinitionPage() {
     // Constraint Management
     const addConstraint = () => {
         if (!def) return;
+        const types = getCatalogValues('technical_constraint_types');
         const newConstraint: SiteConstraint = {
             id: `c_${Date.now()}`,
-            type: "hardware",
+            type: types.length > 0 ? types[0] : "hardware",
             description: "New Constraint"
         };
         setDef({ ...def, constraints: [...def.constraints, newConstraint] });
@@ -104,8 +112,13 @@ export default function EditSiteDefinitionPage() {
         });
     };
 
-    if (loading) return <div className="p-8">Loading...</div>;
+    if (loading || metadataLoading) return <div className="p-8">Loading...</div>;
     if (!def) return <div className="p-8">Definition not found.</div>;
+
+    const cpeRedundancyTypes = getCatalogValues('cpe_redundancy_types');
+    const circuitRedundancyTypes = getCatalogValues('circuit_redundancy_types');
+    const constraintTypes = getCatalogValues('technical_constraint_types');
+    const sloTargets = getCatalogValues('slo_targets');
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
@@ -129,7 +142,9 @@ export default function EditSiteDefinitionPage() {
                     <h2 className="text-lg font-medium text-slate-900 mb-4">General Information</h2>
                     <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700">Name</label>
+                            <label className="block text-sm font-medium text-slate-700">
+                                {def.category === 'SD-WAN' ? 'Classification' : 'Name'}
+                            </label>
                             <input
                                 type="text"
                                 value={def.name}
@@ -167,53 +182,60 @@ export default function EditSiteDefinitionPage() {
                     <h2 className="text-lg font-medium text-slate-900 mb-4">Service Profile & Logic</h2>
                     <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700">Classification (Tier)</label>
-                            <select
-                                value={def.tier}
-                                onChange={e => updateDef('tier', e.target.value)}
-                                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option value="Infrastructure">Infrastructure</option>
-                                <option value="Core">Core</option>
-                                <option value="Standard Branch">Standard Branch</option>
-                                <option value="Small Branch">Small Branch</option>
-                                <option value="Specialized">Specialized</option>
-                                <option value="Cloud">Cloud</option>
-                            </select>
-                        </div>
-                        <div>
                             <label className="block text-sm font-medium text-slate-700">SLO Target (%)</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                value={def.defaults.slo}
-                                onChange={e => updateDefault('slo', parseFloat(e.target.value))}
-                                className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            />
+                            {sloTargets.length > 0 ? (
+                                <select
+                                    value={def.defaults.slo.toString()}
+                                    onChange={e => updateDefault('slo', parseFloat(e.target.value))}
+                                    className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                >
+                                    {sloTargets.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                            ) : (
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={def.defaults.slo}
+                                    onChange={e => updateDefault('slo', parseFloat(e.target.value))}
+                                    className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                />
+                            )}
                         </div>
                         {def.category === 'SD-WAN' && (
                             <>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700">CPE Redundancy</label>
                                     <select
-                                        value={def.defaults.redundancy?.cpe || "Single"}
+                                        value={def.defaults.redundancy?.cpe || ""}
                                         onChange={e => updateRedundancy('cpe', e.target.value)}
                                         className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                     >
-                                        <option value="Single">Single CPE</option>
-                                        <option value="Dual">Dual CPE (HA)</option>
+                                        {cpeRedundancyTypes.length > 0 ? (
+                                            cpeRedundancyTypes.map(t => <option key={t} value={t}>{t}</option>)
+                                        ) : (
+                                            <>
+                                                <option value="Single">Single CPE</option>
+                                                <option value="Dual">Dual CPE (HA)</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700">Circuit Redundancy</label>
                                     <select
-                                        value={def.defaults.redundancy?.circuit || "Single"}
+                                        value={def.defaults.redundancy?.circuit || ""}
                                         onChange={e => updateRedundancy('circuit', e.target.value)}
                                         className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                     >
-                                        <option value="Single">Single Circuit</option>
-                                        <option value="Dual">Dual Circuit</option>
-                                        <option value="Hybrid">Hybrid (DIA + Broadband)</option>
+                                        {circuitRedundancyTypes.length > 0 ? (
+                                            circuitRedundancyTypes.map(t => <option key={t} value={t}>{t}</option>)
+                                        ) : (
+                                            <>
+                                                <option value="Single">Single Circuit</option>
+                                                <option value="Dual">Dual Circuit</option>
+                                                <option value="Hybrid">Hybrid (DIA + Broadband)</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                             </>
@@ -239,14 +261,20 @@ export default function EditSiteDefinitionPage() {
                                             onChange={e => updateConstraint(c.id, 'type', e.target.value)}
                                             className="mt-1 block w-full rounded-md border-slate-300 text-sm"
                                         >
-                                            <option value="redundancy">Redundancy</option>
-                                            <option value="throughput">Throughput</option>
-                                            <option value="circuit">Circuit</option>
-                                            <option value="security">Security</option>
-                                            <option value="hardware">Hardware</option>
-                                            <option value="poe">PoE</option>
-                                            <option value="vlan">VLAN</option>
-                                            <option value="software">Software</option>
+                                            {constraintTypes.length > 0 ? (
+                                                constraintTypes.map(t => <option key={t} value={t}>{t}</option>)
+                                            ) : (
+                                                <>
+                                                    <option value="redundancy">Redundancy</option>
+                                                    <option value="throughput">Throughput</option>
+                                                    <option value="circuit">Circuit</option>
+                                                    <option value="security">Security</option>
+                                                    <option value="hardware">Hardware</option>
+                                                    <option value="poe">PoE</option>
+                                                    <option value="vlan">VLAN</option>
+                                                    <option value="software">Software</option>
+                                                </>
+                                            )}
                                         </select>
                                     </div>
                                     <div className="col-span-2">

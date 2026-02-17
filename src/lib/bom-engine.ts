@@ -39,7 +39,6 @@ export class BOMEngine {
                     id: "generic",
                     name: "Generic Branch",
                     category: "SD-WAN",
-                    tier: "Standard Branch",
                     description: "Generic fallback profile",
                     constraints: [],
                     defaults: {
@@ -274,7 +273,8 @@ export class BOMEngine {
 
     private matchesConstraints(equipment: Equipment, constraints: { type: string; description?: string }[]): boolean {
         for (const constraint of constraints) {
-            if (constraint.type === "hardware") {
+            const type = (constraint.type || "").toLowerCase();
+            if (type === "hardware") {
                 const desc = (constraint.description || "").toLowerCase();
                 if (desc.includes("rugged") && !equipment.description?.toLowerCase().includes("rugged")) return false;
                 if (desc.includes("virtual") && !equipment.model.toLowerCase().includes("v")) return false;

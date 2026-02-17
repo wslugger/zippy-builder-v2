@@ -70,7 +70,7 @@ describe('Feature Metadata Management', () => {
         render(<MetadataPage />);
 
         await waitFor(() => {
-            expect(screen.getByText('feature_catalog')).toBeInTheDocument();
+            expect(screen.getAllByText('feature_catalog').length).toBeGreaterThan(0);
         });
     });
 });

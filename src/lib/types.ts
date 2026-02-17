@@ -162,6 +162,8 @@ export interface CatalogField {
 
 export interface CatalogMetadata {
   id: string; // The catalog ID, e.g., 'service_catalog'
+  name?: string; // Human readable name
+  description?: string; // Description of the catalog
   fields: {
     [key: string]: CatalogField;
   };
