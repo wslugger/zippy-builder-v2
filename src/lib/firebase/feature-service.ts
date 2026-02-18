@@ -2,6 +2,7 @@ import { collection, doc, setDoc, getDoc, getDocs, writeBatch, deleteDoc } from 
 import { TechnicalFeature } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, FEATURES_COLLECTION } from "./config";
+import { validateDoc, validateDocs, TechnicalFeatureSchema } from "./validation";
 
 export const FeatureService = {
     saveFeature: async (feature: TechnicalFeature) => {
@@ -13,14 +14,14 @@ export const FeatureService = {
 
     getAllFeatures: async (): Promise<TechnicalFeature[]> => {
         const snapshot = await getDocs(collection(db, FEATURES_COLLECTION));
-        return snapshot.docs.map((doc) => doc.data() as TechnicalFeature);
+        return validateDocs(TechnicalFeatureSchema, snapshot.docs);
     },
 
     getFeatureById: async (id: string): Promise<TechnicalFeature | null> => {
         const docRef = doc(db, FEATURES_COLLECTION, id);
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
-            return snapshot.data() as TechnicalFeature;
+            return validateDoc(TechnicalFeatureSchema, snapshot.data(), id);
         }
         return null;
     },

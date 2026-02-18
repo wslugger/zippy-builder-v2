@@ -1,17 +1,11 @@
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { TechnicalFeature, Service, Package, CatalogMetadata, WorkflowStep } from "@/src/lib/types";
-import { BOMLogicRule } from "@/src/lib/bom-types";
+import { Service, WorkflowStep } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, DEFAULTS_COLLECTION } from "./config";
+import { validateDoc, SystemDefaultsSchema } from "./validation";
+import { z } from "zod";
 
-interface SystemDefaults {
-    features: TechnicalFeature[];
-    services: Service[];
-    packages: Package[];
-    metadata: CatalogMetadata[];
-    workflowSteps?: WorkflowStep[];
-    bomRules?: BOMLogicRule[];
-}
+type SystemDefaults = z.infer<typeof SystemDefaultsSchema>;
 
 export const SystemDefaultsService = {
     saveDefaults: async (defaults: SystemDefaults) => {
@@ -24,7 +18,7 @@ export const SystemDefaultsService = {
         const docRef = doc(db, DEFAULTS_COLLECTION, "global");
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
-            return snapshot.data() as SystemDefaults;
+            return validateDoc(SystemDefaultsSchema, snapshot.data(), "global");
         }
         return null;
     },
@@ -34,7 +28,7 @@ export const SystemDefaultsService = {
         const snapshot = await getDoc(docRef);
 
         if (snapshot.exists()) {
-            const defaults = snapshot.data() as SystemDefaults;
+            const defaults = validateDoc(SystemDefaultsSchema, snapshot.data(), "global");
             const services = defaults.services || [];
 
             // Find index of existing service

@@ -9,6 +9,18 @@
 // Core Firebase instances
 export { db, storage } from "./config";
 
+// Validation utilities & schemas
+export { validateDoc, validateDocs } from "./validation";
+export {
+    TechnicalFeatureSchema,
+    ServiceSchema,
+    PackageSchema,
+    ProjectSchema,
+    CatalogMetadataSchema,
+    BOMLogicRuleSchema,
+    SystemDefaultsSchema,
+} from "./validation";
+
 // Service modules
 export { EquipmentService } from "./equipment-service";
 export { MetadataService } from "./metadata-service";
@@ -19,3 +31,4 @@ export { ProjectService } from "./project-service";
 export { SystemDefaultsService } from "./system-defaults-service";
 export { BOMService } from "./bom-service";
 export { SiteDefinitionService } from "./site-definition-service";
+

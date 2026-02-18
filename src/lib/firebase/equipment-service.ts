@@ -1,7 +1,8 @@
 import { collection, doc, setDoc, getDoc, getDocs, writeBatch } from "firebase/firestore";
-import { Equipment } from "@/src/lib/types";
+import { Equipment, EquipmentSchema } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, EQUIPMENT_COLLECTION } from "./config";
+import { validateDoc, validateDocs } from "./validation";
 
 export const EquipmentService = {
     saveEquipment: async (equipment: Equipment) => {
@@ -32,7 +33,7 @@ export const EquipmentService = {
      */
     getAllEquipment: async (): Promise<Equipment[]> => {
         const snapshot = await getDocs(collection(db, EQUIPMENT_COLLECTION));
-        return snapshot.docs.map((doc) => doc.data() as Equipment);
+        return validateDocs(EquipmentSchema, snapshot.docs);
     },
 
     /**
@@ -42,7 +43,7 @@ export const EquipmentService = {
         const docRef = doc(db, EQUIPMENT_COLLECTION, id);
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
-            return snapshot.data() as Equipment;
+            return validateDoc(EquipmentSchema, snapshot.data(), id);
         }
         return null;
     },

@@ -3,6 +3,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
 import { Package } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, storage, PACKAGES_COLLECTION } from "./config";
+import { validateDoc, validateDocs, PackageSchema } from "./validation";
 
 export const PackageService = {
     savePackage: async (pkg: Package) => {
@@ -14,14 +15,14 @@ export const PackageService = {
 
     getAllPackages: async (): Promise<Package[]> => {
         const snapshot = await getDocs(collection(db, PACKAGES_COLLECTION));
-        return snapshot.docs.map((doc) => doc.data() as Package);
+        return validateDocs(PackageSchema, snapshot.docs);
     },
 
     getPackageById: async (id: string): Promise<Package | null> => {
         const docRef = doc(db, PACKAGES_COLLECTION, id);
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
-            return snapshot.data() as Package;
+            return validateDoc(PackageSchema, snapshot.data(), id);
         }
         return null;
     },

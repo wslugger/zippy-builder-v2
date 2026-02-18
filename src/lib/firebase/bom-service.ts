@@ -2,6 +2,12 @@ import { collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "firebase/fi
 import { BOMLogicRule } from "@/src/lib/bom-types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, BOM_RULES_COLLECTION } from "./config";
+import { validateDoc, validateDocs, BOMLogicRuleSchema } from "./validation";
+import { z } from "zod";
+
+// Cast the schema since Zod infers `field: string` but BOMLogicRule uses a specific union type.
+// The validation still catches structural issues, just not the specific field name values.
+const RuleSchema = BOMLogicRuleSchema as z.ZodType<BOMLogicRule>;
 
 export const BOMService = {
     saveRule: async (rule: BOMLogicRule) => {
@@ -13,8 +19,7 @@ export const BOMService = {
 
     getAllRules: async (): Promise<BOMLogicRule[]> => {
         const snapshot = await getDocs(collection(db, BOM_RULES_COLLECTION));
-        return snapshot.docs
-            .map((doc) => doc.data() as BOMLogicRule)
+        return validateDocs(RuleSchema, snapshot.docs)
             .sort((a, b) => b.priority - a.priority);
     },
 
@@ -22,7 +27,7 @@ export const BOMService = {
         const docRef = doc(db, BOM_RULES_COLLECTION, id);
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
-            return snapshot.data() as BOMLogicRule;
+            return validateDoc(RuleSchema, snapshot.data(), id);
         }
         return null;
     },

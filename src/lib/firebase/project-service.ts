@@ -3,6 +3,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Project } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, storage, PROJECTS_COLLECTION } from "./config";
+import { validateDoc, ProjectSchema } from "./validation";
 
 export const ProjectService = {
     createProject: async (project: Project): Promise<string> => {
@@ -16,7 +17,7 @@ export const ProjectService = {
         const docRef = doc(db, PROJECTS_COLLECTION, projectId);
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
-            return snapshot.data() as Project;
+            return validateDoc(ProjectSchema, snapshot.data(), projectId);
         }
         return null;
     },
@@ -38,7 +39,7 @@ export const ProjectService = {
         const snapshot = await getDocs(projectsRef);
 
         const projects = snapshot.docs
-            .map(doc => doc.data() as Project)
+            .map(doc => validateDoc(ProjectSchema, doc.data(), doc.id))
             .filter(p => p.userId === userId)
             .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 

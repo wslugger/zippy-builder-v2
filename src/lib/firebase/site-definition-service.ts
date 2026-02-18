@@ -1,7 +1,8 @@
 import { collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "firebase/firestore";
-import { SiteType } from "@/src/lib/site-types";
+import { SiteType, SiteTypeSchema } from "@/src/lib/site-types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, SITE_DEFINITIONS_COLLECTION } from "./config";
+import { validateDoc, validateDocs } from "./validation";
 
 export const SiteDefinitionService = {
     saveSiteDefinition: async (siteDef: SiteType) => {
@@ -13,14 +14,14 @@ export const SiteDefinitionService = {
 
     getAllSiteDefinitions: async (): Promise<SiteType[]> => {
         const snapshot = await getDocs(collection(db, SITE_DEFINITIONS_COLLECTION));
-        return snapshot.docs.map((doc) => doc.data() as SiteType);
+        return validateDocs(SiteTypeSchema, snapshot.docs);
     },
 
     getSiteDefinitionById: async (id: string): Promise<SiteType | null> => {
         const docRef = doc(db, SITE_DEFINITIONS_COLLECTION, id);
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
-            return snapshot.data() as SiteType;
+            return validateDoc(SiteTypeSchema, snapshot.data(), id);
         }
         return null;
     },
