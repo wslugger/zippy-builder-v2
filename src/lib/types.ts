@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+// ============================================================
+// Equipment Types
+// ============================================================
+
 // Valid values for Vendor and Purpose based on implementation plan
 export const VENDOR_IDS = ["cisco_catalyst", "meraki", "hpe_aruba_sdwan", "hpe_aruba_sdbranch"] as const;
 
@@ -86,7 +90,9 @@ export const EquipmentSchema = z.object({
 
 export type Equipment = z.infer<typeof EquipmentSchema>;
 
-
+// ============================================================
+// Service & Package Types
+// ============================================================
 
 export const SERVICE_CATEGORIES = [
   "Fiber",
@@ -194,7 +200,9 @@ export interface CatalogMetadata {
   };
 }
 
-// --- Solutions Architect (SA) Flow Types ---
+// ============================================================
+// Solutions Architect (SA) Flow Types
+// ============================================================
 
 export interface WorkflowStep {
   id: string;
@@ -238,3 +246,133 @@ export interface AIAnalysisResult {
   confidence: number;
   reasoning: string;
 }
+
+// ============================================================
+// Site Types (formerly site-types.ts)
+// ============================================================
+
+export interface SiteConstraint {
+  id: string;
+  description: string;
+  type: string;
+  rule?: {
+    field: string;
+    operator: "equals" | "min" | "max" | "includes" | "distinct";
+    value: string | number | boolean | string[];
+  };
+}
+
+export interface SiteDefault {
+  redundancy: {
+    cpe: string;
+    circuit: string;
+  };
+  slo: number; // e.g. 99.9 or 99.99
+  requiredServices: string[]; // IDs of services that MUST be present (e.g. "managed_sdwan")
+}
+
+export interface SiteType {
+  id: string;
+  name: string;
+  category: "SD-WAN" | "LAN" | "WLAN";
+  description: string; // From MD docs
+  constraints: SiteConstraint[];
+  defaults: SiteDefault;
+}
+
+export const SiteTypeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: z.enum(["SD-WAN", "LAN", "WLAN"]),
+  description: z.string(),
+  constraints: z.array(z.any()), // Simplified for zod
+  defaults: z.object({
+    redundancy: z.object({
+      cpe: z.string(),
+      circuit: z.string()
+    }),
+    slo: z.number().min(0).max(100),
+    requiredServices: z.array(z.string())
+  })
+});
+
+// ============================================================
+// BOM Types (formerly bom-types.ts)
+// ============================================================
+
+// --- Site (individual site from CSV import) ---
+
+export const SiteSchema = z.object({
+  id: z.string().optional(), // specific ID if tracking by ID
+  siteTypeId: z.string().optional(), // Reference to SiteType
+  name: z.string(),
+  address: z.string(),
+  userCount: z.number(),
+  bandwidthDownMbps: z.number(),
+  bandwidthUpMbps: z.number(),
+  redundancyModel: z.string(), // "Dual CPE", "Single CPE"
+  wanLinks: z.number(),
+  lanPorts: z.number(),
+  poePorts: z.number(),
+  indoorAPs: z.number(),
+  outdoorAPs: z.number(),
+  primaryCircuit: z.string(), // "DIA", "Broadband"
+  secondaryCircuit: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export type Site = z.infer<typeof SiteSchema>;
+
+// --- BOM Logic ---
+
+export type LogicOperator = "equals" | "not_equals" | "greater_than" | "less_than" | "contains" | "in_list";
+
+export interface LogicCondition {
+  field: keyof Site | "packageId" | "serviceId" | "designOptionId";
+  operator: LogicOperator;
+  value: string | number | boolean | string[];
+}
+
+export interface BOMLogicAction {
+  type: "select_equipment" | "enable_feature" | "set_configuration";
+  targetId: string; // SKU or Feature ID
+  quantity?: number; // Fixed number or derived? (e.g. 1 per site)
+  quantityMultiplierField?: keyof Site; // e.g. "indoorAPs" -> 1 per AP count
+}
+
+export interface BOMLogicRule {
+  id: string;
+  name: string;
+  priority: number; // Higher number = higher priority
+  conditions: LogicCondition[];
+  actions: BOMLogicAction[];
+}
+
+// --- BOM Output ---
+
+export interface BOMLineItem {
+  id: string;
+  siteName: string;
+  serviceId: string;
+  serviceName: string; // Snapshot
+  itemId: string; // Equipment SKU or Feature ID
+  itemName: string; // Snapshot
+  itemType: "equipment" | "feature" | "license" | "labor";
+  quantity: number;
+  unitPrice?: number; // Placeholder
+  totalPrice?: number; // Placeholder
+  reasoning?: string; // Which rule triggered this?
+}
+
+export interface BOM {
+  id: string;
+  projectId: string;
+  createdAt: string;
+  items: BOMLineItem[];
+  summary: {
+    totalOneTimeCost?: number;
+    totalMonthlyCost?: number;
+    siteCount: number;
+  };
+}
+
