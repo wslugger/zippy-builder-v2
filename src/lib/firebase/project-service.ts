@@ -1,4 +1,4 @@
-import { collection, doc, setDoc, getDoc, getDocs } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Project } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
@@ -31,19 +31,28 @@ export const ProjectService = {
     },
 
     getUserProjects: async (userId: string): Promise<Project[]> => {
-        // Note: Requires an index on userId in production
-        // For now, we'll fetch all and filter client-side if dataset is small, 
-        // OR ideally use a query. Let's try query.
-        // If query fails due to missing index, we might need to fallback or create index.
-        const projectsRef = collection(db, PROJECTS_COLLECTION);
-        const snapshot = await getDocs(projectsRef);
-
-        const projects = snapshot.docs
-            .map(doc => validateDoc(ProjectSchema, doc.data(), doc.id))
-            .filter(p => p.userId === userId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-
-        return projects;
+        // Server-side query: only fetches this user's projects, ordered by most recent
+        // Requires a composite index on (userId, updatedAt) — Firestore will auto-prompt
+        // to create it on the first query, or it can be added via firebase.json indexes.
+        try {
+            const projectsRef = collection(db, PROJECTS_COLLECTION);
+            const q = query(
+                projectsRef,
+                where("userId", "==", userId),
+                orderBy("updatedAt", "desc")
+            );
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(d => validateDoc(ProjectSchema, d.data(), d.id));
+        } catch (error) {
+            // Fallback to client-side filtering if index is missing
+            console.warn("[ProjectService] Server-side query failed (missing index?), falling back to client-side filter:", error);
+            const projectsRef = collection(db, PROJECTS_COLLECTION);
+            const snapshot = await getDocs(projectsRef);
+            return snapshot.docs
+                .map(d => validateDoc(ProjectSchema, d.data(), d.id))
+                .filter(p => p.userId === userId)
+                .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        }
     },
 
     uploadRequirements: async (projectId: string, file: File) => {
