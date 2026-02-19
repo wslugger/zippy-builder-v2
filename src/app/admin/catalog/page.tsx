@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Equipment } from "@/src/lib/types";
-import { EquipmentService } from "@/src/lib/firebase";
+import { useEquipment } from "@/src/hooks/useEquipment";
 import EquipmentTable from "@/src/components/admin/EquipmentTable";
 import EquipmentFilters from "@/src/components/admin/EquipmentFilters";
 import EquipmentModal from "@/src/components/admin/EquipmentModal";
 import Link from "next/link";
 
 export default function CatalogPage() {
-    const [data, setData] = useState<Equipment[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { equipment: data, loading, refreshEquipment: fetchData } = useEquipment();
 
     // Filter States
     const [search, setSearch] = useState("");
@@ -20,22 +19,6 @@ export default function CatalogPage() {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<Equipment | null>(null);
-
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const items = await EquipmentService.getAllEquipment();
-            setData(items);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     // Filter Logic
     const filteredData = data.filter((item) => {

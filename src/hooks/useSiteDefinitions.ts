@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FeatureService } from '@/src/lib/firebase';
-import { TechnicalFeature } from '@/src/lib/types';
+import { SiteDefinitionService } from '@/src/lib/firebase';
+import { SiteType } from '@/src/lib/types';
 
-export function useTechnicalFeatures() {
-    const [features, setFeatures] = useState<TechnicalFeature[]>([]);
+export function useSiteDefinitions() {
+    const [siteDefinitions, setSiteDefinitions] = useState<SiteType[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await FeatureService.getAllFeatures();
-            setFeatures(data);
+            const data = await SiteDefinitionService.getAllSiteDefinitions();
+            setSiteDefinitions(data);
         } catch (e) {
             setError(e as Error);
         } finally {
@@ -23,5 +23,5 @@ export function useTechnicalFeatures() {
         load();
     }, [load]);
 
-    return { features, loading, error, refreshFeatures: load };
+    return { siteDefinitions, loading, error, refreshSiteDefinitions: load };
 }

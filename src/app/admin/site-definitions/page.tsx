@@ -1,33 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { SiteDefinitionService } from "@/src/lib/firebase";
-import { SiteType } from "@/src/lib/site-types";
+import { useSiteDefinitions } from "@/src/hooks/useSiteDefinitions";
 
 export default function SiteDefinitionsListPage() {
-    const [siteDefs, setSiteDefs] = useState<SiteType[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { siteDefinitions, loading, refreshSiteDefinitions: loadDefinitions } = useSiteDefinitions();
     const [seeding, setSeeding] = useState(false);
 
-    const loadDefinitions = async () => {
-        setLoading(true);
-        const data = await SiteDefinitionService.getAllSiteDefinitions();
-        // Sort by Category then Name
-        const sorted = (data as SiteType[]).sort((a, b) => {
+    // Sort by category then name
+    const siteDefs = useMemo(() =>
+        [...siteDefinitions].sort((a, b) => {
             if (a.category !== b.category) return a.category.localeCompare(b.category);
             return a.name.localeCompare(b.name);
-        });
-        setSiteDefs(sorted);
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        const init = async () => {
-            await loadDefinitions();
-        };
-        init();
-    }, []);
+        }),
+        [siteDefinitions]);
 
     async function handleSeed() {
         if (!confirm("This will overwrite existing definitions with defaults from code. Are you sure?")) return;
@@ -41,7 +29,7 @@ export default function SiteDefinitionsListPage() {
             } else {
                 alert("Error seeding: " + json.error);
             }
-        } catch (e) {
+        } catch {
             alert("Error seeding database.");
         }
         setSeeding(false);
@@ -51,7 +39,7 @@ export default function SiteDefinitionsListPage() {
         if (!confirm("Are you sure you want to delete this site type? This action cannot be undone.")) return;
         try {
             await SiteDefinitionService.deleteSiteDefinition(id);
-            setSiteDefs(siteDefs.filter(d => d.id !== id));
+            loadDefinitions();
         } catch (e) {
             console.error(e);
             alert("Failed to delete site definition.");

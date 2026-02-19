@@ -171,10 +171,12 @@ export interface DesignOption extends ServiceItem {
   pros?: string[];
   cons?: string[];
   throughput_overhead_mbps?: number; // Additional bandwidth overhead (e.g. VPN)
+  vendor_id?: typeof VENDOR_IDS[number]; // Explicit vendor binding (preferred over string-matching fallback)
 }
 
 export interface ServiceOption extends ServiceItem {
   design_options: DesignOption[];
+  vendor_id?: typeof VENDOR_IDS[number]; // Explicit vendor binding (preferred over string-matching fallback)
 }
 
 export interface Service extends ServiceItem {

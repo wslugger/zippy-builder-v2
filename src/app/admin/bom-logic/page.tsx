@@ -1,29 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { BOMService } from "@/src/lib/firebase";
-import { BOMLogicRule } from "@/src/lib/bom-types";
+import { useState } from "react";
+import { useBOMRules } from "@/src/hooks/useBOMRules";
 
 export default function BOMRulesListPage() {
-    const [rules, setRules] = useState<BOMLogicRule[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { rules, loading, refreshRules: loadRules } = useBOMRules();
     const [seeding, setSeeding] = useState(false);
-
-    const loadRules = async () => {
-        setLoading(true);
-        try {
-            const data = await BOMService.getAllRules();
-            setRules(data);
-        } catch (error) {
-            console.error("Error loading rules:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadRules();
-    }, []);
 
     async function handleSeed() {
         if (!confirm("This will overwrite existing rules with defaults from code. Are you sure?")) return;
@@ -37,7 +19,7 @@ export default function BOMRulesListPage() {
             } else {
                 alert("Error seeding: " + json.error);
             }
-        } catch (e) {
+        } catch {
             alert("Error seeding database.");
         }
         setSeeding(false);

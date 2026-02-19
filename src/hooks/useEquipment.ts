@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FeatureService } from '@/src/lib/firebase';
-import { TechnicalFeature } from '@/src/lib/types';
+import { EquipmentService } from '@/src/lib/firebase';
+import { Equipment } from '@/src/lib/types';
 
-export function useTechnicalFeatures() {
-    const [features, setFeatures] = useState<TechnicalFeature[]>([]);
+export function useEquipment() {
+    const [equipment, setEquipment] = useState<Equipment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await FeatureService.getAllFeatures();
-            setFeatures(data);
+            const data = await EquipmentService.getAllEquipment();
+            setEquipment(data);
         } catch (e) {
             setError(e as Error);
         } finally {
@@ -23,5 +23,5 @@ export function useTechnicalFeatures() {
         load();
     }, [load]);
 
-    return { features, loading, error, refreshFeatures: load };
+    return { equipment, loading, error, refreshEquipment: load };
 }

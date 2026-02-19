@@ -1,28 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Service } from "@/src/lib/types";
-import { ServiceService } from "@/src/lib/firebase";
+import { useServices } from "@/src/hooks/useServices";
 import Link from "next/link";
 
 export default function ServicesPage() {
-    const [services, setServices] = useState<Service[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    const fetchServices = async () => {
-        try {
-            const data = await ServiceService.getAllServices();
-            setServices(data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchServices();
-    }, []);
+    const { services, loading, refreshServices } = useServices();
 
     const deleteService = async (id: string) => {
         if (!confirm("Delete this service? This action cannot be undone.")) return;
@@ -33,7 +15,7 @@ export default function ServicesPage() {
                 body: JSON.stringify({ id }),
             });
             if (res.ok) {
-                fetchServices();
+                refreshServices();
             } else {
                 alert("Failed to delete service.");
             }

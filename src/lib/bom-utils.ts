@@ -9,13 +9,22 @@ import { Package, Equipment, EQUIPMENT_PURPOSES } from "./types";
 import { Site } from "./bom-types";
 import { SiteType } from "./site-types";
 
-// ============================================================
-// Service ID Normalization
-// ============================================================
-
-/** Maps alternative/Firestore service IDs to canonical IDs used in rules */
+/**
+ * Canonical service ID normalization.
+ * 
+ * This map handles legacy/alternative IDs from external data sources (CSV imports,
+ * Firestore migration artifacts, etc.) and normalizes them to canonical IDs used
+ * throughout the codebase.
+ * 
+ * This should be applied at data boundaries (import, API ingestion) rather than
+ * deep in business logic. The BOM engine calls this once per service during
+ * processing as a safety net.
+ * 
+ * MIGRATION NOTE: Once all Firestore data and seed files use canonical IDs,
+ * the non-identity entries (like "sd_wan_service") can be removed.
+ */
 const SERVICE_ID_ALIASES: Record<string, string> = {
-    "sd_wan_service": "managed_sdwan",
+    "sd_wan_service": "managed_sdwan",  // Legacy alias from early prototype
     "managed_sdwan": "managed_sdwan",
     "managed_lan": "managed_lan",
     "managed_wifi": "managed_wifi",
@@ -42,20 +51,47 @@ export const SERVICE_TO_PURPOSE: Record<string, (typeof EQUIPMENT_PURPOSES)[numb
 
 /**
  * Determines the vendor for a given service based on Package configuration.
- * Inspects the design_option_id and service_option_id for vendor keywords.
+ * 
+ * Resolution priority:
+ * 1. Explicit `vendor_id` on the DesignOption or ServiceOption (data-driven, preferred)
+ * 2. String-matching heuristic on option IDs (legacy fallback)
+ * 3. Default to "meraki"
+ * 
+ * @param pkg - The selected package
+ * @param serviceId - The service ID to resolve vendor for
+ * @param services - Optional service catalog for looking up DesignOption vendor_id
  */
-export function resolveVendorForService(pkg: Package, serviceId: string): string {
+export function resolveVendorForService(
+    pkg: Package,
+    serviceId: string,
+    services?: { id: string; service_options: { id: string; vendor_id?: string; design_options: { id: string; vendor_id?: string }[] }[] }[]
+): string {
     const pkgItem = pkg.items.find(i => i.service_id === serviceId);
 
-    // Determine from option IDs first (design option or service option)
-    const optionId = (pkgItem?.design_option_id || pkgItem?.service_option_id || "").toLowerCase();
+    // 1. Try explicit vendor_id from design option data
+    if (pkgItem?.design_option_id && services) {
+        const service = services.find(s => s.id === serviceId);
+        const designOption = service?.service_options
+            .flatMap(so => so.design_options)
+            .find(d => d.id === pkgItem.design_option_id);
+        if (designOption?.vendor_id) return designOption.vendor_id;
+    }
 
+    // 2. Try explicit vendor_id from service option data
+    if (pkgItem?.service_option_id && services) {
+        const service = services.find(s => s.id === serviceId);
+        const serviceOption = service?.service_options.find(so => so.id === pkgItem.service_option_id);
+        if (serviceOption?.vendor_id) return serviceOption.vendor_id;
+    }
+
+    // 3. Legacy fallback: string-match on option IDs
+    const optionId = (pkgItem?.design_option_id || pkgItem?.service_option_id || "").toLowerCase();
     if (optionId.includes("meraki")) return "meraki";
     if (optionId.includes("cisco") || optionId.includes("catalyst")) return "cisco_catalyst";
     if (optionId.includes("fortinet")) return "fortinet";
     if (optionId.includes("palo_alto") || optionId.includes("paloalto")) return "palo_alto";
 
-    // Fallback or default
+    // 4. Default
     return "meraki";
 }
 
