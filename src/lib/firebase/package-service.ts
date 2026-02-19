@@ -2,13 +2,15 @@ import { collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "firebase/fi
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Package } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
+import { applyTimestamps } from "@/src/lib/timestamps";
 import { db, storage, PACKAGES_COLLECTION } from "./config";
 import { validateDoc, validateDocs, PackageSchema } from "./validation";
 
 export const PackageService = {
     savePackage: async (pkg: Package) => {
         const docRef = doc(db, PACKAGES_COLLECTION, pkg.id);
-        const cleaned = cleanObject(pkg);
+        const stamped = applyTimestamps(pkg);
+        const cleaned = cleanObject(stamped);
         await setDoc(docRef, cleaned, { merge: true });
         return pkg.id;
     },

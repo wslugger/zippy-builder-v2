@@ -1,6 +1,19 @@
 import { z } from "zod";
 
 // ============================================================
+// Shared Utilities
+// ============================================================
+
+/**
+ * ISO 8601 timestamps automatically set in the service layer.
+ * Optional so existing Firestore records without them remain valid.
+ */
+export interface Timestamps {
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// ============================================================
 // Equipment Types
 // ============================================================
 
@@ -86,6 +99,8 @@ export const EquipmentSchema = z.object({
   }),
   images: z.array(z.string()).optional(),
   datasheet_url: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
 });
 
 export type Equipment = z.infer<typeof EquipmentSchema>;
@@ -109,7 +124,7 @@ export const DESIGN_OPTION_CATEGORIES = [
   "Internet Breakout",
 ] as const;
 
-export interface TechnicalFeature {
+export interface TechnicalFeature extends Timestamps {
   id: string; // e.g. "bgp"
   name: string; // "BGP Routing"
   category: string; // "Routing", "Security", etc.
@@ -142,7 +157,7 @@ export interface PackageItem {
   inclusion_type: InclusionType;
 }
 
-export interface Package {
+export interface Package extends Timestamps {
   id: string; // e.g. "cost_centric"
   name: string; // "Cost Centric"
   short_description: string;
@@ -179,7 +194,7 @@ export interface ServiceOption extends ServiceItem {
   vendor_id?: typeof VENDOR_IDS[number]; // Explicit vendor binding (preferred over string-matching fallback)
 }
 
-export interface Service extends ServiceItem {
+export interface Service extends ServiceItem, Timestamps {
   service_options: ServiceOption[];
   active: boolean;
   metadata?: {
@@ -273,7 +288,7 @@ export interface SiteDefault {
   requiredServices: string[]; // IDs of services that MUST be present (e.g. "managed_sdwan")
 }
 
-export interface SiteType {
+export interface SiteType extends Timestamps {
   id: string;
   name: string;
   category: "SD-WAN" | "LAN" | "WLAN";
@@ -295,7 +310,9 @@ export const SiteTypeSchema = z.object({
     }),
     slo: z.number().min(0).max(100),
     requiredServices: z.array(z.string())
-  })
+  }),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
 });
 
 // ============================================================

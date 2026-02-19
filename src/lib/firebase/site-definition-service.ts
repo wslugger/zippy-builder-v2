@@ -1,13 +1,15 @@
 import { collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "firebase/firestore";
 import { SiteType, SiteTypeSchema } from "@/src/lib/site-types";
 import { cleanObject } from "@/src/lib/feature-utils";
+import { applyTimestamps } from "@/src/lib/timestamps";
 import { db, SITE_DEFINITIONS_COLLECTION } from "./config";
 import { validateDoc, validateDocs } from "./validation";
 
 export const SiteDefinitionService = {
     saveSiteDefinition: async (siteDef: SiteType) => {
         const docRef = doc(db, SITE_DEFINITIONS_COLLECTION, siteDef.id);
-        const cleaned = cleanObject(siteDef);
+        const stamped = applyTimestamps(siteDef);
+        const cleaned = cleanObject(stamped);
         await setDoc(docRef, cleaned, { merge: true });
         return siteDef.id;
     },

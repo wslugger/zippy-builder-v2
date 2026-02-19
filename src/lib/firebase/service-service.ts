@@ -1,13 +1,15 @@
 import { collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "firebase/firestore";
 import { Service } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
+import { applyTimestamps } from "@/src/lib/timestamps";
 import { db, SERVICE_COLLECTION } from "./config";
 import { validateDoc, validateDocs, ServiceSchema } from "./validation";
 
 export const ServiceService = {
     saveService: async (service: Service) => {
         const docRef = doc(db, SERVICE_COLLECTION, service.id);
-        const cleaned = cleanObject(service);
+        const stamped = applyTimestamps(service);
+        const cleaned = cleanObject(stamped);
         await setDoc(docRef, cleaned, { merge: true });
         return service.id;
     },

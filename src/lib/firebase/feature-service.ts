@@ -1,13 +1,15 @@
 import { collection, doc, setDoc, getDoc, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
 import { TechnicalFeature } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
+import { applyTimestamps } from "@/src/lib/timestamps";
 import { db, FEATURES_COLLECTION } from "./config";
 import { validateDoc, validateDocs, TechnicalFeatureSchema } from "./validation";
 
 export const FeatureService = {
     saveFeature: async (feature: TechnicalFeature) => {
         const docRef = doc(db, FEATURES_COLLECTION, feature.id);
-        const cleaned = cleanObject(feature);
+        const stamped = applyTimestamps(feature);
+        const cleaned = cleanObject(stamped);
         await setDoc(docRef, cleaned, { merge: true });
         return feature.id;
     },
@@ -28,9 +30,10 @@ export const FeatureService = {
 
     saveFeatureBatch: async (features: TechnicalFeature[]) => {
         const batch = writeBatch(db);
-        features.forEach(feature => {
+        features.forEach((feature) => {
             const docRef = doc(db, FEATURES_COLLECTION, feature.id);
-            batch.set(docRef, feature, { merge: true });
+            const stamped = applyTimestamps(feature);
+            batch.set(docRef, stamped, { merge: true });
         });
         await batch.commit();
         return features.length;
