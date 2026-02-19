@@ -12,6 +12,7 @@ import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
 import { AIService } from "@/src/lib/ai-service";
 import { SiteImportReviewModal } from "@/src/components/sa/SiteImportReviewModal";
+import { resolveVendorForService, calculateThroughputOverhead, isDualRedundancy, isDualCircuit } from "@/src/lib/bom-utils";
 
 // Sample data for testing
 const SAMPLE_CSV = `Site Name,Address,User Count,Bandwidth Down (Mbps),Bandwidth Up (Mbps),Redundancy Model,WAN Links,LAN Ports,PoE Ports,Indoor APs,Outdoor APs,Primary Circuit,Secondary Circuit,Notes
@@ -244,17 +245,7 @@ function BOMBuilderContent() {
     const currentSDWANEquipment = catalog.find(e => e.id === currentSDWANItem?.itemId);
 
     // Calculate overhead for the utilization bar
-    const sdwanPackageItem = pkg?.items.find(i => i.service_id === "managed_sdwan");
-    let sdwanOverhead = (pkg?.throughput_overhead_mbps || 0);
-    if (sdwanPackageItem?.design_option_id && services.length > 0) {
-        const service = services.find(s => s.id === "managed_sdwan");
-        const designOption = service?.service_options
-            .flatMap(so => so.design_options)
-            .find(d => d.id === sdwanPackageItem.design_option_id);
-        if (designOption?.throughput_overhead_mbps) {
-            sdwanOverhead += designOption.throughput_overhead_mbps;
-        }
-    }
+    const sdwanOverhead = pkg ? calculateThroughputOverhead(pkg, "managed_sdwan", services) : 0;
 
     const utilization = selectedSite && currentSDWANEquipment
         ? engine.calculateUtilization(selectedSite, currentSDWANEquipment, pkg?.throughput_basis, sdwanOverhead)
@@ -268,17 +259,7 @@ function BOMBuilderContent() {
     // Helper to determine vendor from package data
     const getVendorForService = (serviceId: string): string => {
         if (!pkg) return "meraki";
-        const pkgItem = pkg.items.find(i => i.service_id === serviceId);
-
-        // Determine from option IDs first (design option or service option)
-        const optionId = (pkgItem?.design_option_id || pkgItem?.service_option_id || "").toLowerCase();
-        if (optionId.includes("meraki")) return "meraki";
-        if (optionId.includes("cisco") || optionId.includes("catalyst")) return "cisco_catalyst";
-        if (optionId.includes("fortinet")) return "fortinet";
-        if (optionId.includes("palo_alto") || optionId.includes("paloalto")) return "palo_alto";
-
-        // Fallback or default
-        return "meraki";
+        return resolveVendorForService(pkg, serviceId);
     };
 
 
@@ -491,18 +472,14 @@ function BOMBuilderContent() {
                                                     <div className="mt-3 flex space-x-4">
                                                         <div className="flex items-center text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
                                                             <span className="mr-1.5">🛡️</span> {(() => {
-                                                                const cpe = (siteDef.defaults?.redundancy?.cpe || "").toLowerCase();
-                                                                const isDual = cpe.includes("dual") || cpe.includes("ha") || cpe.includes("active") || cpe.includes("redundant");
-                                                                console.log('CPE check:', { cpe, isDual });
-                                                                return isDual ? "2 x CPE (High Availability)" : "1 x CPE (Standard)";
+                                                                const cpe = (siteDef.defaults?.redundancy?.cpe || "");
+                                                                return isDualRedundancy(cpe) ? "2 x CPE (High Availability)" : "1 x CPE (Standard)";
                                                             })()}
                                                         </div>
                                                         <div className="flex items-center text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
                                                             <span className="mr-1.5">🧬</span> {(() => {
-                                                                const circuit = (siteDef.defaults?.redundancy?.circuit || "").toLowerCase();
-                                                                const isDual = circuit.includes("dual") || circuit.includes("diverse") || circuit.includes("hybrid") || circuit.includes("multi");
-                                                                console.log('Circuit check:', { circuit, isDual });
-                                                                return isDual ? "Dual Circuit (Diverse)" : "Single Circuit";
+                                                                const circuit = (siteDef.defaults?.redundancy?.circuit || "");
+                                                                return isDualCircuit(circuit) ? "Dual Circuit (Diverse)" : "Single Circuit";
                                                             })()}
                                                         </div>
                                                     </div>

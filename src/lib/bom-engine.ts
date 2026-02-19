@@ -2,21 +2,17 @@ import { Site, BOMLogicRule, BOM, BOMLineItem, LogicCondition } from "./bom-type
 import { Package, Equipment, Service, EQUIPMENT_PURPOSES } from "./types";
 import { VENDOR_LABELS } from "./types";
 import { SiteType } from "./site-types";
+import {
+    normalizeServiceId,
+    SERVICE_TO_PURPOSE,
+    resolveVendorForService,
+    calculateCPEQuantity,
+    getEquipmentPerformanceValue
+} from "./bom-utils";
 
 /**
  * Generates a Bill of Materials based on Sites, Package configuration, and Rules.
  */
-// Maps alternative/Firestore service IDs to the canonical IDs used in rules
-const SERVICE_ID_ALIASES: Record<string, string> = {
-    "sd_wan_service": "managed_sdwan",
-    "managed_sdwan": "managed_sdwan",
-    "managed_lan": "managed_lan",
-    "managed_wifi": "managed_wifi",
-};
-
-function normalizeServiceId(id: string): string {
-    return SERVICE_ID_ALIASES[id] || id;
-}
 
 export class BOMEngine {
     private rules: BOMLogicRule[];
@@ -68,7 +64,7 @@ export class BOMEngine {
                     if (equip) {
                         let quantity = 1;
                         if (canonicalServiceId === "managed_sdwan") {
-                            quantity = this.calculateCPEQuantity(site, siteDef);
+                            quantity = calculateCPEQuantity(site, siteDef);
                         }
 
                         console.log(`[BOMEngine] Manual override found: ${equip.model}`);
@@ -118,7 +114,7 @@ export class BOMEngine {
                     if (equip) {
                         let finalQuantity = equipmentAction.quantity || 1;
                         if (canonicalServiceId === "managed_sdwan") {
-                            finalQuantity = this.calculateCPEQuantity(site, siteDef);
+                            finalQuantity = calculateCPEQuantity(site, siteDef);
                         }
 
                         if (equipmentAction.quantityMultiplierField) {
@@ -147,17 +143,12 @@ export class BOMEngine {
                 }
 
                 // --- 2. FALLBACK TO DIRECT MATCHING ---
-                const vendorId = this.resolveVendorForService(selectedPackage, service.id);
+                const vendorId = resolveVendorForService(selectedPackage, service.id);
 
                 const candidates = this.equipmentCatalog.filter(e => {
                     if (e.vendor_id !== vendorId) return false;
 
-                    const purposeMapping: Record<string, string> = {
-                        "managed_sdwan": "SDWAN",
-                        "managed_lan": "LAN",
-                        "managed_wifi": "WLAN"
-                    };
-                    const requiredPurpose = purposeMapping[canonicalServiceId];
+                    const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
                     if (requiredPurpose && !e.purpose.includes(requiredPurpose as (typeof EQUIPMENT_PURPOSES)[number])) return false;
 
                     if (!this.matchesConstraints(e, siteDef.constraints)) return false;
@@ -177,10 +168,7 @@ export class BOMEngine {
                 });
 
                 let bestFit = candidates.sort((a, b) => {
-                    const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
-                    const valA = (a.specs[throughputField] ?? a.specs.vpn_throughput_mbps ?? 0) || a.specs.ports || 0;
-                    const valB = (b.specs[throughputField] ?? b.specs.vpn_throughput_mbps ?? 0) || b.specs.ports || 0;
-                    return valA - valB;
+                    return getEquipmentPerformanceValue(a, selectedPackage.throughput_basis) - getEquipmentPerformanceValue(b, selectedPackage.throughput_basis);
                 })[0];
 
                 let matchType = "Dynamic match";
@@ -189,20 +177,12 @@ export class BOMEngine {
                     // Last-resort fallback: Pick the LARGEST available device if everything is too small
                     const allPurposeCandidates = this.equipmentCatalog.filter(e => {
                         if (e.vendor_id !== vendorId) return false;
-                        const purposeMapping: Record<string, string> = {
-                            "managed_sdwan": "SDWAN",
-                            "managed_lan": "LAN",
-                            "managed_wifi": "WLAN"
-                        };
-                        const requiredPurpose = purposeMapping[canonicalServiceId];
+                        const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
                         return requiredPurpose && e.purpose.includes(requiredPurpose as (typeof EQUIPMENT_PURPOSES)[number]);
                     });
 
                     bestFit = allPurposeCandidates.sort((a, b) => {
-                        const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
-                        const valA = (a.specs[throughputField] ?? a.specs.vpn_throughput_mbps ?? 0) || a.specs.ports || 0;
-                        const valB = (b.specs[throughputField] ?? b.specs.vpn_throughput_mbps ?? 0) || b.specs.ports || 0;
-                        return valB - valA; // High performance first for fallback
+                        return getEquipmentPerformanceValue(b, selectedPackage.throughput_basis) - getEquipmentPerformanceValue(a, selectedPackage.throughput_basis); // High performance first for fallback
                     })[0];
 
                     if (bestFit) {
@@ -213,7 +193,7 @@ export class BOMEngine {
                 if (bestFit) {
                     let quantity = 1;
                     if (canonicalServiceId === "managed_sdwan") {
-                        quantity = this.calculateCPEQuantity(site, siteDef);
+                        quantity = calculateCPEQuantity(site, siteDef);
                     }
 
                     const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
@@ -245,41 +225,7 @@ export class BOMEngine {
         };
     }
 
-    private calculateCPEQuantity(site: Site, siteDef: SiteType): number {
-        const siteModel = (site.redundancyModel || "").toLowerCase();
-        const profileRedundancy = (siteDef.defaults.redundancy?.cpe || "").toLowerCase();
-
-        // 1. If SiteType is NOT generic, it should be the primary source of truth for standardization
-        // unless the site model explicitly says else. But for SA choice, SiteDef usually wins.
-        if (siteDef.id !== "generic" && profileRedundancy) {
-            if (profileRedundancy.includes("dual") || profileRedundancy.includes("ha") || profileRedundancy.includes("redundant") || profileRedundancy.includes("active")) return 2;
-            if (profileRedundancy.includes("single")) return 1;
-        }
-
-        // 2. Explicit Site-level override (e.g. from CSV)
-        if (siteModel.includes("dual") || siteModel.includes("ha") || siteModel.includes("redundant") || siteModel.includes("active")) return 2;
-        if (siteModel.includes("single")) return 1;
-
-        // 3. Last fallback: Check if profile has anything at all
-        if (profileRedundancy.includes("dual") || profileRedundancy.includes("ha") || profileRedundancy.includes("redundant")) return 2;
-
-        return 1; // Default to single
-    }
-
-    private resolveVendorForService(pkg: Package, serviceId: string): string {
-        const pkgItem = pkg.items.find(i => i.service_id === serviceId);
-
-        // Determine from option IDs first (design option or service option)
-        const optionId = (pkgItem?.design_option_id || pkgItem?.service_option_id || "").toLowerCase();
-
-        if (optionId.includes("meraki")) return "meraki";
-        if (optionId.includes("cisco") || optionId.includes("catalyst")) return "cisco_catalyst";
-        if (optionId.includes("fortinet")) return "fortinet";
-        if (optionId.includes("palo_alto") || optionId.includes("paloalto")) return "palo_alto";
-
-        // Fallback or default
-        return "meraki";
-    }
+    // calculateCPEQuantity and resolveVendorForService are now imported from bom-utils.ts
 
     private matchesConstraints(equipment: Equipment, constraints: { type: string; description?: string }[]): boolean {
         for (const constraint of constraints) {
