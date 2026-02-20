@@ -129,7 +129,7 @@ export function useBOMBuilder(): BOMBuilderState {
         async function loadData() {
             if (!projectId) return;
 
-            let p: Project;
+            let p: Project | null;
             if (projectId === "demo") {
                 const pkgs = await PackageService.getAllPackages();
                 const preferredPkg = pkgs.find((pk) => pk.id === "cost_centric") || pkgs[0];
