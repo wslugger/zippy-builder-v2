@@ -106,7 +106,7 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
                             <select
                                 required
                                 value={formData.status || "Supported"}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof EQUIPMENT_STATUSES[number] })}
                                 className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all appearance-none"
                             >
                                 {EQUIPMENT_STATUSES.map(s => (
