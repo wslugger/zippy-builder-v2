@@ -94,31 +94,25 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
     // Real logic would be math based. For now, simple buckets.
 
     {
-        id: "rule_lan_small",
-        name: "Managed LAN - Small Switch",
-        priority: 50,
+        id: "rule_lan_default_speed",
+        name: "Managed LAN - Default Access Speed",
+        priority: 60,
         conditions: [
-            { field: "serviceId", operator: "equals", value: "managed_lan" },
-            { field: "lanPorts", operator: "less_than", value: 25 }
+            { field: "serviceId", operator: "equals", value: "managed_lan" }
         ],
         actions: [
-            { type: "select_equipment", targetId: "cisco_c9200L_24p", quantity: 1 }
+            { type: "set_parameter", targetId: "defaultAccessSpeed", actionValue: "1GbE" }
         ]
     },
     {
-        id: "rule_lan_large",
-        name: "Managed LAN - Large Switch",
-        priority: 40,
+        id: "rule_lan_dynamic_quantity",
+        name: "Managed LAN - Dynamic Switch Quantity Math",
+        priority: 55,
         conditions: [
-            { field: "serviceId", operator: "equals", value: "managed_lan" },
-            { field: "lanPorts", operator: "greater_than", value: 24 }
+            { field: "serviceId", operator: "equals", value: "managed_lan" }
         ],
         actions: [
-            // Example of multiplier. If we have 100 ports, we might want ceil(100/48) switches.
-            // But my simple engine supports 'quantityMultiplierField'.
-            // If I set quantity: 1, and multiplier 'lanPorts', I get 100 switches. That's wrong.
-            // I'll stick to fixed quantity for this prototype or specific rules (100-200 range -> 2 switches).
-            { type: "select_equipment", targetId: "cisco_c9200L_48p", quantity: 1 }
+            { type: "modify_quantity", targetId: "any_switch", quantityMultiplierField: "lanPorts", actionValue: 48 }
         ]
     },
 

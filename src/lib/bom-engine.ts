@@ -105,6 +105,8 @@ export class BOMEngine {
                 // --- 1. TRY RULES ENGINE FIRST ---
                 const matchingRules = this.findMatchingRules(ruleEvaluationSite, selectedPackage.id, canonicalServiceId);
 
+                const parameterActions = matchingRules.flatMap(r => r.actions).filter(a => a.type === "set_parameter");
+
                 const equipmentAction = matchingRules
                     .flatMap(r => r.actions)
                     .find(a => a.type === "select_equipment");
@@ -162,11 +164,17 @@ export class BOMEngine {
                     if (requiredPurpose === "LAN") {
                         // For LAN, we don't filter out smaller switches, we just buy more of them.
                         // But we DO filter by speed and poe constraints if the Site defines them.
-                        if (site.accessPortSpeed && e.specs.access_speed && e.specs.access_speed !== site.accessPortSpeed) {
+                        let requiredSpeed = site.accessPortSpeed;
+                        const defaultSpeedParam = parameterActions.find(a => a.targetId === "defaultAccessSpeed")?.actionValue;
+                        if (!requiredSpeed && defaultSpeedParam) {
+                            requiredSpeed = String(defaultSpeedParam) as NonNullable<Site["accessPortSpeed"]>;
+                        }
+
+                        if (requiredSpeed && e.specs.access_speed && e.specs.access_speed !== requiredSpeed) {
                             // In a real comparison we might check if e.specs.access_speed >= site.accessPortSpeed. 
                             // For simplicity, we string match or handle "10GbE" > "1GbE" logic if possible.
                             // If e didn't define it, we assume it's basic 1GbE.
-                            if (site.accessPortSpeed !== "1GbE" && !e.specs.access_speed?.includes(site.accessPortSpeed.replace("GbE", "G"))) {
+                            if (requiredSpeed !== "1GbE" && !e.specs.access_speed?.includes(requiredSpeed.replace("GbE", "G"))) {
                                 return false; // Basic strict filter for higher speeds
                             }
                         }
@@ -232,9 +240,26 @@ export class BOMEngine {
                     if (canonicalServiceId === "managed_sdwan") {
                         quantity = calculateCPEQuantity(site, siteDef);
                     } else if (canonicalServiceId === "managed_lan") {
-                        const requiredPorts = site.lanPorts || 48; // Assume 48 if not set
-                        const switchPorts = bestFit.specs.ports || 48;
-                        quantity = Math.ceil(requiredPorts / switchPorts);
+                        const quantityAction = matchingRules.flatMap(r => r.actions).find(a => a.type === "modify_quantity");
+
+                        if (quantityAction) {
+                            if (quantityAction.quantity) {
+                                quantity = quantityAction.quantity;
+                            } else if (quantityAction.quantityMultiplierField) {
+                                const multiplier = site[quantityAction.quantityMultiplierField as keyof Site] as number;
+                                if (typeof multiplier === 'number') {
+                                    if (quantityAction.actionValue) {
+                                        quantity = Math.ceil(multiplier / Number(quantityAction.actionValue));
+                                    } else {
+                                        quantity = Math.ceil(multiplier);
+                                    }
+                                }
+                            }
+                        } else {
+                            const requiredPorts = site.lanPorts || 48; // Assume 48 if not set
+                            const switchPorts = bestFit.specs.ports || 48;
+                            quantity = Math.ceil(requiredPorts / switchPorts);
+                        }
                         if (quantity === 0) quantity = 1;
                     }
 

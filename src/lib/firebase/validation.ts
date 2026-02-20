@@ -151,8 +151,9 @@ const LogicConditionSchema = z.object({
 });
 
 const BOMLogicActionSchema = z.object({
-    type: z.enum(["select_equipment", "enable_feature", "set_configuration"]),
+    type: z.enum(["select_equipment", "enable_feature", "set_configuration", "set_parameter", "modify_quantity"]),
     targetId: z.string(),
+    actionValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
     quantity: z.number().optional(),
     quantityMultiplierField: z.string().optional(),
 });

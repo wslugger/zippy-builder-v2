@@ -363,8 +363,9 @@ export interface LogicCondition {
 }
 
 export interface BOMLogicAction {
-  type: "select_equipment" | "enable_feature" | "set_configuration";
-  targetId: string; // SKU or Feature ID
+  type: "select_equipment" | "enable_feature" | "set_configuration" | "set_parameter" | "modify_quantity";
+  targetId: string; // SKU, Feature ID, or Parameter Name
+  actionValue?: string | number | boolean; // The value to set (e.g. default uplink speed)
   quantity?: number; // Fixed number or derived? (e.g. 1 per site)
   quantityMultiplierField?: keyof Site; // e.g. "indoorAPs" -> 1 per AP count
 }

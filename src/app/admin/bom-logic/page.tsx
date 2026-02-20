@@ -2,10 +2,25 @@
 
 import { useState } from "react";
 import { useBOMRules } from "@/src/hooks/useBOMRules";
+import RuleList from "@/src/components/admin/bom-logic/RuleList";
+import RuleEditorModal from "@/src/components/admin/bom-logic/RuleEditorModal";
+import { BOMLogicRule } from "@/src/lib/types";
+import { BOMService } from "@/src/lib/firebase/bom-service";
 
 export default function BOMRulesListPage() {
     const { rules, loading, refreshRules: loadRules } = useBOMRules();
     const [seeding, setSeeding] = useState(false);
+
+    const [activeTab, setActiveTab] = useState<"managed_sdwan" | "managed_lan" | "managed_wifi">("managed_sdwan");
+
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [ruleToEdit, setRuleToEdit] = useState<BOMLogicRule | null>(null);
+
+    // Filter rules based on active tab. Assuming rule condition has serviceId matching the tab.
+    const filteredRules = rules.filter(r =>
+        r.conditions.some(c => c.field === "serviceId" && c.value === activeTab)
+    );
 
     async function handleSeed() {
         if (!confirm("This will overwrite existing rules with defaults from code. Are you sure?")) return;
@@ -25,14 +40,40 @@ export default function BOMRulesListPage() {
         setSeeding(false);
     }
 
+    const openCreateModal = () => {
+        setRuleToEdit(null);
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (rule: BOMLogicRule) => {
+        setRuleToEdit(rule);
+        setIsModalOpen(true);
+    };
+
+    const closeAndRefresh = () => {
+        setIsModalOpen(false);
+        setRuleToEdit(null);
+        loadRules();
+    };
+
+    const handleSaveRule = async (rule: BOMLogicRule) => {
+        await BOMService.saveRule(rule);
+        loadRules();
+    };
+
+    const handleDeleteRule = async (id: string) => {
+        await BOMService.deleteRule(id);
+        loadRules();
+    };
+
     if (loading) return <div className="p-8">Loading...</div>;
 
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
+        <div className="p-8 space-y-6">
+            <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">BOM Logic Rules</h1>
-                    <p className="text-slate-500">Define rule-based equipment selection and configuration.</p>
+                    <h1 className="text-2xl font-bold text-slate-800">BOM Logic Settings</h1>
+                    <p className="text-slate-500">Manage logic properties and equipment selections using Rules.</p>
                 </div>
                 <div className="space-x-4">
                     <button
@@ -43,64 +84,46 @@ export default function BOMRulesListPage() {
                         {seeding ? "Seeding..." : "Reset Verified Defaults"}
                     </button>
                     <button
-                        className="px-4 py-2 text-sm text-white bg-blue-600 rounded opacity-50 cursor-not-allowed"
-                        disabled
+                        onClick={openCreateModal}
+                        className="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 font-medium shadow-sm transition-colors"
                     >
                         + Create New Rule
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white border rounded shadow-sm overflow-hidden">
-                <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Priority</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Rule Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Conditions</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-slate-200">
-                        {rules.map((rule) => (
-                            <tr key={rule.id} className="hover:bg-slate-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                    {rule.priority}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="font-medium text-slate-900">{rule.name}</div>
-                                    <div className="text-xs text-slate-500 font-mono">{rule.id}</div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex flex-wrap gap-1">
-                                        {rule.conditions.map((c, i) => (
-                                            <span key={i} className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 text-[10px] border border-zinc-200">
-                                                {c.field} {c.operator} {String(c.value)}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex flex-wrap gap-1">
-                                        {rule.actions.map((a, i) => (
-                                            <span key={i} className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] border border-blue-100 font-medium">
-                                                {a.type}: {a.targetId} {a.quantity ? `(x${a.quantity})` : ''}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {rules.length === 0 && (
-                            <tr>
-                                <td colSpan={4} className="px-6 py-10 text-center text-slate-500 italic">
-                                    No rules found. Click &quot;Reset Verified Defaults&quot; to seed the rule set.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+            {/* Tabs */}
+            <div className="flex space-x-1 border-b">
+                {[
+                    { id: "managed_sdwan", label: "SD-WAN Rules" },
+                    { id: "managed_lan", label: "LAN Rules" },
+                    { id: "managed_wifi", label: "WLAN Rules" }
+                ].map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as "managed_sdwan" | "managed_lan" | "managed_wifi")}
+                        className={`px-4 py-2 font-medium text-sm transition-colors rounded-t-lg
+                            ${activeTab === tab.id
+                                ? "bg-white border-t border-l border-r text-blue-600 mb-[-1px]"
+                                : "text-slate-500 hover:text-slate-700 bg-slate-50 border-t border-l border-r border-transparent hover:border-slate-200 mb-[-1px]"}
+                        `}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
             </div>
+
+            {/* Rule List */}
+            <RuleList rules={filteredRules} onEdit={openEditModal} onDelete={handleDeleteRule} />
+
+            {/* Modal */}
+            <RuleEditorModal
+                isOpen={isModalOpen}
+                ruleToEdit={ruleToEdit}
+                serviceCategory={activeTab}
+                onClose={closeAndRefresh}
+                onSave={handleSaveRule}
+            />
         </div>
     );
 }
