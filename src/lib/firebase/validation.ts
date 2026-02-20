@@ -39,6 +39,7 @@ export const TechnicalFeatureSchema = z.object({
     id: z.string(),
     name: z.string(),
     category: z.string(),
+    status: z.enum(["Supported", "In development", "Not supported"]).optional(),
     description: z.string(),
     caveats: z.array(z.string()).optional(),
     assumptions: z.array(z.string()).optional(),

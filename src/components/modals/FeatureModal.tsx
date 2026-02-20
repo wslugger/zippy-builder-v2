@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { TechnicalFeature } from "@/src/lib/types";
+import { TechnicalFeature, EQUIPMENT_STATUSES } from "@/src/lib/types";
 import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 
 interface FeatureModalProps {
@@ -17,6 +17,7 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
             id: "",
             name: "",
             category: "Routing",
+            status: "Supported",
             description: "",
             caveats: [],
             assumptions: []
@@ -61,7 +62,7 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Name</label>
                             <input
@@ -99,6 +100,19 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
                                     placeholder="e.g. Routing"
                                 />
                             )}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Status</label>
+                            <select
+                                required
+                                value={formData.status || "Supported"}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all appearance-none"
+                            >
+                                {EQUIPMENT_STATUSES.map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

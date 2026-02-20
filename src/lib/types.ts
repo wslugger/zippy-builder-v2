@@ -128,6 +128,7 @@ export interface TechnicalFeature extends Timestamps {
   id: string; // e.g. "bgp"
   name: string; // "BGP Routing"
   category: string; // "Routing", "Security", etc.
+  status?: typeof EQUIPMENT_STATUSES[number];
   description: string;
   caveats?: string[];
   assumptions?: string[];

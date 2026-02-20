@@ -17,7 +17,7 @@ export default function FeatureList({ features, services, packages, onRefresh }:
     const [editingFeature, setEditingFeature] = useState<TechnicalFeature | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [expandedFeatureId, setExpandedFeatureId] = useState<string | null>(null);
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(['name', 'category', 'description', 'usage']);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(['name', 'category', 'status', 'description', 'usage']);
     const [isColumnDropdownOpen, setIsColumnDropdownOpen] = useState(false);
 
     const filteredFeatures = features.filter(f =>
@@ -176,7 +176,7 @@ export default function FeatureList({ features, services, packages, onRefresh }:
                         <>
                             <div className="fixed inset-0 z-10" onClick={() => setIsColumnDropdownOpen(false)}></div>
                             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl z-20 p-2">
-                                {['name', 'category', 'description', 'usage'].map(col => (
+                                {['name', 'category', 'status', 'description', 'usage'].map(col => (
                                     <label key={col} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer text-sm capitalize">
                                         <input
                                             type="checkbox"
@@ -211,6 +211,7 @@ export default function FeatureList({ features, services, packages, onRefresh }:
                         <tr>
                             {visibleColumns.includes('name') && <th className="px-6 py-3 font-medium text-zinc-500">Name</th>}
                             {visibleColumns.includes('category') && <th className="px-6 py-3 font-medium text-zinc-500">Category</th>}
+                            {visibleColumns.includes('status') && <th className="px-6 py-3 font-medium text-zinc-500">Status</th>}
                             {visibleColumns.includes('description') && <th className="px-6 py-3 font-medium text-zinc-500">Description</th>}
                             {visibleColumns.includes('usage') && <th className="px-6 py-3 font-medium text-zinc-500 text-center">Usage</th>}
                             <th className="px-6 py-3 font-medium text-zinc-500 text-right">Actions</th>
@@ -227,6 +228,18 @@ export default function FeatureList({ features, services, packages, onRefresh }:
                                         <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
                                                 {feature.category}
+                                            </span>
+                                        </td>
+                                    )}
+                                    {visibleColumns.includes('status') && (
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${feature.status === 'Supported' || !feature.status
+                                                    ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                                                    : feature.status === 'In development'
+                                                        ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
+                                                        : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+                                                }`}>
+                                                {feature.status || "Supported"}
                                             </span>
                                         </td>
                                     )}
