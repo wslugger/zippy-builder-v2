@@ -160,18 +160,45 @@ export class BOMEngine {
                     }
 
                     if (requiredPurpose === "LAN") {
-                        const requiredPorts = site.lanPorts || 0;
-                        if ((e.specs.ports || 0) < requiredPorts && e.specs.ports !== undefined) return false;
+                        // For LAN, we don't filter out smaller switches, we just buy more of them.
+                        // But we DO filter by speed and poe constraints if the Site defines them.
+                        if (site.accessPortSpeed && e.specs.access_speed && e.specs.access_speed !== site.accessPortSpeed) {
+                            // In a real comparison we might check if e.specs.access_speed >= site.accessPortSpeed. 
+                            // For simplicity, we string match or handle "10GbE" > "1GbE" logic if possible.
+                            // If e didn't define it, we assume it's basic 1GbE.
+                            if (site.accessPortSpeed !== "1GbE" && !e.specs.access_speed?.includes(site.accessPortSpeed.replace("GbE", "G"))) {
+                                return false; // Basic strict filter for higher speeds
+                            }
+                        }
+
+                        // PoE validation
+                        if (site.poeStandard && e.specs.poe_capabilities && !e.specs.poe_capabilities.includes(site.poeStandard)) {
+                            // If Site wants PoE+ but switch only has PoE, filter it out.
+                            return false;
+                        }
                     }
 
                     return true;
                 });
 
-                let bestFit = candidates.sort((a, b) => {
+                const sortedCandidates = candidates.sort((a, b) => {
                     return getEquipmentPerformanceValue(a, selectedPackage.throughput_basis) - getEquipmentPerformanceValue(b, selectedPackage.throughput_basis);
-                })[0];
+                });
+
+                let bestFit = sortedCandidates[0];
 
                 let matchType = "Dynamic match";
+
+                let alternatives: { itemId: string; itemName: string; reasoning?: string }[] = [];
+                if (sortedCandidates.length > 1) {
+                    // grab up to 5 additional candidates
+                    alternatives = sortedCandidates.slice(1, 6).map(e => ({
+                        itemId: e.id,
+                        itemName: `${VENDOR_LABELS[e.vendor_id] || e.vendor_id} ${e.model}`,
+                        reasoning: `Alternative option.`,
+                        specSummary: this.getEquipmentSpecSummary(e)
+                    }));
+                }
 
                 if (!bestFit) {
                     // Last-resort fallback: Pick the LARGEST available device if everything is too small
@@ -181,12 +208,22 @@ export class BOMEngine {
                         return requiredPurpose && e.purpose.includes(requiredPurpose as (typeof EQUIPMENT_PURPOSES)[number]);
                     });
 
-                    bestFit = allPurposeCandidates.sort((a, b) => {
+                    const sortedFallbackCandidates = allPurposeCandidates.sort((a, b) => {
                         return getEquipmentPerformanceValue(b, selectedPackage.throughput_basis) - getEquipmentPerformanceValue(a, selectedPackage.throughput_basis); // High performance first for fallback
-                    })[0];
+                    });
+
+                    bestFit = sortedFallbackCandidates[0];
 
                     if (bestFit) {
                         matchType = "Fallback (Best available effort)";
+                        if (sortedFallbackCandidates.length > 1) {
+                            alternatives = sortedFallbackCandidates.slice(1, 6).map(e => ({
+                                itemId: e.id,
+                                itemName: `${VENDOR_LABELS[e.vendor_id] || e.vendor_id} ${e.model}`,
+                                reasoning: `Fallback alternative.`,
+                                specSummary: this.getEquipmentSpecSummary(e)
+                            }));
+                        }
                     }
                 }
 
@@ -194,6 +231,11 @@ export class BOMEngine {
                     let quantity = 1;
                     if (canonicalServiceId === "managed_sdwan") {
                         quantity = calculateCPEQuantity(site, siteDef);
+                    } else if (canonicalServiceId === "managed_lan") {
+                        const requiredPorts = site.lanPorts || 48; // Assume 48 if not set
+                        const switchPorts = bestFit.specs.ports || 48;
+                        quantity = Math.ceil(requiredPorts / switchPorts);
+                        if (quantity === 0) quantity = 1;
                     }
 
                     const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
@@ -208,7 +250,8 @@ export class BOMEngine {
                         itemName: `${VENDOR_LABELS[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,
                         itemType: "equipment",
                         quantity: quantity,
-                        reasoning: `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`
+                        reasoning: `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`,
+                        alternatives: alternatives.length > 0 ? alternatives : undefined
                     });
                 }
             }
@@ -321,5 +364,19 @@ export class BOMEngine {
         }
 
         return warnings;
+    }
+
+    private getEquipmentSpecSummary(e: Equipment): string {
+        const parts: string[] = [];
+        if (e.purpose.includes("LAN")) {
+            if (e.specs.ports) parts.push(`${e.specs.ports} Ports`);
+            if (e.specs.poe_budget) parts.push(`${e.specs.poe_budget}W PoE`);
+            if (e.specs.access_speed) parts.push(`${e.specs.access_speed} Access`);
+        } else if (e.purpose.includes("SDWAN")) {
+            const throughput = e.specs.vpn_throughput_mbps || 0;
+            if (throughput) parts.push(`${throughput}M VPN`);
+            if (e.specs.wan_interfaces_count) parts.push(`${e.specs.wan_interfaces_count} WAN`);
+        }
+        return parts.join(", ");
     }
 }

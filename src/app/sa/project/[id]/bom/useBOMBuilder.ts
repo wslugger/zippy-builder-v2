@@ -28,6 +28,7 @@ DAL-DataCenter,555 Tech Way Dallas TX,5,10000,10000,Dual CPE,2,24,0,0,0,DIA,DIA,
 // -------------------------------------------------------
 export type PreviewSite = Site & {
     recommendedType?: string;
+    recommendedLanType?: string;
     confidence?: number;
     reasoning?: string;
 };
@@ -91,6 +92,8 @@ export interface BOMBuilderState {
     handlePackageChange: (pkgId: string) => Promise<void>;
     /** Call to change siteTypeId for currently selected site */
     handleSiteTypeChange: (siteTypeId: string) => void;
+    /** Call to update any properties on the currently selected site */
+    handleSiteUpdate: (updates: Partial<Site>) => void;
     projectId: string;
 }
 
@@ -288,6 +291,16 @@ export function useBOMBuilder(): BOMBuilderState {
         });
     }, [selectedSiteIndex]);
 
+    const handleSiteUpdate = useCallback((updates: Partial<Site>) => {
+        setSites((prev) => {
+            const next = [...prev];
+            if (next[selectedSiteIndex]) {
+                next[selectedSiteIndex] = { ...next[selectedSiteIndex], ...updates };
+            }
+            return next;
+        });
+    }, [selectedSiteIndex]);
+
     // -------------------------------------------------------
     // CSV + AI classification
     // -------------------------------------------------------
@@ -298,7 +311,7 @@ export function useBOMBuilder(): BOMBuilderState {
             const analysis = await AIService.classifySites(parsed, siteTypes);
             const preview: PreviewSite[] = parsed.map((site, idx) => {
                 const rec = analysis.find((a) => a.siteIndex === idx);
-                return { ...site, recommendedType: rec?.siteTypeId, confidence: rec?.confidence, reasoning: rec?.reasoning };
+                return { ...site, recommendedType: rec?.siteTypeId, recommendedLanType: rec?.lanSiteTypeId, confidence: rec?.confidence, reasoning: rec?.reasoning };
             });
             setPreviewSites(preview);
         } catch {
@@ -368,6 +381,7 @@ export function useBOMBuilder(): BOMBuilderState {
         getVendorForService,
         handlePackageChange,
         handleSiteTypeChange,
+        handleSiteUpdate,
         projectId,
     };
 }

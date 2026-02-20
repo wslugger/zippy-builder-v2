@@ -143,6 +143,12 @@ function BOMBuilderContent() {
                                 <LANTab
                                     selectedSite={selectedSite}
                                     siteTypes={siteTypes}
+                                    handleSiteUpdate={state.handleSiteUpdate}
+                                    lanItem={state.siteBOMItems.find(i => i.serviceId === "managed_lan" && i.itemType === "equipment")}
+                                    manualSelections={manualSelections}
+                                    setManualSelections={setManualSelections}
+                                    catalog={catalog}
+                                    setSelectedSpecsItem={setSelectedSpecsItem}
                                 />
                             )}
 

@@ -66,6 +66,9 @@ ${defaultsText}`;
             You are a Network Solutions Architect expert specializing in SD-WAN, LAN, and WLAN deployments.
             
             Your task is to classify a list of imported sites into the most appropriate "Site Type" (Deployment Profile) from our catalog.
+            Specifically, you must provide TWO classifications for each site:
+            1. An SD-WAN or Branch profile (siteTypeId)
+            2. A LAN profile (lanSiteTypeId)
             
             CRITICAL REQUIREMENT:
             Base your classification PRIMARILY on the "Matching Rules/Constraints" and "Description" provided for each Site Type below. 
@@ -81,15 +84,17 @@ ${defaultsText}`;
             1. **Strict Constraint Matching**: If a Site Type has a rule like "userCount min 100", do not assign sites with 20 users to that type.
             2. **Redundancy Priority**: If a site's data says "Dual CPE", favor Site Types that default to "Dual CPE" redundancy.
             3. **Description Context**: Use the "Description" field to understand the business intent of the profile (e.g., "Critical Data Center hub").
-            4. **Reasoning**: In your JSON output, explain which specific rule or description lead to your choice.
+            4. **Dual Category Selection**: You MUST pick one SD-WAN/Branch profile AND one LAN profile for each site, looking at the "Category" of the Site Types.
+            5. **Reasoning**: In your JSON output, explain which specific rule or description lead to your choice.
             
             Output strictly in JSON format as an array of objects:
             [
               {
                 "siteIndex": number,
-                "siteTypeId": "string (must match one of the available IDs)",
+                "siteTypeId": "string (must match one of the available IDs for a non-LAN site)",
+                "lanSiteTypeId": "string (must match one of the available IDs for a LAN site)",
                 "confidence": number (0-100),
-                "reasoning": "string (e.g. 'Site has 120 users which matches the Large Office min 100 constraint')"
+                "reasoning": "string (e.g. 'Site has 120 users which matches the Large Office min 100 constraint, and is assigned 3-Tier Campus for LAN')"
               },
               ...
             ]

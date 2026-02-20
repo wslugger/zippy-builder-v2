@@ -5,6 +5,7 @@ import { SiteType } from '@/src/lib/site-types';
 interface SiteImportReviewModalProps {
     sites: (Site & {
         recommendedType?: string;
+        recommendedLanType?: string;
         confidence?: number;
         reasoning?: string;
     })[];
@@ -27,10 +28,17 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
         setReviewedSites(next);
     };
 
+    const handleLanTypeChange = (index: number, typeId: string) => {
+        const next = [...reviewedSites];
+        next[index] = { ...next[index], recommendedLanType: typeId, lanSiteTypeId: typeId };
+        setReviewedSites(next);
+    };
+
     const handleConfirm = () => {
         const finalSites = reviewedSites.map(s => ({
             ...s,
-            siteTypeId: s.recommendedType || s.siteTypeId
+            siteTypeId: s.recommendedType || s.siteTypeId,
+            lanSiteTypeId: s.recommendedLanType || s.lanSiteTypeId
         }));
         onConfirm(finalSites);
     };
@@ -88,16 +96,46 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
                                         <div className="text-[10px] text-slate-400 font-mono mt-1 mt-1 truncate max-w-[150px]">{site.notes || "No notes"}</div>
                                     </td>
                                     <td className="py-5 px-4">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="relative flex-1 min-w-[180px]">
+                                        <div className="flex flex-col space-y-3">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="relative flex-1 min-w-[180px]">
+                                                    <select
+                                                        value={site.recommendedType || ""}
+                                                        onChange={(e) => handleTypeChange(idx, e.target.value)}
+                                                        className={`w-full text-sm font-medium border rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none bg-white ${(site.confidence || 0) > 80 ? 'border-green-200' : 'border-slate-200'
+                                                            }`}
+                                                    >
+                                                        <option value="">Select Edge Profile...</option>
+                                                        {siteTypes.filter(t => t.category !== "LAN").map(t => (
+                                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                                    </div>
+                                                </div>
+                                                {(site.confidence || 0) > 0 && (
+                                                    <div
+                                                        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border ${site.confidence! > 80
+                                                            ? 'bg-green-50 text-green-700 border-green-100'
+                                                            : site.confidence! > 50
+                                                                ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                                                : 'bg-slate-50 text-slate-500 border-slate-100'
+                                                            }`}
+                                                        title={`Confidence: ${site.confidence}%`}
+                                                    >
+                                                        {site.confidence}%
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="relative min-w-[180px]">
                                                 <select
-                                                    value={site.recommendedType || ""}
-                                                    onChange={(e) => handleTypeChange(idx, e.target.value)}
-                                                    className={`w-full text-sm font-medium border rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none bg-white ${(site.confidence || 0) > 80 ? 'border-green-200' : 'border-slate-200'
-                                                        }`}
+                                                    value={site.recommendedLanType || ""}
+                                                    onChange={(e) => handleLanTypeChange(idx, e.target.value)}
+                                                    className={`w-full text-sm font-medium border rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none bg-white border-slate-200`}
                                                 >
-                                                    <option value="">Select Profile...</option>
-                                                    {siteTypes.map(t => (
+                                                    <option value="">Select LAN Profile...</option>
+                                                    {siteTypes.filter(t => t.category === "LAN").map(t => (
                                                         <option key={t.id} value={t.id}>{t.name}</option>
                                                     ))}
                                                 </select>
@@ -105,19 +143,6 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                                 </div>
                                             </div>
-                                            {(site.confidence || 0) > 0 && (
-                                                <div
-                                                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border ${site.confidence! > 80
-                                                            ? 'bg-green-50 text-green-700 border-green-100'
-                                                            : site.confidence! > 50
-                                                                ? 'bg-amber-50 text-amber-700 border-amber-100'
-                                                                : 'bg-slate-50 text-slate-500 border-slate-100'
-                                                        }`}
-                                                    title={`Confidence: ${site.confidence}%`}
-                                                >
-                                                    {site.confidence}%
-                                                </div>
-                                            )}
                                         </div>
                                     </td>
                                     <td className="py-5 px-4">

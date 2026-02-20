@@ -73,7 +73,7 @@ export const AIService = {
     /**
      * Classifies a list of sites into Site Types using Gemini.
      */
-    classifySites: async (sites: Site[], availableSiteTypes: SiteType[]): Promise<{ siteIndex: number, siteTypeId: string, confidence: number, reasoning: string }[]> => {
+    classifySites: async (sites: Site[], availableSiteTypes: SiteType[]): Promise<{ siteIndex: number, siteTypeId: string, lanSiteTypeId?: string, confidence: number, reasoning: string }[]> => {
         try {
             const response = await fetch('/api/sa/classify-sites', {
                 method: 'POST',

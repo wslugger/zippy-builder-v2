@@ -55,6 +55,9 @@ export const EquipmentSchema = z.object({
     lan_interfaces_count: z.number().optional(),
     lan_interfaces_desc: z.string().optional(),
     convertible_interfaces_desc: z.string().optional(),
+    access_speed: z.string().optional(),
+    uplink_speed: z.string().optional(),
+    uplink_ports: z.number().optional(),
     integrated_cellular: z.boolean().optional(),
     modular_cellular: z.boolean().optional().describe("Supports Pluggable Interface Modules (PIM)"),
     cellular_type: z.enum(CELLULAR_TYPES).optional(),
@@ -325,6 +328,7 @@ export const SiteTypeSchema = z.object({
 export const SiteSchema = z.object({
   id: z.string().optional(), // specific ID if tracking by ID
   siteTypeId: z.string().optional(), // Reference to SiteType
+  lanSiteTypeId: z.string().optional(), // Reference to LAN SiteType
   name: z.string(),
   address: z.string(),
   userCount: z.number(),
@@ -339,6 +343,11 @@ export const SiteSchema = z.object({
   primaryCircuit: z.string(), // "DIA", "Broadband"
   secondaryCircuit: z.string().optional(),
   notes: z.string().optional(),
+  accessPortSpeed: z.enum(["1GbE", "2.5GbE", "5GbE", "10GbE"]).optional(),
+  uplinkPortSpeed: z.enum(["1GbE", "10GbE", "25GbE", "40GbE", "100GbE"]).optional(),
+  uplinkPortType: z.enum(["SFP+", "Copper", "Fiber"]).optional(),
+  poeStandard: z.enum(["PoE", "PoE+", "PoE++"]).optional(),
+  requiredPoePorts: z.number().optional(),
 });
 
 export type Site = z.infer<typeof SiteSchema>;
@@ -382,6 +391,7 @@ export interface BOMLineItem {
   unitPrice?: number; // Placeholder
   totalPrice?: number; // Placeholder
   reasoning?: string; // Which rule triggered this?
+  alternatives?: { itemId: string; itemName: string; reasoning?: string; specSummary?: string }[];
 }
 
 export interface BOM {
