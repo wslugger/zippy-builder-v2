@@ -1,4 +1,4 @@
-import { BOMEngine } from "@/src/lib/bom-engine";
+import { calculateBOM } from "@/src/lib/bom-engine";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { Site, BOM } from "@/src/lib/bom-types";
@@ -6,10 +6,11 @@ import { Package, Service } from "@/src/lib/types";
 import { SiteType } from "@/src/lib/site-types";
 
 describe("Bug Reproduction: BOM Throughput Basis", () => {
-    let engine: BOMEngine;
+    let testRules: import("@/src/lib/types").BOMLogicRule[]; let testCatalog: import("@/src/lib/types").Equipment[];
 
     beforeEach(() => {
-        engine = new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT);
+        testRules = SEED_BOM_RULES;
+        testCatalog = SEED_EQUIPMENT;
     });
 
     const mockServiceSDWAN: Service = {
@@ -86,12 +87,12 @@ describe("Bug Reproduction: BOM Throughput Basis", () => {
 
         // Test with VPN basis
         const pkgVPN: Package = { ...pkg, throughput_basis: "vpn_throughput_mbps" };
-        const bomVPN = engine.generateBOM("proj", [highLoadSite], pkgVPN, [mockServiceSDWAN], [mockSiteType]);
+        const bomVPN = calculateBOM({ projectId: "proj", sites: [highLoadSite], selectedPackage: pkgVPN, services: [mockServiceSDWAN], siteTypes: [mockSiteType], equipmentCatalog: testCatalog, rules: testRules });
         const itemVPN = bomVPN.items.find(i => i.serviceId === "managed_sdwan");
 
         // Test with NGFW basis
         const pkgNGFW: Package = { ...pkg, throughput_basis: "ngfw_throughput_mbps" };
-        const bomNGFW = engine.generateBOM("proj", [highLoadSite], pkgNGFW, [mockServiceSDWAN], [mockSiteType]);
+        const bomNGFW = calculateBOM({ projectId: "proj", sites: [highLoadSite], selectedPackage: pkgNGFW, services: [mockServiceSDWAN], siteTypes: [mockSiteType], equipmentCatalog: testCatalog, rules: testRules });
         const itemNGFW = bomNGFW.items.find(i => i.serviceId === "managed_sdwan");
 
         // These should differ if the basis is respected

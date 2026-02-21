@@ -1,4 +1,4 @@
-import { BOMEngine } from "@/src/lib/bom-engine";
+import { calculateBOM } from "@/src/lib/bom-engine";
 import { Site } from "@/src/lib/bom-types";
 import { Package, Service } from "@/src/lib/types";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
@@ -6,7 +6,8 @@ import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { SiteType } from "@/src/lib/site-types";
 
 describe("Bugfix: CPE Redundancy Catalog Sync", () => {
-    const engine = new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT);
+    const testRules = SEED_BOM_RULES;
+    const testCatalog = SEED_EQUIPMENT;
 
     const mockServices: Service[] = [
         {
@@ -71,7 +72,7 @@ describe("Bugfix: CPE Redundancy Catalog Sync", () => {
             primaryCircuit: "DIA"
         };
 
-        const bom = engine.generateBOM("test-project", [site], mockPackage, mockServices, [dynamicSiteType]);
+        const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: [dynamicSiteType], equipmentCatalog: testCatalog, rules: testRules });
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
 
         expect(sdwanItem).toBeDefined();
@@ -113,7 +114,7 @@ describe("Bugfix: CPE Redundancy Catalog Sync", () => {
             primaryCircuit: "Broadband"
         };
 
-        const bom = engine.generateBOM("test-project", [site], mockPackage, mockServices, [dynamicSiteType]);
+        const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: [dynamicSiteType], equipmentCatalog: testCatalog, rules: testRules });
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
 
         expect(sdwanItem).toBeDefined();

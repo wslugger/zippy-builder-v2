@@ -19,7 +19,7 @@ export default function BOMRulesListPage() {
 
     // Filter rules based on active tab. Assuming rule condition has serviceId matching the tab.
     const filteredRules = rules.filter(r =>
-        r.conditions.some(c => c.field === "serviceId" && c.value === activeTab)
+        JSON.stringify(r.condition).includes(activeTab)
     );
 
     async function handleSeed() {

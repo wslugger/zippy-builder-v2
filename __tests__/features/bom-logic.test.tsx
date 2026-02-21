@@ -1,4 +1,4 @@
-import { BOMEngine } from "@/src/lib/bom-engine";
+import { calculateBOM } from "@/src/lib/bom-engine";
 import { BOMLogicRule, Site, Equipment, Package, Service, SiteType } from "@/src/lib/types";
 import { SERVICE_TO_PURPOSE } from "@/src/lib/bom-utils";
 
@@ -31,7 +31,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
         detailed_description: "",
         active: true,
         items: [
-            { service_id: "managed_lan", inclusion_type: "required" }
+            { service_id: "managed_lan", inclusion_type: "required", enabled_features: [] }
         ]
     };
 
@@ -82,13 +82,14 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 id: "r1",
                 name: "Default Speed",
                 priority: 10,
-                conditions: [{ field: "serviceId", operator: "equals", value: "managed_lan" }],
+                condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
                 actions: [{ type: "set_parameter", targetId: "defaultAccessSpeed", actionValue: "10GbE" }]
             }
         ];
 
-        const engine = new BOMEngine(rules, mockEquipmentCatalog);
-        const bom = engine.generateBOM("proj1", [site], mockPackage, mockServices, mockSiteTypes);
+        const testRules = rules;
+        const testCatalog = mockEquipmentCatalog;
+        const bom = calculateBOM({ projectId: "proj1", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: mockSiteTypes, equipmentCatalog: testCatalog, rules: testRules });
 
         // Should filter out the 1GbE switch and pick the 10GbE switch based on set_parameter logic replacing undefined
         expect(bom.items[0].itemId).toBe("sw_24p_10g");
@@ -121,15 +122,16 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 id: "r2",
                 name: "Dynamic Switch Ratio",
                 priority: 10,
-                conditions: [{ field: "serviceId", operator: "equals", value: "managed_lan" }],
+                condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
                 actions: [
                     { type: "modify_quantity", targetId: "calculate_qty", quantityMultiplierField: "lanPorts", actionValue: 48 }
                 ]
             }
         ];
 
-        const engine = new BOMEngine(rules, mockEquipmentCatalog);
-        const bom = engine.generateBOM("proj2", [site], mockPackage, mockServices, mockSiteTypes);
+        const testRules = rules;
+        const testCatalog = mockEquipmentCatalog;
+        const bom = calculateBOM({ projectId: "proj2", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: mockSiteTypes, equipmentCatalog: testCatalog, rules: testRules });
 
         // With 100 ports, dividing by 48 = 2.08, ceiling should be 3.
         expect(bom.items[0].itemId).toBe("sw_24p_10g");

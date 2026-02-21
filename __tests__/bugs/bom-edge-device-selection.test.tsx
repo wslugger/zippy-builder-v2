@@ -1,5 +1,5 @@
 
-import { BOMEngine } from "@/src/lib/bom-engine";
+import { calculateBOM } from "@/src/lib/bom-engine";
 import { Site } from "@/src/lib/bom-types";
 import { Package, Service } from "@/src/lib/types";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
@@ -7,7 +7,8 @@ import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 
 describe("Bug Reproduction: BOM Edge Device Selection", () => {
-    const engine = new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT);
+    const testRules = SEED_BOM_RULES;
+    const testCatalog = SEED_EQUIPMENT;
 
     const mockServices: Service[] = [
         {
@@ -57,7 +58,7 @@ describe("Bug Reproduction: BOM Edge Device Selection", () => {
             primaryCircuit: "DIA"
         };
 
-        const bom = engine.generateBOM("test-project-bug", [site], costCentricPackage, mockServices, ALL_SITE_TYPES);
+        const bom = calculateBOM({ projectId: "test-project-bug", sites: [site], selectedPackage: costCentricPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
 
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
         expect(sdwanItem).toBeDefined();

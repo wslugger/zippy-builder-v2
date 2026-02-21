@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BOMLogicRule, LogicCondition, BOMLogicAction } from "@/src/lib/types";
+import { BOMLogicRule, BOMLogicAction } from "@/src/lib/types";
 
 interface RuleEditorModalProps {
     isOpen: boolean;
@@ -20,9 +20,7 @@ export default function RuleEditorModal({
         id: "",
         name: "",
         priority: 10,
-        conditions: [
-            { field: "serviceId", operator: "equals", value: serviceCategory },
-        ],
+        condition: { "==": [{ "var": "serviceId" }, serviceCategory] } as Record<string, unknown>,
         actions: [],
     });
     const [saving, setSaving] = useState(false);
@@ -35,9 +33,7 @@ export default function RuleEditorModal({
                 id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
                 name: "",
                 priority: 10,
-                conditions: [
-                    { field: "serviceId", operator: "equals", value: serviceCategory },
-                ],
+                condition: { "==": [{ "var": "serviceId" }, serviceCategory] } as Record<string, unknown>,
                 actions: [],
             });
         }
@@ -59,31 +55,7 @@ export default function RuleEditorModal({
         }
     };
 
-    const addCondition = () => {
-        setRule({
-            ...rule,
-            conditions: [...rule.conditions, { field: "bandwidthDownMbps", operator: "equals", value: "" }],
-        });
-    };
-
-    const updateCondition = (index: number, updates: Partial<LogicCondition>) => {
-        const newConditions = [...rule.conditions];
-        newConditions[index] = { ...newConditions[index], ...updates } as LogicCondition;
-        // Fix up numeric vs string
-        if (updates.value !== undefined) {
-            if (updates.operator?.includes("than") || newConditions[index].operator.includes("than")) {
-                newConditions[index].value = Number(updates.value);
-            }
-        }
-        setRule({ ...rule, conditions: newConditions });
-    };
-
-    const removeCondition = (index: number) => {
-        setRule({
-            ...rule,
-            conditions: rule.conditions.filter((_, i) => i !== index),
-        });
-    };
+    // Condition helpers removed in favor of JSON string editing
 
     const addAction = () => {
         setRule({
@@ -146,48 +118,24 @@ export default function RuleEditorModal({
 
                         <section className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <h3 className="font-semibold text-slate-800">Conditions</h3>
-                                <button type="button" onClick={addCondition} className="text-sm text-blue-600 hover:text-blue-800">+ Add Condition</button>
+                                <h3 className="font-semibold text-slate-800">Condition (JSON Logic)</h3>
                             </div>
                             <div className="space-y-2 border rounded p-4 bg-slate-50">
-                                {rule.conditions.map((c, i) => (
-                                    <div key={i} className="flex flex-wrap md:flex-nowrap gap-2 items-center">
-                                        <input
-                                            type="text"
-                                            value={c.field}
-                                            onChange={(e) => updateCondition(i, { field: e.target.value as keyof import("@/src/lib/types").Site | "packageId" | "serviceId" | "designOptionId" })}
-                                            className="flex-1 border rounded px-2 py-1 text-sm"
-                                            placeholder="Field name (e.g., bandwidthDownMbps)"
-                                            required
-                                        />
-                                        <select
-                                            value={c.operator}
-                                            onChange={(e) => updateCondition(i, { operator: e.target.value as import("@/src/lib/types").LogicOperator })}
-                                            className="flex-1 border rounded px-2 py-1 text-sm bg-white"
-                                        >
-                                            <option value="equals">equals</option>
-                                            <option value="not_equals">not equals</option>
-                                            <option value="greater_than">&gt;</option>
-                                            <option value="less_than">&lt;</option>
-                                            <option value="contains">contains</option>
-                                        </select>
-                                        <input
-                                            type="text"
-                                            value={String(c.value)}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                // auto convert to number if possible and not empty
-                                                const numVal = Number(val);
-                                                updateCondition(i, { value: (isNaN(numVal) || val === '') ? val : numVal });
-                                            }}
-                                            className="flex-1 border rounded px-2 py-1 text-sm"
-                                            placeholder="Value"
-                                            required
-                                        />
-                                        <button type="button" onClick={() => removeCondition(i)} className="p-1 text-red-500 hover:text-red-700">✕</button>
-                                    </div>
-                                ))}
-                                {rule.conditions.length === 0 && <span className="text-sm text-slate-500">No conditions. Adding an action applies to all matching the service type.</span>}
+                                <textarea
+                                    key={rule.id || "new"}
+                                    defaultValue={JSON.stringify(rule.condition, null, 2)}
+                                    onChange={(e) => {
+                                        try {
+                                            const parsed = JSON.parse(e.target.value);
+                                            setRule({ ...rule, condition: parsed });
+                                        } catch {
+                                            // Allow invalid state while typing
+                                        }
+                                    }}
+                                    className="w-full border rounded px-3 py-2 font-mono text-sm h-48"
+                                    placeholder='{ "==": [{ "var": "serviceId" }, "managed_sdwan"] }'
+                                    required
+                                />
                             </div>
                         </section>
 

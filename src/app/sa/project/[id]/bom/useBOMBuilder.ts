@@ -7,7 +7,7 @@ import { Project, Package, Service, Equipment } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
-import { BOMEngine } from "@/src/lib/bom-engine";
+import { calculateBOM, calculateUtilization, validatePOE } from "@/src/lib/bom-engine";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
 import { AIService } from "@/src/lib/ai-service";
@@ -181,10 +181,7 @@ export function useBOMBuilder(): BOMBuilderState {
         loadData();
     }, [projectId]);
 
-    // -------------------------------------------------------
-    // Engine (reactive to catalog)
-    // -------------------------------------------------------
-    const engine = useMemo(() => new BOMEngine(SEED_BOM_RULES, catalog), [catalog]);
+    // Engine instantiation removed in favor of pure functions
 
     // -------------------------------------------------------
     // Available tabs (derived from package + services)
@@ -245,10 +242,19 @@ export function useBOMBuilder(): BOMBuilderState {
     // -------------------------------------------------------
     const bom = useMemo<BOM | null>(() => {
         if (sites.length > 0 && pkg && services.length > 0 && siteTypes.length > 0) {
-            return engine.generateBOM(projectId, sites, pkg, services, siteTypes, manualSelections);
+            return calculateBOM({
+                projectId,
+                sites,
+                selectedPackage: pkg,
+                services,
+                siteTypes,
+                equipmentCatalog: catalog,
+                rules: SEED_BOM_RULES,
+                manualSelections
+            });
         }
         return null;
-    }, [sites, pkg, services, siteTypes, engine, projectId, manualSelections]);
+    }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections]);
 
     const selectedSite = sites[selectedSiteIndex];
     const siteBOMItems = bom?.items.filter((i) => i.siteName === selectedSite?.name) ?? [];
@@ -260,12 +266,12 @@ export function useBOMBuilder(): BOMBuilderState {
     const currentSDWANEquipment = catalog.find((e) => e.id === currentSDWANItem?.itemId);
     const sdwanOverhead = pkg ? calculateThroughputOverhead(pkg, "managed_sdwan", services) : 0;
     const utilization = selectedSite && currentSDWANEquipment
-        ? engine.calculateUtilization(selectedSite, currentSDWANEquipment, pkg?.throughput_basis, sdwanOverhead)
+        ? calculateUtilization(selectedSite, currentSDWANEquipment, pkg?.throughput_basis, sdwanOverhead)
         : 0;
     const totalLoad = selectedSite
         ? (selectedSite.bandwidthDownMbps || 0) + (selectedSite.bandwidthUpMbps || 0) + sdwanOverhead
         : 0;
-    const poeWarnings = selectedSite ? engine.validatePOE(selectedSite, siteBOMItems) : [];
+    const poeWarnings = selectedSite ? validatePOE(selectedSite, siteBOMItems, catalog) : [];
 
     // -------------------------------------------------------
     // Helpers

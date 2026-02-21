@@ -38,12 +38,8 @@ export default function RuleList({ rules, onEdit, onDelete }: RuleListProps) {
                                 <div className="text-xs text-slate-500 font-mono">{rule.id}</div>
                             </td>
                             <td className="px-6 py-4">
-                                <div className="flex flex-wrap gap-1">
-                                    {rule.conditions.map((c, i) => (
-                                        <span key={i} className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 text-[10px] border border-zinc-200">
-                                            {c.field} {c.operator} {String(c.value)}
-                                        </span>
-                                    ))}
+                                <div className="text-[10px] font-mono whitespace-pre text-zinc-600 max-w-xs overflow-hidden text-ellipsis h-12">
+                                    {JSON.stringify(rule.condition, null, 2)}
                                 </div>
                             </td>
                             <td className="px-6 py-4">

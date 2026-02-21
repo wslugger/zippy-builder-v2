@@ -162,7 +162,7 @@ export const BOMLogicRuleSchema = z.object({
     id: z.string(),
     name: z.string(),
     priority: z.number(),
-    conditions: z.array(LogicConditionSchema),
+    condition: z.record(z.string(), z.unknown()),
     actions: z.array(BOMLogicActionSchema),
 });
 

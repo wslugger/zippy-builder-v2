@@ -1,4 +1,4 @@
-import { BOMEngine } from "@/src/lib/bom-engine";
+import { calculateBOM } from "@/src/lib/bom-engine";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { Site, BOM } from "@/src/lib/bom-types";
@@ -6,10 +6,11 @@ import { Package, Service } from "@/src/lib/types";
 import { SiteType } from "@/src/lib/site-types";
 
 describe("BOM Engine - Throughput Calculation", () => {
-    let engine: BOMEngine;
+    let testRules: import("@/src/lib/types").BOMLogicRule[]; let testCatalog: import("@/src/lib/types").Equipment[];
 
     beforeEach(() => {
-        engine = new BOMEngine(SEED_BOM_RULES, SEED_EQUIPMENT);
+        testRules = SEED_BOM_RULES;
+        testCatalog = SEED_EQUIPMENT;
     });
 
     const mockServiceSDWAN: Service = {
@@ -59,7 +60,6 @@ describe("BOM Engine - Throughput Calculation", () => {
         id: "standard_branch",
         name: "Standard Branch",
         category: "SD-WAN",
-        tier: "Standard Branch",
         description: "Standard",
         constraints: [],
         defaults: {
@@ -76,13 +76,11 @@ describe("BOM Engine - Throughput Calculation", () => {
         const site: Site = { ...mockSiteHighBW, bandwidthDownMbps: 450, bandwidthUpMbps: 450 };
         const pkg: Package = { ...mockPackageWithOverhead, throughput_overhead_mbps: 200 };
 
-        const bom: BOM = engine.generateBOM(
-            "test-project",
-            [site],
-            pkg,
-            [mockServiceSDWAN],
-            [mockSiteType]
-        );
+        const bom: BOM = calculateBOM({
+            projectId:
+                "test-project", sites: [site], selectedPackage: pkg, services: [mockServiceSDWAN], siteTypes: [mockSiteType]
+            , equipmentCatalog: testCatalog, rules: testRules
+        });
 
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
 
@@ -97,13 +95,11 @@ describe("BOM Engine - Throughput Calculation", () => {
         const site: Site = { ...mockSiteHighBW, bandwidthDownMbps: 450, bandwidthUpMbps: 450 };
         const pkg: Package = { ...mockPackageWithOverhead, throughput_overhead_mbps: 0 };
 
-        const bom: BOM = engine.generateBOM(
-            "test-project",
-            [site],
-            pkg,
-            [mockServiceSDWAN],
-            [mockSiteType]
-        );
+        const bom: BOM = calculateBOM({
+            projectId:
+                "test-project", sites: [site], selectedPackage: pkg, services: [mockServiceSDWAN], siteTypes: [mockSiteType]
+            , equipmentCatalog: testCatalog, rules: testRules
+        });
 
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
 

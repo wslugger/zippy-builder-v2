@@ -374,7 +374,7 @@ export interface BOMLogicRule {
   id: string;
   name: string;
   priority: number; // Higher number = higher priority
-  conditions: LogicCondition[];
+  condition: Record<string, unknown>; // JSON Logic condition
   actions: BOMLogicAction[];
 }
 
@@ -405,5 +405,16 @@ export interface BOM {
     totalMonthlyCost?: number;
     siteCount: number;
   };
+}
+
+export interface BOMEngineInput {
+  projectId: string;
+  sites: Site[];
+  selectedPackage: Package;
+  services: Service[];
+  siteTypes: SiteType[];
+  equipmentCatalog: Equipment[];
+  rules: BOMLogicRule[];
+  manualSelections?: Record<string, string>;
 }
 
