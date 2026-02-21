@@ -8,6 +8,7 @@ import { SpecsModal } from "./SpecsModal";
 import { WANTab } from "./WANTab";
 import { LANTab } from "./LANTab";
 import { WLANTab } from "./WLANTab";
+import { ProjectSummaryDashboard } from "./ProjectSummaryDashboard";
 
 // ─────────────────────────────────────────────
 // Small local icons (trivial, kept in page file)
@@ -35,6 +36,7 @@ function BOMBuilderContent() {
         currentSDWANEquipment, currentSDWANItem,
         handleFileUpload, loadSampleData, getVendorForService,
         handlePackageChange, handleSiteTypeChange, projectId,
+        siteFilter, setSiteFilter,
     } = state;
 
     if (!project) return <div className="p-8">Loading Project...</div>;
@@ -55,6 +57,8 @@ function BOMBuilderContent() {
                 pkg={pkg}
                 allPackages={allPackages}
                 onPackageChange={handlePackageChange}
+                siteFilter={siteFilter}
+                setSiteFilter={setSiteFilter}
             />
 
             {/* ── Main Content ── */}
@@ -161,9 +165,7 @@ function BOMBuilderContent() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center text-slate-400">
-                        Select a site from the sidebar or upload a CSV to begin.
-                    </div>
+                    <ProjectSummaryDashboard sites={sites} setSiteFilter={setSiteFilter} />
                 )}
 
                 {/* ── Modals ── */}

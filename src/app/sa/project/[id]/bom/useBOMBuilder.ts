@@ -58,8 +58,10 @@ export interface BOMBuilderState {
     // Sites
     sites: Site[];
     setSites: (sites: Site[]) => void;
-    selectedSiteIndex: number;
-    setSelectedSiteIndex: (i: number) => void;
+    selectedSiteIndex: number | null;
+    setSelectedSiteIndex: (i: number | null) => void;
+    siteFilter: "all" | "flagged";
+    setSiteFilter: (filter: "all" | "flagged") => void;
     selectedSite: Site | undefined;
     // Tab state
     activeTab: string;
@@ -112,7 +114,8 @@ export function useBOMBuilder(): BOMBuilderState {
 
     // ---- Sites ----
     const [sites, setSites] = useState<Site[]>([]);
-    const [selectedSiteIndex, setSelectedSiteIndex] = useState<number>(0);
+    const [selectedSiteIndex, setSelectedSiteIndex] = useState<number | null>(null);
+    const [siteFilter, setSiteFilter] = useState<"all" | "flagged">("all");
 
     // ---- Tabs ----
     const [activeTab, setActiveTab] = useState<string>("WAN");
@@ -256,7 +259,7 @@ export function useBOMBuilder(): BOMBuilderState {
         return null;
     }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections]);
 
-    const selectedSite = sites[selectedSiteIndex];
+    const selectedSite = selectedSiteIndex !== null ? sites[selectedSiteIndex] : undefined;
     const siteBOMItems = bom?.items.filter((i) => i.siteName === selectedSite?.name) ?? [];
 
     // -------------------------------------------------------
@@ -290,7 +293,7 @@ export function useBOMBuilder(): BOMBuilderState {
     const handleSiteTypeChange = useCallback((siteTypeId: string) => {
         setSites((prev) => {
             const next = [...prev];
-            if (next[selectedSiteIndex]) {
+            if (selectedSiteIndex !== null && next[selectedSiteIndex]) {
                 next[selectedSiteIndex] = { ...next[selectedSiteIndex], siteTypeId };
             }
             return next;
@@ -300,7 +303,7 @@ export function useBOMBuilder(): BOMBuilderState {
     const handleSiteUpdate = useCallback((updates: Partial<Site>) => {
         setSites((prev) => {
             const next = [...prev];
-            if (next[selectedSiteIndex]) {
+            if (selectedSiteIndex !== null && next[selectedSiteIndex]) {
                 next[selectedSiteIndex] = { ...next[selectedSiteIndex], ...updates };
             }
             return next;
@@ -363,6 +366,8 @@ export function useBOMBuilder(): BOMBuilderState {
         setSites,
         selectedSiteIndex,
         setSelectedSiteIndex,
+        siteFilter,
+        setSiteFilter,
         selectedSite,
         activeTab,
         setActiveTab,
