@@ -70,7 +70,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         itemName: `${VENDOR_LABELS[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
                         itemType: "equipment",
                         quantity: quantity,
-                        reasoning: `Manual Selection`
+                        reasoning: `Manual Selection`,
+                        matchedRules: [{ ruleId: 'manual', ruleName: 'Manual Override', description: 'User manually selected this equipment' }]
                     });
                     continue;
                 }
@@ -132,7 +133,12 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         itemName: `${VENDOR_LABELS[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
                         itemType: "equipment",
                         quantity: finalQuantity,
-                        reasoning: `Rule Match: ${matchingRules[0].name}${finalQuantity === 2 ? ' (Redundant)' : ''}`
+                        reasoning: `Rule Match: ${matchingRules[0].name}${finalQuantity === 2 ? ' (Redundant)' : ''}`,
+                        matchedRules: matchingRules.map(r => ({
+                            ruleId: r.id,
+                            ruleName: r.name,
+                            description: `Condition: ${JSON.stringify(r.condition)}`
+                        }))
                     });
                     continue;
                 } else {
@@ -261,6 +267,17 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     itemType: "equipment",
                     quantity: quantity,
                     reasoning: `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`,
+                    matchedRules: matchingRules.length > 0 ? matchingRules.map(r => ({
+                        ruleId: r.id,
+                        ruleName: r.name,
+                        description: `Condition: ${JSON.stringify(r.condition)}`
+                    })) : [
+                        {
+                            ruleId: 'dynamic_match',
+                            ruleName: matchType,
+                            description: `Selected based on Vendor (${vendorId}) and Throughput (${deviceThroughput} Mbps >= ${Math.round(requiredThroughput)} Mbps required).`
+                        }
+                    ],
                     alternatives: alternatives.length > 0 ? alternatives : undefined
                 });
             }

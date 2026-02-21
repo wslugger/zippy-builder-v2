@@ -417,6 +417,7 @@ export interface BOMLineItem {
   totalPrice?: number; // Placeholder
   reasoning?: string; // Which rule triggered this?
   alternatives?: { itemId: string; itemName: string; reasoning?: string; specSummary?: string }[];
+  matchedRules?: { ruleId: string; ruleName: string; description?: string }[];
 }
 
 export interface BOM {

@@ -1,6 +1,7 @@
 import { Site, BOMLineItem } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { Equipment } from "@/src/lib/types";
+import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
 
 interface LANTabProps {
     selectedSite: Site;
@@ -158,7 +159,10 @@ export function LANTab({
                             <div className="flex items-center space-x-4">
                                 <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">🔌</div>
                                 <div>
-                                    <div className="font-bold text-slate-900">{lanItem.itemName}</div>
+                                    <div className="font-bold text-slate-900 flex items-center">
+                                        {lanItem.itemName}
+                                        <TraceabilityPopover matchedRules={lanItem.matchedRules} reasoning={lanItem.reasoning} />
+                                    </div>
                                     <div className="text-xs text-slate-500 mt-0.5">{lanItem.reasoning}</div>
                                     <button
                                         onClick={() => {

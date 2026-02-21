@@ -3,6 +3,7 @@ import { SiteType } from "@/src/lib/site-types";
 import { Equipment, Package } from "@/src/lib/types";
 import { isDualRedundancy, isDualCircuit } from "@/src/lib/bom-utils";
 import { ManualDeviceSelector } from "./ManualDeviceSelector";
+import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
 
 interface WANTabProps {
     selectedSite: Site;
@@ -113,9 +114,10 @@ export function WANTab({
                         </div>
                         <div className="flex-1">
                             <div className="flex justify-between">
-                                <h4 className="text-lg font-bold text-slate-900">
+                                <h4 className="text-lg font-bold text-slate-900 flex items-center">
                                     {currentSDWANItem?.quantity && currentSDWANItem.quantity > 1 ? `${currentSDWANItem.quantity} x ` : ""}
                                     {currentSDWANEquipment.model}
+                                    <TraceabilityPopover matchedRules={currentSDWANItem?.matchedRules} reasoning={currentSDWANItem?.reasoning} />
                                 </h4>
                                 <button onClick={() => setSelectedSpecsItem(currentSDWANEquipment)} className="text-sm text-blue-600 hover:underline">
                                     View Specs
