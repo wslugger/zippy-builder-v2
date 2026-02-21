@@ -4,6 +4,8 @@ import { DesignOption, DESIGN_OPTION_CATEGORIES as DEFAULT_CATEGORIES } from "@/
 import { useState } from "react";
 import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 import { useTechnicalFeatures } from "@/src/hooks/useTechnicalFeatures";
+import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
+import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 
 interface ServiceItemFormProps {
     item: Partial<DesignOption>;
@@ -18,6 +20,136 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
     const categories: string[] = metadata?.fields?.design_option_categories?.values || [...DEFAULT_CATEGORIES];
     const [featureSearch, setFeatureSearch] = useState("");
     const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+
+    const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
+    const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
+
+    const handleAskDescriptionCopilot = async () => {
+        setIsLoadingDescriptionCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: {
+                        name: item.name,
+                        shortDescription: item.short_description,
+                        pros: item.pros,
+                        cons: item.cons
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) {
+                    setDescriptionSuggestion(data.suggestion);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to suggest description", error);
+        } finally {
+            setIsLoadingDescriptionCopilot(false);
+        }
+    };
+
+    const [caveatsSuggestion, setCaveatsSuggestion] = useState<string | null>(null);
+    const [isLoadingCaveatsCopilot, setIsLoadingCaveatsCopilot] = useState(false);
+
+    const handleAskCaveatsCopilot = async () => {
+        setIsLoadingCaveatsCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: {
+                        name: item.name,
+                        shortDescription: "Generate a list of caveats or limitations"
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) setCaveatsSuggestion(data.suggestion);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoadingCaveatsCopilot(false);
+        }
+    };
+
+    const [assumptionsSuggestion, setAssumptionsSuggestion] = useState<string | null>(null);
+    const [isLoadingAssumptionsCopilot, setIsLoadingAssumptionsCopilot] = useState(false);
+
+    const handleAskAssumptionsCopilot = async () => {
+        setIsLoadingAssumptionsCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: {
+                        name: item.name,
+                        shortDescription: "Generate a list of assumptions"
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) setAssumptionsSuggestion(data.suggestion);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoadingAssumptionsCopilot(false);
+        }
+    };
+
+    const [prosSuggestion, setProsSuggestion] = useState<string | null>(null);
+    const [isLoadingProsCopilot, setIsLoadingProsCopilot] = useState(false);
+
+    const handleAskProsCopilot = async () => {
+        setIsLoadingProsCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: { name: item.name, shortDescription: "Generate a list of pros or benefits" }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) setProsSuggestion(data.suggestion);
+            }
+        } catch (e) { console.error(e); } finally { setIsLoadingProsCopilot(false); }
+    };
+
+    const [consSuggestion, setConsSuggestion] = useState<string | null>(null);
+    const [isLoadingConsCopilot, setIsLoadingConsCopilot] = useState(false);
+
+    const handleAskConsCopilot = async () => {
+        setIsLoadingConsCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: { name: item.name, shortDescription: "Generate a list of cons or downsides" }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) setConsSuggestion(data.suggestion);
+            }
+        } catch (e) { console.error(e); } finally { setIsLoadingConsCopilot(false); }
+    };
 
     return (
         <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
@@ -100,37 +232,86 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Detailed Description</label>
-                    <textarea
-                        value={item.detailed_description || ""}
-                        onChange={(e) => onChange({ detailed_description: e.target.value })}
-                        rows={4}
-                        className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                        placeholder="Full details, specifications, and value proposition..."
-                    />
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center">
+                        Detailed Description
+                        <InlineCopilotTrigger
+                            onClick={handleAskDescriptionCopilot}
+                            isLoading={isLoadingDescriptionCopilot}
+                            title="Generate a professional description based on pros, cons, and short description"
+                        />
+                    </label>
+                    <CopilotSuggestion
+                        suggestion={descriptionSuggestion}
+                        onAccept={() => {
+                            onChange({ detailed_description: descriptionSuggestion || "" });
+                            setDescriptionSuggestion(null);
+                        }}
+                        onReject={() => setDescriptionSuggestion(null)}
+                    >
+                        <textarea
+                            value={item.detailed_description || ""}
+                            onChange={(e) => {
+                                onChange({ detailed_description: e.target.value });
+                                setDescriptionSuggestion(null); // Clear suggestion on user edit
+                            }}
+                            rows={4}
+                            className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                            placeholder="Full details, specifications, and value proposition..."
+                        />
+                    </CopilotSuggestion>
                 </div>
 
                 {showDesignFields && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Pros (one per line)</label>
-                            <textarea
-                                value={item.pros?.join("\n") || ""}
-                                onChange={(e) => onChange({ pros: e.target.value.split("\n").filter(l => l.trim() !== "") })}
-                                rows={4}
-                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="Key benefits..."
-                            />
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center">
+                                Pros (one per line)
+                                <InlineCopilotTrigger onClick={handleAskProsCopilot} isLoading={isLoadingProsCopilot} title="Generate pros" />
+                            </label>
+                            <CopilotSuggestion
+                                suggestion={prosSuggestion}
+                                onAccept={() => {
+                                    onChange({ pros: prosSuggestion?.split("\n").filter((l: string) => l.trim() !== "") });
+                                    setProsSuggestion(null);
+                                }}
+                                onReject={() => setProsSuggestion(null)}
+                            >
+                                <textarea
+                                    value={item.pros?.join("\n") || ""}
+                                    onChange={(e) => {
+                                        onChange({ pros: e.target.value.split("\n").filter(l => l.trim() !== "") });
+                                        setProsSuggestion(null);
+                                    }}
+                                    rows={4}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                    placeholder="Key benefits..."
+                                />
+                            </CopilotSuggestion>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Cons (one per line)</label>
-                            <textarea
-                                value={item.cons?.join("\n") || ""}
-                                onChange={(e) => onChange({ cons: e.target.value.split("\n").filter(l => l.trim() !== "") })}
-                                rows={4}
-                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="Downsides or trade-offs..."
-                            />
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center">
+                                Cons (one per line)
+                                <InlineCopilotTrigger onClick={handleAskConsCopilot} isLoading={isLoadingConsCopilot} title="Generate cons" />
+                            </label>
+                            <CopilotSuggestion
+                                suggestion={consSuggestion}
+                                onAccept={() => {
+                                    onChange({ cons: consSuggestion?.split("\n").filter((l: string) => l.trim() !== "") });
+                                    setConsSuggestion(null);
+                                }}
+                                onReject={() => setConsSuggestion(null)}
+                            >
+                                <textarea
+                                    value={item.cons?.join("\n") || ""}
+                                    onChange={(e) => {
+                                        onChange({ cons: e.target.value.split("\n").filter(l => l.trim() !== "") });
+                                        setConsSuggestion(null);
+                                    }}
+                                    rows={4}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                    placeholder="Downsides or trade-offs..."
+                                />
+                            </CopilotSuggestion>
                         </div>
                     </div>
                 )}
@@ -230,24 +411,54 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Caveats (one per line)</label>
-                        <textarea
-                            value={item.caveats?.join("\n") || ""}
-                            onChange={(e) => onChange({ caveats: e.target.value.split("\n").filter(l => l.trim() !== "") })}
-                            rows={5}
-                            className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            placeholder="Constraints or limitations..."
-                        />
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center">
+                            Caveats (one per line)
+                            <InlineCopilotTrigger onClick={handleAskCaveatsCopilot} isLoading={isLoadingCaveatsCopilot} title="Generate caveats" />
+                        </label>
+                        <CopilotSuggestion
+                            suggestion={caveatsSuggestion}
+                            onAccept={() => {
+                                onChange({ caveats: caveatsSuggestion?.split("\n").filter((l: string) => l.trim() !== "") });
+                                setCaveatsSuggestion(null);
+                            }}
+                            onReject={() => setCaveatsSuggestion(null)}
+                        >
+                            <textarea
+                                value={item.caveats?.join("\n") || ""}
+                                onChange={(e) => {
+                                    onChange({ caveats: e.target.value.split("\n").filter(l => l.trim() !== "") });
+                                    setCaveatsSuggestion(null);
+                                }}
+                                rows={5}
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                placeholder="Constraints or limitations..."
+                            />
+                        </CopilotSuggestion>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Assumptions (one per line)</label>
-                        <textarea
-                            value={item.assumptions?.join("\n") || ""}
-                            onChange={(e) => onChange({ assumptions: e.target.value.split("\n").filter(l => l.trim() !== "") })}
-                            rows={5}
-                            className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            placeholder="What is assumed to be true or provided..."
-                        />
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center">
+                            Assumptions (one per line)
+                            <InlineCopilotTrigger onClick={handleAskAssumptionsCopilot} isLoading={isLoadingAssumptionsCopilot} title="Generate assumptions" />
+                        </label>
+                        <CopilotSuggestion
+                            suggestion={assumptionsSuggestion}
+                            onAccept={() => {
+                                onChange({ assumptions: assumptionsSuggestion?.split("\n").filter((l: string) => l.trim() !== "") });
+                                setAssumptionsSuggestion(null);
+                            }}
+                            onReject={() => setAssumptionsSuggestion(null)}
+                        >
+                            <textarea
+                                value={item.assumptions?.join("\n") || ""}
+                                onChange={(e) => {
+                                    onChange({ assumptions: e.target.value.split("\n").filter(l => l.trim() !== "") });
+                                    setAssumptionsSuggestion(null);
+                                }}
+                                rows={5}
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                placeholder="What is assumed to be true or provided..."
+                            />
+                        </CopilotSuggestion>
                     </div>
                 </div>
             </div>

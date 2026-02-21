@@ -8,6 +8,8 @@ import Link from "next/link";
 import { useServices } from "@/src/hooks/useServices";
 import { useTechnicalFeatures } from "@/src/hooks/useTechnicalFeatures";
 import { InclusionToggle } from "@/src/components/admin/inclusion-toggle";
+import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
+import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 
 const COLLATERAL_TYPES = [
     { value: 'solution_brief', label: 'Solution Brief' },
@@ -45,6 +47,36 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [editingItem, setEditingItem] = useState<EditingItem | null>(null);
+
+    const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
+    const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
+
+    const handleAskDescriptionCopilot = async () => {
+        setIsLoadingDescriptionCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: {
+                        name: pkg.name,
+                        shortDescription: pkg.short_description
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) {
+                    setDescriptionSuggestion(data.suggestion);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to suggest description", error);
+        } finally {
+            setIsLoadingDescriptionCopilot(false);
+        }
+    };
 
     useEffect(() => {
         if (!isNew) {
@@ -280,14 +312,33 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-zinc-500 mb-1">Full Description</label>
-                                <textarea
-                                    value={pkg.detailed_description || ""}
-                                    onChange={(e) => setPkg({ ...pkg, detailed_description: e.target.value })}
-                                    rows={5}
-                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                                    placeholder="Detailed value proposition..."
-                                />
+                                <label className="block text-xs font-semibold text-zinc-500 mb-1 flex items-center">
+                                    Full Description
+                                    <InlineCopilotTrigger
+                                        onClick={handleAskDescriptionCopilot}
+                                        isLoading={isLoadingDescriptionCopilot}
+                                        title="Generate a professional description"
+                                    />
+                                </label>
+                                <CopilotSuggestion
+                                    suggestion={descriptionSuggestion}
+                                    onAccept={() => {
+                                        setPkg({ ...pkg, detailed_description: descriptionSuggestion || "" });
+                                        setDescriptionSuggestion(null);
+                                    }}
+                                    onReject={() => setDescriptionSuggestion(null)}
+                                >
+                                    <textarea
+                                        value={pkg.detailed_description || ""}
+                                        onChange={(e) => {
+                                            setPkg({ ...pkg, detailed_description: e.target.value });
+                                            setDescriptionSuggestion(null);
+                                        }}
+                                        rows={5}
+                                        className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        placeholder="Detailed value proposition..."
+                                    />
+                                </CopilotSuggestion>
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-zinc-500 mb-1">Throughput Matching Basis</label>

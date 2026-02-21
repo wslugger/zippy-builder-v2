@@ -2,6 +2,9 @@ import { Site, BOMLineItem } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { Equipment } from "@/src/lib/types";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
+import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
+import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
+import { useState } from "react";
 
 interface LANTabProps {
     selectedSite: Site;
@@ -24,6 +27,35 @@ export function LANTab({
     catalog,
     setSelectedSpecsItem
 }: LANTabProps) {
+    const [lanPortsSuggestion, setLanPortsSuggestion] = useState<number | null>(null);
+    const [isLoadingLanPortsCopilot, setIsLoadingLanPortsCopilot] = useState(false);
+
+    const handleAskLanPortsCopilot = async () => {
+        setIsLoadingLanPortsCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "sa_lan_ports",
+                    promptData: {
+                        lanSiteTypeName: siteTypes.find(t => t.id === selectedSite.lanSiteTypeId)?.name || "Unknown"
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) {
+                    setLanPortsSuggestion(data.suggestion);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to suggest LAN ports", error);
+        } finally {
+            setIsLoadingLanPortsCopilot(false);
+        }
+    };
+
     const handleAlternativeChange = (newEquipmentId: string) => {
         setManualSelections(prev => {
             const next = { ...prev };
@@ -57,14 +89,33 @@ export function LANTab({
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1">Total LAN Ports Required</label>
-                        <input
-                            type="number"
-                            className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            value={selectedSite.lanPorts || ""}
-                            onChange={(e) => handleSiteUpdate({ lanPorts: parseInt(e.target.value) || 0 })}
-                            placeholder="e.g. 48"
-                        />
+                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1 flex items-center">
+                            Total LAN Ports Required
+                            <InlineCopilotTrigger
+                                onClick={handleAskLanPortsCopilot}
+                                isLoading={isLoadingLanPortsCopilot}
+                                title="Suggest port count based on site type"
+                            />
+                        </label>
+                        <CopilotSuggestion
+                            suggestion={lanPortsSuggestion}
+                            onAccept={() => {
+                                handleSiteUpdate({ lanPorts: lanPortsSuggestion || 0 });
+                                setLanPortsSuggestion(null);
+                            }}
+                            onReject={() => setLanPortsSuggestion(null)}
+                        >
+                            <input
+                                type="number"
+                                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                value={selectedSite.lanPorts || ""}
+                                onChange={(e) => {
+                                    handleSiteUpdate({ lanPorts: parseInt(e.target.value) || 0 });
+                                    setLanPortsSuggestion(null); // Clear suggestion if user types
+                                }}
+                                placeholder="e.g. 48"
+                            />
+                        </CopilotSuggestion>
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-slate-500 uppercase mb-1">PoE Ports Required</label>

@@ -5,6 +5,8 @@ import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES as DEFAULT_PUR
 import { useState } from "react";
 import { EquipmentService, MetadataService } from "@/src/lib/firebase";
 import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
+import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 
 interface EquipmentModalProps {
     equipment: Equipment;
@@ -36,6 +38,36 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
     const mountingOptions = metadata?.fields?.mounting_options?.values || [];
     const recommendedUseCases = metadata?.fields?.recommended_use_cases?.values || [];
     const powerConnectorTypes = metadata?.fields?.power_connector_types?.values || [];
+
+    const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
+    const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
+
+    const handleAskDescriptionCopilot = async () => {
+        setIsLoadingDescriptionCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: {
+                        name: formData.model || formData.id,
+                        shortDescription: `Equipment Model: ${formData.model}, Family: ${formData.family}`
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) {
+                    setDescriptionSuggestion(data.suggestion);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to suggest description", error);
+        } finally {
+            setIsLoadingDescriptionCopilot(false);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -265,13 +297,32 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         </div>
                                     </div>
                                     <div className="col-span-2">
-                                        <label className={labelClass}>Description</label>
-                                        <textarea
-                                            rows={4}
-                                            value={formData.description || ""}
-                                            onChange={(e) => handleChange("description", e.target.value)}
-                                            className={inputClass}
-                                        />
+                                        <label className={`${labelClass} flex items-center`}>
+                                            Description
+                                            <InlineCopilotTrigger
+                                                onClick={handleAskDescriptionCopilot}
+                                                isLoading={isLoadingDescriptionCopilot}
+                                                title="Generate description based on model"
+                                            />
+                                        </label>
+                                        <CopilotSuggestion
+                                            suggestion={descriptionSuggestion}
+                                            onAccept={() => {
+                                                handleChange("description", descriptionSuggestion || "");
+                                                setDescriptionSuggestion(null);
+                                            }}
+                                            onReject={() => setDescriptionSuggestion(null)}
+                                        >
+                                            <textarea
+                                                rows={4}
+                                                value={formData.description || ""}
+                                                onChange={(e) => {
+                                                    handleChange("description", e.target.value);
+                                                    setDescriptionSuggestion(null);
+                                                }}
+                                                className={inputClass}
+                                            />
+                                        </CopilotSuggestion>
                                     </div>
                                 </div>
                             </section>

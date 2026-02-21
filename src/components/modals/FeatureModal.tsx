@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import { TechnicalFeature, EQUIPMENT_STATUSES } from "@/src/lib/types";
 import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
+import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 
 interface FeatureModalProps {
     feature: TechnicalFeature | null;
@@ -25,6 +27,92 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
     );
     const [saving, setSaving] = useState(false);
     const { metadata: featureMetadata, loading: metadataLoading } = useCatalogMetadata("feature_catalog");
+
+    const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
+    const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
+
+    const handleAskDescriptionCopilot = async () => {
+        setIsLoadingDescriptionCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: {
+                        name: formData.name,
+                        shortDescription: `Category: ${formData.category}`
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) {
+                    setDescriptionSuggestion(data.suggestion);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to suggest description", error);
+        } finally {
+            setIsLoadingDescriptionCopilot(false);
+        }
+    };
+
+    const [caveatsSuggestion, setCaveatsSuggestion] = useState<string | null>(null);
+    const [isLoadingCaveatsCopilot, setIsLoadingCaveatsCopilot] = useState(false);
+
+    const handleAskCaveatsCopilot = async () => {
+        setIsLoadingCaveatsCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: {
+                        name: formData.name,
+                        shortDescription: "Generate a list of caveats or limitations"
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) setCaveatsSuggestion(data.suggestion);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoadingCaveatsCopilot(false);
+        }
+    };
+
+    const [assumptionsSuggestion, setAssumptionsSuggestion] = useState<string | null>(null);
+    const [isLoadingAssumptionsCopilot, setIsLoadingAssumptionsCopilot] = useState(false);
+
+    const handleAskAssumptionsCopilot = async () => {
+        setIsLoadingAssumptionsCopilot(true);
+        try {
+            const res = await fetch("/api/copilot-suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contextType: "admin_service_description",
+                    promptData: {
+                        name: formData.name,
+                        shortDescription: "Generate a list of assumptions"
+                    }
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.suggestion) setAssumptionsSuggestion(data.suggestion);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsLoadingAssumptionsCopilot(false);
+        }
+    };
 
     const categories = useMemo(() => {
         return featureMetadata?.fields?.feature_categories?.values || [];
@@ -117,37 +205,86 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Description</label>
-                        <textarea
-                            required
-                            rows={3}
-                            value={formData.description || ""}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                            placeholder="Detailed explanation of the capability..."
-                        />
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center">
+                            Description
+                            <InlineCopilotTrigger
+                                onClick={handleAskDescriptionCopilot}
+                                isLoading={isLoadingDescriptionCopilot}
+                                title="Generate description based on name and category"
+                            />
+                        </label>
+                        <CopilotSuggestion
+                            suggestion={descriptionSuggestion}
+                            onAccept={() => {
+                                setFormData({ ...formData, description: descriptionSuggestion || "" });
+                                setDescriptionSuggestion(null);
+                            }}
+                            onReject={() => setDescriptionSuggestion(null)}
+                        >
+                            <textarea
+                                required
+                                rows={3}
+                                value={formData.description || ""}
+                                onChange={(e) => {
+                                    setFormData({ ...formData, description: e.target.value });
+                                    setDescriptionSuggestion(null);
+                                }}
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                placeholder="Detailed explanation of the capability..."
+                            />
+                        </CopilotSuggestion>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Caveats (one per line)</label>
-                            <textarea
-                                rows={4}
-                                value={formData.caveats?.join("\n") || ""}
-                                onChange={(e) => setFormData({ ...formData, caveats: e.target.value.split("\n").filter(l => l.trim()) })}
-                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="Limitations or constraints..."
-                            />
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center">
+                                Caveats (one per line)
+                                <InlineCopilotTrigger onClick={handleAskCaveatsCopilot} isLoading={isLoadingCaveatsCopilot} title="Generate caveats" />
+                            </label>
+                            <CopilotSuggestion
+                                suggestion={caveatsSuggestion}
+                                onAccept={() => {
+                                    setFormData({ ...formData, caveats: caveatsSuggestion?.split("\n").filter((l: string) => l.trim() !== "") });
+                                    setCaveatsSuggestion(null);
+                                }}
+                                onReject={() => setCaveatsSuggestion(null)}
+                            >
+                                <textarea
+                                    rows={4}
+                                    value={formData.caveats?.join("\n") || ""}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, caveats: e.target.value.split("\n").filter(l => l.trim()) });
+                                        setCaveatsSuggestion(null);
+                                    }}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                    placeholder="Limitations or constraints..."
+                                />
+                            </CopilotSuggestion>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Assumptions (one per line)</label>
-                            <textarea
-                                rows={4}
-                                value={formData.assumptions?.join("\n") || ""}
-                                onChange={(e) => setFormData({ ...formData, assumptions: e.target.value.split("\n").filter(l => l.trim()) })}
-                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                placeholder="What needs to be true for this to work..."
-                            />
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center">
+                                Assumptions (one per line)
+                                <InlineCopilotTrigger onClick={handleAskAssumptionsCopilot} isLoading={isLoadingAssumptionsCopilot} title="Generate assumptions" />
+                            </label>
+                            <CopilotSuggestion
+                                suggestion={assumptionsSuggestion}
+                                onAccept={() => {
+                                    setFormData({ ...formData, assumptions: assumptionsSuggestion?.split("\n").filter((l: string) => l.trim() !== "") });
+                                    setAssumptionsSuggestion(null);
+                                }}
+                                onReject={() => setAssumptionsSuggestion(null)}
+                            >
+                                <textarea
+                                    rows={4}
+                                    value={formData.assumptions?.join("\n") || ""}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, assumptions: e.target.value.split("\n").filter(l => l.trim()) });
+                                        setAssumptionsSuggestion(null);
+                                    }}
+                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                                    placeholder="What needs to be true for this to work..."
+                                />
+                            </CopilotSuggestion>
                         </div>
                     </div>
                 </form>
