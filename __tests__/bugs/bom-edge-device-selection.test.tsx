@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { calculateBOM } from "@/src/lib/bom-engine";
 import { Site } from "@/src/lib/bom-types";
@@ -73,7 +74,7 @@ describe("Bug Reproduction: BOM Edge Device Selection", () => {
 
         // We probably expect mx105 or better
         const selectedDevice = SEED_EQUIPMENT.find(e => e.id === sdwanItem?.itemId);
-        const capacity = selectedDevice?.specs.ngfw_throughput_mbps || 0;
+        const capacity = (selectedDevice?.specs as any)?.ngfw_throughput_mbps || 0;
         expect(capacity).toBeGreaterThanOrEqual(1100);
     });
 });

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { calculateBOM } from "@/src/lib/bom-engine";
 import { BOMLogicRule, Site, Equipment, Package, Service, SiteType } from "@/src/lib/types";
 import { SERVICE_TO_PURPOSE } from "@/src/lib/bom-utils";
@@ -8,19 +9,19 @@ describe("BOM Engine - Extended Logic Rules", () => {
             id: "sw_48p_1g",
             model: "SW 48 Port 1G",
             vendor_id: "meraki",
-            purpose: ["LAN"],
+            primary_purpose: "LAN", additional_purposes: [], role: "LAN",
             active: true,
             status: "Supported",
-            specs: { ports: 48, access_speed: "1GbE" },
+            specs: { stackable: false, port_configuration: { copper1G: 48, mGig: 0, sfp10G: 0 } },
         },
         {
             id: "sw_24p_10g",
             model: "SW 24 Port 10G",
             vendor_id: "meraki",
-            purpose: ["LAN"],
+            primary_purpose: "LAN", additional_purposes: [], role: "LAN",
             active: true,
             status: "Supported",
-            specs: { ports: 24, access_speed: "10GbE" },
+            specs: { stackable: false, port_configuration: { copper1G: 0, mGig: 0, sfp10G: 24 } },
         }
     ];
 

@@ -11,13 +11,24 @@ export const SiteBOMService = {
         const equipment = eqSnap.data() as Equipment;
 
         // 2. Map to the snapshot
+        let throughput: number | undefined;
+        let ports: number | undefined;
+
+        if (equipment.role === 'WAN') {
+            throughput = equipment.specs.vpn_throughput_mbps ?? equipment.specs.ngfw_throughput_mbps;
+            ports = ((equipment.specs as any).wanPortCount || 0) + ((equipment.specs as any).lanPortCount || 0);
+        } else if (equipment.role === 'LAN') {
+            throughput = equipment.specs.switching_capacity_gbps;
+            ports = (equipment.specs as any).accessPortCount || 0;
+        }
+
         const snapshot: EmbeddedEquipmentSnapshot = {
             id: equipment.id,
             model: equipment.model,
             vendor_id: equipment.vendor_id,
             specs_summary: {
-                throughput: equipment.specs?.vpn_throughput_mbps ?? equipment.specs?.ngfw_throughput_mbps,
-                ports: equipment.specs?.ports ?? equipment.specs?.wan_interfaces_count
+                throughput,
+                ports
             },
             addedAt: new Date().toISOString()
         };

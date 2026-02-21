@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Equipment, VENDOR_LABELS } from "@/src/lib/types";
 
 interface SpecsModalProps {
@@ -40,16 +41,16 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                             <dl className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <dt className="text-slate-500">VPN Throughput</dt>
-                                    <dd className="font-semibold text-slate-900">{item.specs.vpn_throughput_mbps} Mbps</dd>
+                                    <dd className="font-semibold text-slate-900">{(item as any).specs.vpn_throughput_mbps} Mbps</dd>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <dt className="text-slate-500">NGFW Throughput</dt>
-                                    <dd className="font-semibold text-slate-900">{item.specs.ngfw_throughput_mbps || 0} Mbps</dd>
+                                    <dd className="font-semibold text-slate-900">{(item as any).specs.ngfw_throughput_mbps || 0} Mbps</dd>
                                 </div>
-                                {item.specs.adv_sec_throughput_mbps && (
+                                {(item as any).specs.adv_sec_throughput_mbps && (
                                     <div className="flex justify-between text-sm">
                                         <dt className="text-slate-500">AdvSec Throughput</dt>
-                                        <dd className="font-semibold text-slate-900">{item.specs.adv_sec_throughput_mbps} Mbps</dd>
+                                        <dd className="font-semibold text-slate-900">{(item as any).specs.adv_sec_throughput_mbps} Mbps</dd>
                                     </div>
                                 )}
                             </dl>
@@ -58,16 +59,32 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                             <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Hardware</h5>
                             <dl className="space-y-2">
                                 <div className="flex justify-between text-sm">
-                                    <dt className="text-slate-500">Total Ports</dt>
-                                    <dd className="font-semibold text-slate-900">{item.specs.ports || "N/A"}</dd>
+                                    <dt className="text-slate-500">
+                                        {item.role === 'WAN' ? 'WAN/LAN Ports' : item.role === 'LAN' ? 'Access Ports' : 'Total Ports'}
+                                    </dt>
+                                    <dd className="font-semibold text-slate-900">
+                                        {item.role === 'WAN'
+                                            ? `${(item.specs as any).wanPortCount || 0}W / ${(item.specs as any).lanPortCount || 0}L`
+                                            : item.role === 'LAN'
+                                                ? (item.specs as any).accessPortCount || 0
+                                                : (item.specs as any).ports || "N/A"}
+                                    </dd>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <dt className="text-slate-500">WAN Interfaces</dt>
-                                    <dd className="font-semibold text-slate-900">{item.specs.wan_interfaces_count || 2}</dd>
+                                    <dt className="text-slate-500">Uplink / SFP</dt>
+                                    <dd className="font-semibold text-slate-900">
+                                        {item.role === 'WAN'
+                                            ? (item.specs as any).sfpPortCount || 0
+                                            : item.role === 'LAN'
+                                                ? (item.specs as any).uplinkPortCount || 0
+                                                : "N/A"}
+                                    </dd>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <dt className="text-slate-500">Form Factor</dt>
-                                    <dd className="font-semibold text-slate-900 uppercase text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">Desktop / Rack</dd>
+                                    <dd className="font-semibold text-slate-900 uppercase text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">
+                                        {item.formFactor || "Desktop / Rack"}
+                                    </dd>
                                 </div>
                             </dl>
                         </div>

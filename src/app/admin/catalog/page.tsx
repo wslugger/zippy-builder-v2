@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -26,16 +27,15 @@ export default function CatalogPage() {
         const matchesSearch = item.model.toLowerCase().includes(lowerSearch) ||
             item.description?.toLowerCase().includes(lowerSearch) ||
             item.id.toLowerCase().includes(lowerSearch) ||
-            (lowerSearch === "cellular" || lowerSearch === "lte" || lowerSearch === "5g" ? item.specs.integrated_cellular : false) ||
-            (lowerSearch === "wifi" || lowerSearch === "wireless" ? item.specs.integrated_wifi : false) ||
-            item.specs.cellular_type?.toLowerCase().includes(lowerSearch) ||
-            item.specs.wifi_standard?.toLowerCase().includes(lowerSearch) ||
+            (lowerSearch === "cellular" || lowerSearch === "lte" || lowerSearch === "5g" ? (item as any).specs.integrated_cellular : false) ||
+            (lowerSearch === "wifi" || lowerSearch === "wireless" ? (item as any).specs.integrated_wifi : false) ||
+            (item as any).specs.cellular_type?.toLowerCase().includes(lowerSearch) ||
+            (item as any).specs.wifi_standard?.toLowerCase().includes(lowerSearch) ||
             item.status?.toLowerCase().includes(lowerSearch);
         const matchesVendor = selectedVendor ? item.vendor_id === selectedVendor : true;
+        const itemWithAny = item as any;
         const matchesPurpose = selectedPurpose
-            ? Array.isArray(item.purpose)
-                ? (item.purpose as string[]).includes(selectedPurpose)
-                : (item.purpose as string) === selectedPurpose
+            ? (itemWithAny.primary_purpose === selectedPurpose || (itemWithAny.additional_purposes || []).includes(selectedPurpose))
             : true;
 
         return matchesSearch && matchesVendor && matchesPurpose;

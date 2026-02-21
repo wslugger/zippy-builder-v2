@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES as DEFAULT_PURPOSES, CELLULAR_TYPES as DEFAULT_CELLULAR_TYPES, WIFI_STANDARDS as DEFAULT_WIFI_STANDARDS, EQUIPMENT_STATUSES as DEFAULT_STATUSES } from "@/src/lib/types";
@@ -15,23 +16,23 @@ interface EquipmentModalProps {
 export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: EquipmentModalProps) {
     const [formData, setFormData] = useState<Equipment>(() => {
         // Deep copy specs to avoid mutating prop
-        const data = { ...equipment, specs: { ...equipment.specs } };
+        const data = { ...equipment, specs: { ...equipment.specs } } as any;
 
         // Migration logic: if rack_units > 0 but no mounting_options, assume Rack
         if (!data.specs.mounting_options && data.specs.rack_units && data.specs.rack_units > 0) {
             data.specs.mounting_options = ["Rack"];
         }
-        return data;
+        return data as Equipment;
     });
     const [activeTab, setActiveTab] = useState<"details" | "json">("details");
     const [isSaving, setIsSaving] = useState(false);
 
     const { metadata } = useCatalogMetadata("equipment_catalog");
+    const specs = formData.specs as any;
     const purposes = metadata?.fields?.purposes?.values || DEFAULT_PURPOSES;
     const cellularTypes = metadata?.fields?.cellular_types?.values || DEFAULT_CELLULAR_TYPES;
     const wifiStandards = metadata?.fields?.wifi_standards?.values || DEFAULT_WIFI_STANDARDS;
     const statuses = metadata?.fields?.statuses?.values || DEFAULT_STATUSES;
-    const interfaceTypes = metadata?.fields?.interface_types?.values || [];
     const mountingOptions = metadata?.fields?.mounting_options?.values || [];
     const recommendedUseCases = metadata?.fields?.recommended_use_cases?.values || [];
     const powerConnectorTypes = metadata?.fields?.power_connector_types?.values || [];
@@ -41,18 +42,11 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Update metadata for dynamic fields if new values are found
             const metadataUpdates: { field: string, value: string | string[] }[] = [
-                { field: 'mounting_options', value: formData.specs.mounting_options || [] },
-                { field: 'recommended_use_cases', value: formData.specs.recommended_use_case || "" },
-                { field: 'power_connector_types', value: formData.specs.power_connector_type || "" }
+                { field: 'mounting_options', value: specs.mounting_options || [] },
+                { field: 'recommended_use_cases', value: specs.recommended_use_case || "" },
+                { field: 'power_connector_types', value: specs.power_connector_type || "" }
             ];
-
-            // Add interface types
-            const { type: wanType } = parseInterface(formData.specs.wan_interfaces_desc);
-            const { type: lanType } = parseInterface(formData.specs.lan_interfaces_desc);
-            if (wanType) metadataUpdates.push({ field: 'interface_types', value: wanType });
-            if (lanType) metadataUpdates.push({ field: 'interface_types', value: lanType });
 
             for (const update of metadataUpdates) {
                 const values = Array.isArray(update.value) ? update.value : [update.value];
@@ -80,17 +74,16 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
         setFormData({ ...formData, [field]: value });
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSpecChange = <K extends keyof Equipment['specs']>(field: K, value: any) => {
+    const handleSpecChange = (field: string, value: any) => {
         let finalValue = value;
 
         // Only convert to number if it's a numeric field and the input is a string that looks like a number
-        const numericFields: (keyof Equipment['specs'])[] = [
+        const numericFields: string[] = [
             'ngfw_throughput_mbps', 'adv_sec_throughput_mbps', 'vpn_throughput_mbps',
-            'vpn_tunnels', 'wan_interfaces_count', 'lan_interfaces_count',
-            'power_supply_watts', 'power_load_idle_watts', 'power_load_max_watts',
+            'vpn_tunnels', 'power_supply_watts', 'power_load_idle_watts', 'power_load_max_watts',
             'ports', 'poe_budget', 'power_rating_watts', 'rack_units', 'max_clients',
-            'stacking_bandwidth_gbps', 'forwarding_rate_mpps', 'switching_capacity_gbps'
+            'stacking_bandwidth_gbps', 'forwarding_rate_mpps', 'switching_capacity_gbps',
+            'wanPortCount', 'lanPortCount', 'sfpPortCount', 'accessPortCount', 'uplinkPortCount'
         ];
 
         if (numericFields.includes(field) && typeof value === 'string' && value !== '') {
@@ -100,90 +93,57 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
         setFormData({
             ...formData,
             specs: { ...formData.specs, [field]: finalValue },
-        });
+        } as unknown as Equipment);
     };
 
-    const handlePurposeChange = (purpose: string) => {
-        const currentPurposes = Array.isArray(formData.purpose)
-            ? formData.purpose
-            : [formData.purpose]; // Handle legacy string data
+    const handlePrimaryPurposeChange = (purpose: string) => {
+        const ROLE_MAP: Record<string, string> = {
+            "SDWAN": "WAN",
+            "LAN": "LAN",
+            "WLAN": "WLAN",
+            "Security": "SECURITY"
+        };
+        const newRole = (ROLE_MAP[purpose] || "LAN") as Equipment['role'];
+        const roleChanged = newRole !== formData.role;
 
-        let newPurposes;
-        if (currentPurposes.includes(purpose as Equipment['purpose'][number])) {
-            newPurposes = currentPurposes.filter((p) => p !== purpose && (purposes as string[]).includes(p));
-        } else {
-            newPurposes = [...currentPurposes.filter(p => (purposes as string[]).includes(p)), purpose];
-        }
+        setFormData({
+            ...formData,
+            primary_purpose: purpose as any,
+            role: newRole,
+            specs: roleChanged ? ({} as any) : formData.specs
+        } as any);
+    };
 
-        // Ensure at least one purpose is selected if possible, or allow empty?
-        // Let's allow empty for now, or default to first one if empty is bad.
-        // Actually, Zod schema might require min(1). Let's just set the state.
+    const handleAdditionalPurposeChange = (purpose: string) => {
+        const current = formData.additional_purposes || [];
+        const next = current.includes(purpose as any)
+            ? current.filter(p => p !== purpose)
+            : [...current, purpose];
 
-        setFormData({ ...formData, purpose: newPurposes as Equipment['purpose'] });
+        setFormData({
+            ...formData,
+            additional_purposes: next as any
+        } as any);
     };
 
     const handleMountingChange = (option: string) => {
-        const currentOptions = formData.specs.mounting_options || [];
+        const currentOptions = specs.mounting_options || [];
         let newOptions;
-        let newRackUnits = formData.specs.rack_units;
+        let newRackUnits = specs.rack_units;
 
         if (currentOptions.includes(option)) {
-            newOptions = currentOptions.filter((o) => o !== option);
+            newOptions = currentOptions.filter((o: string) => o !== option);
             if (option === "Rack") {
                 newRackUnits = undefined;
             }
         } else {
             newOptions = [...currentOptions, option];
         }
-        setFormData({
-            ...formData,
-            specs: {
-                ...formData.specs,
-                mounting_options: newOptions,
-                rack_units: newRackUnits
-            },
-        });
+        handleSpecChange("mounting_options", newOptions);
+        handleSpecChange("rack_units", newRackUnits);
     };
 
-    const parseInterface = (desc: string | null | undefined = "") => {
-        const safeDesc = desc || "";
-        const match = safeDesc.match(/^(\d+)x\s*(.*)$/);
-        if (match) {
-            return { qty: match[1], type: match[2] };
-        }
-        return { qty: "", type: safeDesc };
-    };
 
-    const joinInterface = (qty: string, type: string) => {
-        if (!qty) return type;
-        return `${qty}x ${type}`;
-    };
-
-    const handleInterfaceChange = (field: 'wan' | 'lan' | 'convertible', part: 'qty' | 'type', value: string) => {
-        const descField = `${field}_interfaces_desc` as keyof Equipment['specs'];
-        const countField = `${field}_interfaces_count` as keyof Equipment['specs'];
-
-        const currentDesc = formData.specs[descField] as string || "";
-        const { qty, type } = parseInterface(currentDesc);
-
-        const newQty = part === 'qty' ? value : qty;
-        const newType = part === 'type' ? value : type;
-
-        const newDesc = joinInterface(newQty, newType);
-
-        setFormData({
-            ...formData,
-            specs: {
-                ...formData.specs,
-                [descField]: newDesc,
-                ...(field !== 'convertible' ? { [countField]: parseInt(newQty) || 0 } : {})
-            }
-        });
-    };
-
-    const wanParts = parseInterface(formData.specs.wan_interfaces_desc);
-    const lanParts = parseInterface(formData.specs.lan_interfaces_desc);
-    const convertibleParts = parseInterface(formData.specs.convertible_interfaces_desc);
 
     const labelClass = "block text-[10px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-[0.1em] mb-2 ml-0.5";
     const inputClass = "w-full px-4 py-3 text-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-300";
@@ -275,18 +235,31 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="col-span-2">
-                                        <label className={labelClass}>Purpose</label>
-                                        <div className="flex flex-wrap gap-3">
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Primary Purpose</label>
+                                        <select
+                                            value={formData.primary_purpose || ""}
+                                            onChange={(e) => handlePrimaryPurposeChange(e.target.value)}
+                                            className={inputClass}
+                                        >
+                                            <option value="">Select Purpose...</option>
                                             {purposes.map((p) => (
-                                                <label key={p} className="flex items-center gap-2.5 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
+                                                <option key={p} value={p}>{p}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Additional Purposes</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {purposes.map((p) => p !== formData.primary_purpose && (
+                                                <label key={p} className="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
                                                     <input
                                                         type="checkbox"
-                                                        checked={(formData.purpose as string[]).includes(p)}
-                                                        onChange={() => handlePurposeChange(p)}
-                                                        className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                                        checked={(formData.additional_purposes || []).includes(p as any)}
+                                                        onChange={() => handleAdditionalPurposeChange(p)}
+                                                        className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
                                                     />
-                                                    <span className="text-xs font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{p}</span>
+                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{p}</span>
                                                 </label>
                                             ))}
                                         </div>
@@ -303,234 +276,169 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 </div>
                             </section>
 
-                            {/* Throughput & Performance Card */}
-                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h4 className={sectionTitleClass}>Throughput & Performance</h4>
-                                <div className="grid grid-cols-3 gap-x-8 gap-y-8">
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>NGFW (Mbps)</label>
-                                        <div className="relative">
-                                            <input type="number" value={formData.specs.ngfw_throughput_mbps || 0} onChange={(e) => handleSpecChange("ngfw_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
+                            {/* Throughput & Performance Card - Primarily for WAN */}
+                            {formData.role === 'WAN' && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>Throughput & Performance</h4>
+                                    <div className="grid grid-cols-3 gap-x-8 gap-y-8">
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>NGFW (Mbps)</label>
+                                            <div className="relative">
+                                                <input type="number" value={specs.ngfw_throughput_mbps || 0} onChange={(e) => handleSpecChange("ngfw_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Adv. Sec (Mbps)</label>
+                                            <div className="relative">
+                                                <input type="number" value={specs.adv_sec_throughput_mbps || 0} onChange={(e) => handleSpecChange("adv_sec_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>VPN (Mbps)</label>
+                                            <div className="relative">
+                                                <input type="number" value={specs.vpn_throughput_mbps || 0} onChange={(e) => handleSpecChange("vpn_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>VPN Tunnels</label>
+                                            <div className="relative">
+                                                <input type="number" value={specs.vpn_tunnels || 0} onChange={(e) => handleSpecChange("vpn_tunnels", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Tunnels</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className={labelClass}>Recommended Use Case</label>
+                                            <select
+                                                value={specs.recommended_use_case || ""}
+                                                onChange={(e) => handleSpecChange("recommended_use_case", e.target.value)}
+                                                className={inputClass}
+                                            >
+                                                <option value="">Select Use Case...</option>
+                                                {recommendedUseCases.map((uc: string) => (
+                                                    <option key={uc} value={uc}>{uc}</option>
+                                                ))}
+                                                {specs.recommended_use_case && !recommendedUseCases.includes(specs.recommended_use_case) && (
+                                                    <option value={specs.recommended_use_case}>{specs.recommended_use_case} (Custom)</option>
+                                                )}
+                                            </select>
                                         </div>
                                     </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>Adv. Sec (Mbps)</label>
-                                        <div className="relative">
-                                            <input type="number" value={formData.specs.adv_sec_throughput_mbps || 0} onChange={(e) => handleSpecChange("adv_sec_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>VPN (Mbps)</label>
-                                        <div className="relative">
-                                            <input type="number" value={formData.specs.vpn_throughput_mbps || 0} onChange={(e) => handleSpecChange("vpn_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>VPN Tunnels</label>
-                                        <div className="relative">
-                                            <input type="number" value={formData.specs.vpn_tunnels || 0} onChange={(e) => handleSpecChange("vpn_tunnels", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Tunnels</span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className={labelClass}>Recommended Use Case</label>
-                                        <select
-                                            value={formData.specs.recommended_use_case || ""}
-                                            onChange={(e) => handleSpecChange("recommended_use_case", e.target.value)}
-                                            className={inputClass}
-                                        >
-                                            <option value="">Select Use Case...</option>
-                                            {recommendedUseCases.map((uc: string) => (
-                                                <option key={uc} value={uc}>{uc}</option>
-                                            ))}
-                                            {formData.specs.recommended_use_case && !recommendedUseCases.includes(formData.specs.recommended_use_case) && (
-                                                <option value={formData.specs.recommended_use_case}>{formData.specs.recommended_use_case} (Custom)</option>
-                                            )}
-                                        </select>
-                                    </div>
-                                </div>
-                            </section>
+                                </section>
+                            )}
 
                             {/* Interfaces Card */}
-                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h4 className={sectionTitleClass}>Interfaces</h4>
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>WAN Interfaces</label>
-                                        <div className="flex gap-3">
-                                            <div className="w-24 flex-shrink-0">
-                                                <input
-                                                    type="text"
-                                                    value={wanParts.qty}
-                                                    onChange={(e) => handleInterfaceChange('wan', 'qty', e.target.value)}
-                                                    className={inputClass}
-                                                    placeholder="Qty (e.g. 1)"
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <select
-                                                    value={wanParts.type}
-                                                    onChange={(e) => handleInterfaceChange('wan', 'type', e.target.value)}
-                                                    className={inputClass}
-                                                >
-                                                    <option value="">Select Type...</option>
-                                                    {interfaceTypes.map((type: string) => (
-                                                        <option key={type} value={type}>{type}</option>
-                                                    ))}
-                                                    {wanParts.type && !interfaceTypes.includes(wanParts.type) && (
-                                                        <option value={wanParts.type}>{wanParts.type} (Custom)</option>
-                                                    )}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>LAN Interfaces</label>
-                                        <div className="flex gap-3">
-                                            <div className="w-24 flex-shrink-0">
-                                                <input
-                                                    type="text"
-                                                    value={lanParts.qty}
-                                                    onChange={(e) => handleInterfaceChange('lan', 'qty', e.target.value)}
-                                                    className={inputClass}
-                                                    placeholder="Qty"
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <select
-                                                    value={lanParts.type}
-                                                    onChange={(e) => handleInterfaceChange('lan', 'type', e.target.value)}
-                                                    className={inputClass}
-                                                >
-                                                    <option value="">Select Type...</option>
-                                                    {interfaceTypes.map((type: string) => (
-                                                        <option key={type} value={type}>{type}</option>
-                                                    ))}
-                                                    {lanParts.type && !interfaceTypes.includes(lanParts.type) && (
-                                                        <option value={lanParts.type}>{lanParts.type} (Custom)</option>
-                                                    )}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className={labelClass}>Convertible Interfaces</label>
-                                        <div className="flex gap-3">
-                                            <div className="w-24 flex-shrink-0">
-                                                <input
-                                                    type="text"
-                                                    value={convertibleParts.qty}
-                                                    onChange={(e) => handleInterfaceChange('convertible', 'qty', e.target.value)}
-                                                    className={inputClass}
-                                                    placeholder="Qty"
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <select
-                                                    value={convertibleParts.type}
-                                                    onChange={(e) => handleInterfaceChange('convertible', 'type', e.target.value)}
-                                                    className={inputClass}
-                                                >
-                                                    <option value="">Select Type...</option>
-                                                    {interfaceTypes.map((type: string) => (
-                                                        <option key={type} value={type}>{type}</option>
-                                                    ))}
-                                                    {convertibleParts.type && !interfaceTypes.includes(convertibleParts.type) && (
-                                                        <option value={convertibleParts.type}>{convertibleParts.type} (Custom)</option>
-                                                    )}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2 pt-4 border-t border-slate-50 dark:border-zinc-800 mt-2">
-                                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Integrated Features</h5>
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
-                                                <div className="flex gap-6">
-                                                    <label className="flex items-center gap-3 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={formData.specs.integrated_cellular || false}
-                                                            onChange={(e) => setFormData({
-                                                                ...formData,
-                                                                specs: {
-                                                                    ...formData.specs,
-                                                                    integrated_cellular: e.target.checked,
-                                                                    cellular_type: e.target.checked ? formData.specs.cellular_type || "LTE" : undefined
-                                                                }
-                                                            })}
-                                                            className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
-                                                        />
-                                                        <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Integrated Cellular</span>
+                            {(formData.role === 'WAN' || formData.role === 'LAN' || formData.role === 'WLAN') && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>Interfaces</h4>
+                                    <div className="grid grid-cols-2 gap-x-8 gap-y-8">
+                                        {formData.role === 'WAN' && (
+                                            <>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>
+                                                        WAN Port Count
+                                                        <span className="text-slate-400 font-normal ml-2 block normal-case tracking-normal">WAN: For circuits.</span>
                                                     </label>
-
-                                                    <label className="flex items-center gap-3 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={formData.specs.modular_cellular || false}
-                                                            onChange={(e) => setFormData({
-                                                                ...formData,
-                                                                specs: {
-                                                                    ...formData.specs,
-                                                                    modular_cellular: e.target.checked
-                                                                }
-                                                            })}
-                                                            className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
-                                                        />
-                                                        <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Modular Cellular (PIM)</span>
-                                                    </label>
-                                                </div>
-                                                {(formData.specs.integrated_cellular || formData.specs.modular_cellular) && (
-                                                    <select
-                                                        value={formData.specs.cellular_type || cellularTypes[0]}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            specs: { ...formData.specs, cellular_type: e.target.value as Equipment['specs']['cellular_type'] }
-                                                        })}
-                                                        className={`${inputClass} py-1.5 h-10 text-xs w-32`}
-                                                    >
-                                                        {cellularTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                                    </select>
-                                                )}
-                                            </div>
-
-                                            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
-                                                <label className="flex items-center gap-3 cursor-pointer">
                                                     <input
-                                                        type="checkbox"
-                                                        checked={formData.specs.integrated_wifi || false}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            specs: {
-                                                                ...formData.specs,
-                                                                integrated_wifi: e.target.checked,
-                                                                wifi_standard: e.target.checked ? formData.specs.wifi_standard || "Wi-Fi 6" : undefined
-                                                            }
-                                                        })}
-                                                        className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                                        type="number"
+                                                        value={specs.wanPortCount ?? 0}
+                                                        onChange={(e) => handleSpecChange('wanPortCount', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Qty (e.g. 2)"
                                                     />
-                                                    <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Integrated Wi-Fi</span>
-                                                </label>
-                                                {formData.specs.integrated_wifi && (
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>
+                                                        LAN Port Count
+                                                        <span className="text-slate-400 font-normal ml-2 block normal-case tracking-normal">LAN: For switch handoff & HA.</span>
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={specs.lanPortCount ?? 0}
+                                                        onChange={(e) => handleSpecChange('lanPortCount', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Qty (e.g. 4)"
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {formData.role === 'LAN' && (
+                                            <>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Access Port Count</label>
+                                                    <input
+                                                        type="number"
+                                                        value={specs.accessPortCount ?? 0}
+                                                        onChange={(e) => handleSpecChange('accessPortCount', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Qty (e.g. 24, 48)"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Uplink Port Count</label>
+                                                    <input
+                                                        type="number"
+                                                        value={specs.uplinkPortCount ?? 0}
+                                                        onChange={(e) => handleSpecChange('uplinkPortCount', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Qty (e.g. 4)"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Access Port Speed</label>
                                                     <select
-                                                        value={formData.specs.wifi_standard || wifiStandards[0]}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            specs: { ...formData.specs, wifi_standard: e.target.value as Equipment['specs']['wifi_standard'] }
-                                                        })}
-                                                        className={`${inputClass} py-1.5 h-10 text-xs w-36`}
+                                                        value={specs.accessPortType || ""}
+                                                        onChange={(e) => handleSpecChange('accessPortType', e.target.value)}
+                                                        className={inputClass}
                                                     >
-                                                        {wifiStandards.map(s => <option key={s} value={s}>{s}</option>)}
+                                                        <option value="">Select Speed...</option>
+                                                        <option value="1G">1G</option>
+                                                        <option value="mGig">mGig</option>
+                                                        <option value="10G">10G</option>
                                                     </select>
-                                                )}
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Uplink Port Speed</label>
+                                                    <select
+                                                        value={specs.uplinkPortType || ""}
+                                                        onChange={(e) => handleSpecChange('uplinkPortType', e.target.value)}
+                                                        className={inputClass}
+                                                    >
+                                                        <option value="">Select Speed...</option>
+                                                        <option value="1G">1G</option>
+                                                        <option value="10G">10G</option>
+                                                        <option value="40G">40G</option>
+                                                        <option value="100G">100G</option>
+                                                    </select>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {formData.role === 'WLAN' && (
+                                            <div className="col-span-2 grid grid-cols-2 gap-x-8">
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Uplink Port Speed</label>
+                                                    <select
+                                                        value={specs.uplinkPortType || ""}
+                                                        onChange={(e) => handleSpecChange('uplinkPortType', e.target.value)}
+                                                        className={inputClass}
+                                                    >
+                                                        <option value="1G">1G</option>
+                                                        <option value="mGig">mGig</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
+
                                     </div>
-                                </div>
-                            </section>
+                                </section>
+                            )}
+
+
+
 
                             {/* Physical & Power Card */}
                             <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
@@ -539,21 +447,21 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                     <div>
                                         <label className={labelClass}>Power Supply (W)</label>
                                         <div className="relative">
-                                            <input type="number" value={formData.specs.power_supply_watts || 0} onChange={(e) => handleSpecChange("power_supply_watts", e.target.value)} className={`${inputClass} pr-10`} />
+                                            <input type="number" value={specs.power_supply_watts || 0} onChange={(e) => handleSpecChange("power_supply_watts", e.target.value)} className={`${inputClass} pr-10`} />
                                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
                                         </div>
                                     </div>
                                     <div>
                                         <label className={labelClass}>Idle Load (W)</label>
                                         <div className="relative">
-                                            <input type="number" value={formData.specs.power_load_idle_watts || 0} onChange={(e) => handleSpecChange("power_load_idle_watts", e.target.value)} className={`${inputClass} pr-10`} />
+                                            <input type="number" value={specs.power_load_idle_watts || 0} onChange={(e) => handleSpecChange("power_load_idle_watts", e.target.value)} className={`${inputClass} pr-10`} />
                                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
                                         </div>
                                     </div>
                                     <div>
                                         <label className={labelClass}>Max Load (W)</label>
                                         <div className="relative">
-                                            <input type="number" value={formData.specs.power_load_max_watts || 0} onChange={(e) => handleSpecChange("power_load_max_watts", e.target.value)} className={`${inputClass} pr-10`} />
+                                            <input type="number" value={specs.power_load_max_watts || 0} onChange={(e) => handleSpecChange("power_load_max_watts", e.target.value)} className={`${inputClass} pr-10`} />
                                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
                                         </div>
                                     </div>
@@ -564,7 +472,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 <label key={option} className="flex items-center gap-2.5 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
                                                     <input
                                                         type="checkbox"
-                                                        checked={(formData.specs.mounting_options as string[])?.includes(option) || false}
+                                                        checked={(specs.mounting_options as string[])?.includes(option) || false}
                                                         onChange={() => handleMountingChange(option)}
                                                         className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                                                     />
@@ -574,13 +482,13 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         </div>
                                     </div>
                                     <div className="col-span-1">
-                                        {formData.specs.mounting_options?.includes("Rack") && (
+                                        {specs.mounting_options?.includes("Rack") && (
                                             <div className="">
                                                 <label className={labelClass}>Rack Units</label>
                                                 <div className="relative">
                                                     <input
                                                         type="number"
-                                                        value={formData.specs.rack_units || 0}
+                                                        value={specs.rack_units || 0}
                                                         onChange={(e) => handleSpecChange("rack_units", e.target.value)}
                                                         className={`${inputClass} pr-10`}
                                                         placeholder="U Size"
@@ -593,14 +501,14 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                     <div className="col-span-1">
                                         <label className={labelClass}>PoE Budget (W)</label>
                                         <div className="relative">
-                                            <input type="number" value={formData.specs.poe_budget || 0} onChange={(e) => handleSpecChange("poe_budget", e.target.value)} className={`${inputClass} pr-10`} />
+                                            <input type="number" value={specs.poe_budget || 0} onChange={(e) => handleSpecChange("poe_budget", e.target.value)} className={`${inputClass} pr-10`} />
                                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
                                         </div>
                                     </div>
                                     <div className="col-span-1">
                                         <label className={labelClass}>Power Connector</label>
                                         <select
-                                            value={formData.specs.power_connector_type || ""}
+                                            value={specs.power_connector_type || ""}
                                             onChange={(e) => handleSpecChange("power_connector_type", e.target.value)}
                                             className={inputClass}
                                         >
@@ -608,301 +516,294 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                             {powerConnectorTypes.map((pc: string) => (
                                                 <option key={pc} value={pc}>{pc}</option>
                                             ))}
-                                            {formData.specs.power_connector_type && !powerConnectorTypes.includes(formData.specs.power_connector_type) && (
-                                                <option value={formData.specs.power_connector_type}>{formData.specs.power_connector_type} (Custom)</option>
+                                            {specs.power_connector_type && !powerConnectorTypes.includes(specs.power_connector_type) && (
+                                                <option value={specs.power_connector_type}>{specs.power_connector_type} (Custom)</option>
                                             )}
                                         </select>
                                     </div>
                                 </div>
                             </section>
 
-                            {/* Switching & Performance Card - Only show for LAN purpose or Catalyst vendor */}
-                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h4 className={sectionTitleClass}>Switching & Performance</h4>
-                                <div className="grid grid-cols-3 gap-x-8 gap-y-8">
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>Forwarding Rate (Mpps)</label>
-                                        <div className="relative">
-                                            <input type="number" step="0.01" value={formData.specs.forwarding_rate_mpps || 0} onChange={(e) => handleSpecChange("forwarding_rate_mpps", e.target.value)} className={`${inputClass} pr-14`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mpps</span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>Switching Capacity (Gbps)</label>
-                                        <div className="relative">
-                                            <input type="number" value={formData.specs.switching_capacity_gbps || 0} onChange={(e) => handleSpecChange("switching_capacity_gbps", e.target.value)} className={`${inputClass} pr-14`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Gbps</span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>PoE Capabilities</label>
-                                        <input type="text" placeholder="e.g. PoE+, UPOE" value={formData.specs.poe_capabilities || ""} onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)} className={inputClass} />
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* Stacking & High Availability Card */}
-                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h4 className={sectionTitleClass}>Stacking & Power Redundancy</h4>
-                                <div className="grid grid-cols-3 gap-x-8 gap-y-8">
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>Performance Rating</label>
-                                        <input
-                                            type="text"
-                                            placeholder="e.g. Wire Rate"
-                                            value={formData.specs.performance_rating || ""}
-                                            onChange={(e) => handleSpecChange("performance_rating", e.target.value)}
-                                            className={inputClass}
-                                        />
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>Stacking Support</label>
-                                        <label className="flex items-center gap-3 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.specs.stacking_supported || false}
-                                                onChange={(e) => setFormData({
-                                                    ...formData,
-                                                    specs: { ...formData.specs, stacking_supported: e.target.checked }
-                                                })}
-                                                className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
-                                            />
-                                            <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Stackable</span>
-                                        </label>
-                                    </div>
-                                    {formData.specs.stacking_supported && (
+                            {/* Switching & Performance Card - Only show for LAN role */}
+                            {formData.role === 'LAN' && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>Switching & Performance</h4>
+                                    <div className="grid grid-cols-3 gap-x-8 gap-y-8">
                                         <div className="col-span-1">
-                                            <label className={labelClass}>Stack Bandwidth (Gbps)</label>
+                                            <label className={labelClass}>Forwarding Rate (Mpps)</label>
                                             <div className="relative">
-                                                <input type="number" value={formData.specs.stacking_bandwidth_gbps || 0} onChange={(e) => handleSpecChange("stacking_bandwidth_gbps", e.target.value)} className={`${inputClass} pr-14`} />
+                                                <input type="number" step="0.01" value={specs.forwarding_rate_mpps || 0} onChange={(e) => handleSpecChange("forwarding_rate_mpps", e.target.value)} className={`${inputClass} pr-14`} />
+                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mpps</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Switching Capacity (Gbps)</label>
+                                            <div className="relative">
+                                                <input type="number" value={specs.switching_capacity_gbps || 0} onChange={(e) => handleSpecChange("switching_capacity_gbps", e.target.value)} className={`${inputClass} pr-14`} />
                                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Gbps</span>
                                             </div>
                                         </div>
-                                    )}
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>Primary Power Supply</label>
-                                        <input type="text" placeholder="Model #" value={formData.specs.primary_power_supply || ""} onChange={(e) => handleSpecChange("primary_power_supply", e.target.value)} className={inputClass} />
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>PoE Capabilities</label>
+                                            <input type="text" placeholder="e.g. PoE+, UPOE" value={specs.poe_capabilities || ""} onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)} className={inputClass} />
+                                        </div>
                                     </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>Secondary Power Supply</label>
-                                        <input type="text" placeholder="Model #" value={formData.specs.secondary_power_supply || ""} onChange={(e) => handleSpecChange("secondary_power_supply", e.target.value)} className={inputClass} />
-                                    </div>
-                                </div>
-                            </section>
+                                </section>
+                            )}
 
-                            {/* Modular Components Sections */}
-                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h4 className={sectionTitleClass}>Modular Components & Accessories</h4>
-
-                                {/* Uplink Modules */}
-                                <div className="mb-8">
-                                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
-                                        Compatible Uplink Modules
-                                        <button
-                                            onClick={() => setFormData({
-                                                ...formData,
-                                                specs: {
-                                                    ...formData.specs,
-                                                    compatible_uplink_modules: [...(formData.specs.compatible_uplink_modules || []), { part_number: "", description: "", ports: 0, speed: "" }]
-                                                }
-                                            })}
-                                            className="text-blue-500 hover:text-blue-700 normal-case font-bold"
-                                        >
-                                            + Add Module
-                                        </button>
-                                    </h5>
-                                    <div className="space-y-3">
-                                        {formData.specs.compatible_uplink_modules?.map((mod, i) => (
-                                            <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                            {/* Stacking & High Availability Card - LAN and WAN */}
+                            {(formData.role === 'LAN' || formData.role === 'WAN') && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>Stacking & Power Redundancy</h4>
+                                    <div className="grid grid-cols-3 gap-x-8 gap-y-8">
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Performance Rating</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Wire Rate"
+                                                value={specs.performance_rating || ""}
+                                                onChange={(e) => handleSpecChange("performance_rating", e.target.value)}
+                                                className={inputClass}
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Stacking Support</label>
+                                            <label className="flex items-center gap-3 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500">
                                                 <input
-                                                    type="text" placeholder="Part #"
-                                                    value={mod.part_number}
-                                                    onChange={(e) => {
-                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
-                                                        newMods[i].part_number = e.target.value;
-                                                        handleSpecChange("compatible_uplink_modules", newMods);
-                                                    }}
-                                                    className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    type="checkbox"
+                                                    checked={specs.stacking_supported || false}
+                                                    onChange={(e) => handleSpecChange("stacking_supported", e.target.checked)}
+                                                    className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                                                 />
-                                                <input
-                                                    type="text" placeholder="Description"
-                                                    value={mod.description}
-                                                    onChange={(e) => {
-                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
-                                                        newMods[i].description = e.target.value;
-                                                        handleSpecChange("compatible_uplink_modules", newMods);
-                                                    }}
-                                                    className="col-span-4 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <input
-                                                    type="number" placeholder="Ports"
-                                                    value={mod.ports || 0}
-                                                    onChange={(e) => {
-                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
-                                                        newMods[i].ports = parseInt(e.target.value);
-                                                        handleSpecChange("compatible_uplink_modules", newMods);
-                                                    }}
-                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <input
-                                                    type="text" placeholder="Speed"
-                                                    value={mod.speed}
-                                                    onChange={(e) => {
-                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
-                                                        newMods[i].speed = e.target.value;
-                                                        handleSpecChange("compatible_uplink_modules", newMods);
-                                                    }}
-                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        const newMods = [...(formData.specs.compatible_uplink_modules || [])];
-                                                        newMods.splice(i, 1);
-                                                        handleSpecChange("compatible_uplink_modules", newMods);
-                                                    }}
-                                                    className="col-span-1 text-red-500 hover:text-red-700"
-                                                >✕</button>
+                                                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Stackable</span>
+                                            </label>
+                                        </div>
+                                        {specs.stacking_supported && (
+                                            <div className="col-span-1">
+                                                <label className={labelClass}>Stack Bandwidth (Gbps)</label>
+                                                <div className="relative">
+                                                    <input type="number" value={specs.stacking_bandwidth_gbps || 0} onChange={(e) => handleSpecChange("stacking_bandwidth_gbps", e.target.value)} className={`${inputClass} pr-14`} />
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Gbps</span>
+                                                </div>
                                             </div>
-                                        ))}
+                                        )}
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Primary Power Supply</label>
+                                            <input type="text" placeholder="Model #" value={specs.primary_power_supply || ""} onChange={(e) => handleSpecChange("primary_power_supply", e.target.value)} className={inputClass} />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Secondary Power Supply</label>
+                                            <input type="text" placeholder="Model #" value={specs.secondary_power_supply || ""} onChange={(e) => handleSpecChange("secondary_power_supply", e.target.value)} className={inputClass} />
+                                        </div>
                                     </div>
-                                </div>
+                                </section>
+                            )}
 
-                                {/* Power Supplies */}
-                                <div className="mb-8">
-                                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
-                                        Compatible Power Supplies Sets
-                                        <button
-                                            onClick={() => setFormData({
-                                                ...formData,
-                                                specs: {
-                                                    ...formData.specs,
-                                                    compatible_power_supplies: [...(formData.specs.compatible_power_supplies || []), { part_number: "", description: "", wattage: 0, poe_budget: 0 }]
-                                                }
-                                            })}
-                                            className="text-blue-500 hover:text-blue-700 normal-case font-bold"
-                                        >
-                                            + Add PSU
-                                        </button>
-                                    </h5>
-                                    <div className="space-y-3">
-                                        {formData.specs.compatible_power_supplies?.map((psu, i) => (
-                                            <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
-                                                <input
-                                                    type="text" placeholder="Part #"
-                                                    value={psu.part_number}
-                                                    onChange={(e) => {
-                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
-                                                        newPsus[i].part_number = e.target.value;
-                                                        handleSpecChange("compatible_power_supplies", newPsus);
-                                                    }}
-                                                    className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <input
-                                                    type="text" placeholder="Description"
-                                                    value={psu.description}
-                                                    onChange={(e) => {
-                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
-                                                        newPsus[i].description = e.target.value;
-                                                        handleSpecChange("compatible_power_supplies", newPsus);
-                                                    }}
-                                                    className="col-span-4 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <input
-                                                    type="number" placeholder="Watts"
-                                                    value={psu.wattage || 0}
-                                                    onChange={(e) => {
-                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
-                                                        newPsus[i].wattage = parseInt(e.target.value);
-                                                        handleSpecChange("compatible_power_supplies", newPsus);
-                                                    }}
-                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <input
-                                                    type="number" placeholder="PoE (W)"
-                                                    value={psu.poe_budget || 0}
-                                                    onChange={(e) => {
-                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
-                                                        newPsus[i].poe_budget = parseInt(e.target.value);
-                                                        handleSpecChange("compatible_power_supplies", newPsus);
-                                                    }}
-                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        const newPsus = [...(formData.specs.compatible_power_supplies || [])];
-                                                        newPsus.splice(i, 1);
-                                                        handleSpecChange("compatible_power_supplies", newPsus);
-                                                    }}
-                                                    className="col-span-1 text-red-500 hover:text-red-700"
-                                                >✕</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                            {/* Modular Components Sections - LAN and WAN */}
+                            {(formData.role === 'LAN' || formData.role === 'WAN') && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>Modular Components & Accessories</h4>
 
-                                {/* Stacking Options */}
-                                <div>
-                                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
-                                        Stacking Accessories
-                                        <button
-                                            onClick={() => setFormData({
-                                                ...formData,
-                                                specs: {
-                                                    ...formData.specs,
-                                                    compatible_stacking_options: [...(formData.specs.compatible_stacking_options || []), { part_number: "", description: "", length_cm: 0 }]
-                                                }
-                                            })}
-                                            className="text-blue-500 hover:text-blue-700 normal-case font-bold"
-                                        >
-                                            + Add Stacking Item
-                                        </button>
-                                    </h5>
-                                    <div className="space-y-3">
-                                        {formData.specs.compatible_stacking_options?.map((opt, i) => (
-                                            <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
-                                                <input
-                                                    type="text" placeholder="Part #"
-                                                    value={opt.part_number}
-                                                    onChange={(e) => {
-                                                        const newOpts = [...(formData.specs.compatible_stacking_options || [])];
-                                                        newOpts[i].part_number = e.target.value;
-                                                        handleSpecChange("compatible_stacking_options", newOpts);
-                                                    }}
-                                                    className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <input
-                                                    type="text" placeholder="Description"
-                                                    value={opt.description}
-                                                    onChange={(e) => {
-                                                        const newOpts = [...(formData.specs.compatible_stacking_options || [])];
-                                                        newOpts[i].description = e.target.value;
-                                                        handleSpecChange("compatible_stacking_options", newOpts);
-                                                    }}
-                                                    className="col-span-6 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <input
-                                                    type="number" placeholder="Len (cm)"
-                                                    value={opt.length_cm || 0}
-                                                    onChange={(e) => {
-                                                        const newOpts = [...(formData.specs.compatible_stacking_options || [])];
-                                                        newOpts[i].length_cm = parseInt(e.target.value);
-                                                        handleSpecChange("compatible_stacking_options", newOpts);
-                                                    }}
-                                                    className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        const newOpts = [...(formData.specs.compatible_stacking_options || [])];
-                                                        newOpts.splice(i, 1);
-                                                        handleSpecChange("compatible_stacking_options", newOpts);
-                                                    }}
-                                                    className="col-span-1 text-red-500 hover:text-red-700"
-                                                >✕</button>
-                                            </div>
-                                        ))}
+                                    {/* Uplink Modules */}
+                                    <div className="mb-8">
+                                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+                                            Compatible Uplink Modules
+                                            <button
+                                                onClick={() => handleSpecChange("compatible_uplink_modules", [...(specs.compatible_uplink_modules || []), { part_number: "", description: "", ports: 0, speed: "" }])}
+                                                className="text-blue-500 hover:text-blue-700 normal-case font-bold"
+                                            >
+                                                + Add Module
+                                            </button>
+                                        </h5>
+                                        <div className="space-y-3">
+                                            {specs.compatible_uplink_modules?.map((mod: any, i: number) => (
+                                                <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                                                    <input
+                                                        type="text" placeholder="Part #"
+                                                        value={mod.part_number}
+                                                        onChange={(e) => {
+                                                            const newMods = [...(specs.compatible_uplink_modules || [])];
+                                                            newMods[i].part_number = e.target.value;
+                                                            handleSpecChange("compatible_uplink_modules", newMods);
+                                                        }}
+                                                        className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <input
+                                                        type="text" placeholder="Description"
+                                                        value={mod.description}
+                                                        onChange={(e) => {
+                                                            const newMods = [...(specs.compatible_uplink_modules || [])];
+                                                            newMods[i].description = e.target.value;
+                                                            handleSpecChange("compatible_uplink_modules", newMods);
+                                                        }}
+                                                        className="col-span-4 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <input
+                                                        type="number" placeholder="Ports"
+                                                        value={mod.ports || 0}
+                                                        onChange={(e) => {
+                                                            const newMods = [...(specs.compatible_uplink_modules || [])];
+                                                            newMods[i].ports = parseInt(e.target.value);
+                                                            handleSpecChange("compatible_uplink_modules", newMods);
+                                                        }}
+                                                        className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <input
+                                                        type="text" placeholder="Speed"
+                                                        value={mod.speed}
+                                                        onChange={(e) => {
+                                                            const newMods = [...(specs.compatible_uplink_modules || [])];
+                                                            newMods[i].speed = e.target.value;
+                                                            handleSpecChange("compatible_uplink_modules", newMods);
+                                                        }}
+                                                        className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newMods = [...(specs.compatible_uplink_modules || [])];
+                                                            newMods.splice(i, 1);
+                                                            handleSpecChange("compatible_uplink_modules", newMods);
+                                                        }}
+                                                        className="col-span-1 text-red-500 hover:text-red-700"
+                                                    >✕</button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            </section>
+
+                                    {/* Power Supplies */}
+                                    <div className="mb-8">
+                                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+                                            Compatible Power Supplies Sets
+                                            <button
+                                                onClick={() => handleSpecChange("compatible_power_supplies", [...(specs.compatible_power_supplies || []), { part_number: "", description: "", wattage: 0, poe_budget: 0 }])}
+                                                className="text-blue-500 hover:text-blue-700 normal-case font-bold"
+                                            >
+                                                + Add PSU
+                                            </button>
+                                        </h5>
+                                        <div className="space-y-3">
+                                            {specs.compatible_power_supplies?.map((psu: any, i: number) => (
+                                                <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                                                    <input
+                                                        type="text" placeholder="Part #"
+                                                        value={psu.part_number}
+                                                        onChange={(e) => {
+                                                            const newPsus = [...(specs.compatible_power_supplies || [])];
+                                                            newPsus[i].part_number = e.target.value;
+                                                            handleSpecChange("compatible_power_supplies", newPsus);
+                                                        }}
+                                                        className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <input
+                                                        type="text" placeholder="Description"
+                                                        value={psu.description}
+                                                        onChange={(e) => {
+                                                            const newPsus = [...(specs.compatible_power_supplies || [])];
+                                                            newPsus[i].description = e.target.value;
+                                                            handleSpecChange("compatible_power_supplies", newPsus);
+                                                        }}
+                                                        className="col-span-4 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <input
+                                                        type="number" placeholder="Watts"
+                                                        value={psu.wattage || 0}
+                                                        onChange={(e) => {
+                                                            const newPsus = [...(specs.compatible_power_supplies || [])];
+                                                            newPsus[i].wattage = parseInt(e.target.value);
+                                                            handleSpecChange("compatible_power_supplies", newPsus);
+                                                        }}
+                                                        className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <input
+                                                        type="number" placeholder="PoE (W)"
+                                                        value={psu.poe_budget || 0}
+                                                        onChange={(e) => {
+                                                            const newPsus = [...(specs.compatible_power_supplies || [])];
+                                                            newPsus[i].poe_budget = parseInt(e.target.value);
+                                                            handleSpecChange("compatible_power_supplies", newPsus);
+                                                        }}
+                                                        className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newPsus = [...(specs.compatible_power_supplies || [])];
+                                                            newPsus.splice(i, 1);
+                                                            handleSpecChange("compatible_power_supplies", newPsus);
+                                                        }}
+                                                        className="col-span-1 text-red-500 hover:text-red-700"
+                                                    >✕</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Stacking Options */}
+                                    <div>
+                                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-between items-center">
+                                            Stacking Accessories
+                                            <button
+                                                onClick={() => handleSpecChange("compatible_stacking_options", [...(specs.compatible_stacking_options || []), { part_number: "", description: "", length_cm: 0 }])}
+                                                className="text-blue-500 hover:text-blue-700 normal-case font-bold"
+                                            >
+                                                + Add Stacking Item
+                                            </button>
+                                        </h5>
+                                        <div className="space-y-3">
+                                            {specs.compatible_stacking_options?.map((opt: any, i: number) => (
+                                                <div key={i} className="grid grid-cols-12 gap-3 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                                                    <input
+                                                        type="text" placeholder="Part #"
+                                                        value={opt.part_number}
+                                                        onChange={(e) => {
+                                                            const newOpts = [...(specs.compatible_stacking_options || [])];
+                                                            newOpts[i].part_number = e.target.value;
+                                                            handleSpecChange("compatible_stacking_options", newOpts);
+                                                        }}
+                                                        className="col-span-3 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <input
+                                                        type="text" placeholder="Description"
+                                                        value={opt.description}
+                                                        onChange={(e) => {
+                                                            const newOpts = [...(specs.compatible_stacking_options || [])];
+                                                            newOpts[i].description = e.target.value;
+                                                            handleSpecChange("compatible_stacking_options", newOpts);
+                                                        }}
+                                                        className="col-span-6 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <input
+                                                        type="number" placeholder="Len (cm)"
+                                                        value={opt.length_cm || 0}
+                                                        onChange={(e) => {
+                                                            const newOpts = [...(specs.compatible_stacking_options || [])];
+                                                            newOpts[i].length_cm = parseInt(e.target.value);
+                                                            handleSpecChange("compatible_stacking_options", newOpts);
+                                                        }}
+                                                        className="col-span-2 text-xs p-2 rounded border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newOpts = [...(specs.compatible_stacking_options || [])];
+                                                            newOpts.splice(i, 1);
+                                                            handleSpecChange("compatible_stacking_options", newOpts);
+                                                        }}
+                                                        className="col-span-1 text-red-500 hover:text-red-700"
+                                                    >✕</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* Security / Fallback section */}
+                            {formData.role === 'SECURITY' && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>Security Specifications</h4>
+                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Security equipment attributes are managed via the raw JSON tab until a dedicated schema is finalized.</p>
+                                </section>
+                            )}
                         </div>
                     ) : (
                         <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
@@ -910,11 +811,12 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 {JSON.stringify(formData, null, 2)}
                             </pre>
                         </div>
-                    )}
-                </div>
+                    )
+                    }
+                </div >
 
                 {/* Footer */}
-                <div className="px-8 py-6 bg-white dark:bg-zinc-900 flex justify-end gap-3 border-t border-zinc-100 dark:border-zinc-800 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
+                < div className="px-8 py-6 bg-white dark:bg-zinc-900 flex justify-end gap-3 border-t border-zinc-100 dark:border-zinc-800 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]" >
                     <button onClick={onClose} className="px-6 py-2.5 text-sm text-slate-500 hover:text-slate-800 font-bold transition-all">
                         Cancel
                     </button>
@@ -925,8 +827,8 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                     >
                         {isSaving ? "Saving..." : "Save Changes"}
                     </button>
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 }

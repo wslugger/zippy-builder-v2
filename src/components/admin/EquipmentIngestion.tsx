@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -13,11 +14,8 @@ export default function EquipmentIngestion() {
     const [statusMessage, setStatusMessage] = useState<string>("");
 
     const handlePurposeChange = (purpose: string) => {
-        if (selectedPurposes.includes(purpose)) {
-            setSelectedPurposes(selectedPurposes.filter(p => p !== purpose));
-        } else {
-            setSelectedPurposes([...selectedPurposes, purpose]);
-        }
+        // Change to single selection for "Primary Purpose" context to keep it simple as requested
+        setSelectedPurposes([purpose]);
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,10 +156,11 @@ export default function EquipmentIngestion() {
                         {EQUIPMENT_PURPOSES.map((p: string) => (
                             <label key={p} className="flex items-center gap-2 cursor-pointer bg-zinc-50 dark:bg-zinc-800 px-4 py-2 rounded-md border border-zinc-200 dark:border-zinc-700 hover:border-blue-500 transition-colors">
                                 <input
-                                    type="checkbox"
+                                    type="radio"
+                                    name="primaryPurpose"
                                     checked={selectedPurposes.includes(p)}
                                     onChange={() => handlePurposeChange(p)}
-                                    className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                                    className="rounded-full border-zinc-300 text-blue-600 focus:ring-blue-500"
                                 />
                                 <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{p}</span>
                             </label>
@@ -240,32 +239,47 @@ export default function EquipmentIngestion() {
                                     </div>
                                     <div>
                                         <span className="block text-xs font-medium text-zinc-500 uppercase">Throughput</span>
-                                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{item.specs.ngfw_throughput_mbps || 0} Mbps</span>
+                                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{(item as any).specs.ngfw_throughput_mbps || 0} Mbps</span>
                                         <span className="block text-[10px] text-zinc-400">NGFW</span>
                                     </div>
                                     <div>
                                         <span className="block text-xs font-medium text-zinc-500 uppercase">Interfaces</span>
                                         <div className="text-[10px] leading-tight">
-                                            {item.specs.wan_interfaces_desc && <div><span className="text-blue-500">W:</span> {item.specs.wan_interfaces_desc}</div>}
-                                            {item.specs.lan_interfaces_desc && <div><span className="text-green-500">L:</span> {item.specs.lan_interfaces_desc}</div>}
+                                            {item.role === 'WAN' && (
+                                                <>
+                                                    <div><span className="text-blue-500">W:</span> {(item.specs as any).wanPortCount || 0}</div>
+                                                    <div><span className="text-green-500">L:</span> {(item.specs as any).lanPortCount || 0}</div>
+                                                </>
+                                            )}
+                                            {item.role === 'LAN' && (
+                                                <>
+                                                    <div><span className="text-blue-500">A:</span> {(item.specs as any).accessPortCount || 0}</div>
+                                                    <div><span className="text-green-500">U:</span> {(item.specs as any).uplinkPortCount || 0}</div>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                     <div>
                                         <span className="block text-xs font-medium text-zinc-500 uppercase">Power (Max)</span>
-                                        <span className="text-zinc-700 dark:text-zinc-300">{item.specs.power_load_max_watts || 0}W</span>
+                                        <span className="text-zinc-700 dark:text-zinc-300">{(item as any).specs.power_load_max_watts || 0}W</span>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-                                        {item.purpose}
+                                        {(item as any).primary_purpose}
                                     </span>
-                                    {item.specs.vpn_tunnels && (
+                                    {((item as any).additional_purposes || []).map((p: string) => (
+                                        <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-50 text-zinc-600 border border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800">
+                                            {p}
+                                        </span>
+                                    ))}
+                                    {(item as any).specs.vpn_tunnels && (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                            {item.specs.vpn_tunnels} VPN Tunnels
+                                            {(item as any).specs.vpn_tunnels} VPN Tunnels
                                         </span>
                                     )}
-                                    {item.specs.stacking_supported && (
+                                    {(item as any).specs.stacking_supported && (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
                                             Stackable
                                         </span>

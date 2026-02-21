@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Equipment, VENDOR_LABELS, EQUIPMENT_PURPOSES } from "@/src/lib/types";
@@ -42,15 +43,19 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                     <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-2">
                                         {item.model}
                                         <div className="flex gap-1">
-                                            {item.specs.integrated_cellular && (
-                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800" title="Integrated Cellular">
-                                                    {item.specs.cellular_type || "LTE"}
-                                                </span>
-                                            )}
-                                            {item.specs.integrated_wifi && (
-                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800" title="Integrated Wi-Fi">
-                                                    {item.specs.wifi_standard?.replace("Wi-Fi ", "W") || "WIFI"}
-                                                </span>
+                                            {item.role === 'WAN' && (
+                                                <>
+                                                    {item.specs.integrated_cellular && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800" title="Integrated Cellular">
+                                                            {item.specs.cellular_type || "LTE"}
+                                                        </span>
+                                                    )}
+                                                    {item.specs.integrated_wifi && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800" title="Integrated Wi-Fi">
+                                                            {item.specs.wifi_standard?.replace("Wi-Fi ", "W") || "WIFI"}
+                                                        </span>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -62,47 +67,91 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                 <td className="px-6 py-4">
                                     <div className="flex flex-wrap gap-1">
                                         {(() => {
-                                            const purposes = Array.isArray(item.purpose)
-                                                ? item.purpose
-                                                : typeof item.purpose === 'string'
-                                                    ? (item.purpose as string).split(',').map(p => p.trim())
-                                                    : [];
+                                            const itemWithAny = item as any;
+                                            const purposes = [
+                                                itemWithAny.primary_purpose,
+                                                ...(itemWithAny.additional_purposes || [])
+                                            ].filter(Boolean);
 
-                                            return purposes
-                                                .filter(p => (EQUIPMENT_PURPOSES as readonly string[]).includes(p))
-                                                .map((p) => (
-                                                    <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
-                                                        {p}
-                                                    </span>
-                                                ));
-                                        })()}
-                                    </div>
+                                            return purposes.map((p) => (
+                                                <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
+                                                    {p}
+                                                </span>
+                                            ));
+                                        })()}                                    </div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
-                                        {item.specs.ngfw_throughput_mbps && (
+                                        {item.role === 'WAN' && (
+                                            <>
+                                                {item.specs.ngfw_throughput_mbps && (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="opacity-50">⚡</span>
+                                                        Throughput: {item.specs.ngfw_throughput_mbps} Mbps
+                                                    </div>
+                                                )}
+                                                {item.specs.vpn_throughput_mbps && (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="opacity-50">🔒</span>
+                                                        Crypto: {item.specs.vpn_throughput_mbps} Mbps
+                                                    </div>
+                                                )}
+                                                {(item.specs as any).wanPortCount !== undefined && (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="opacity-50">🔌</span>
+                                                        Ports: {(item.specs as any).wanPortCount}W / {(item.specs as any).lanPortCount}L
+                                                        {item.specs.poe_budget && item.specs.poe_budget > 0 && ` (${item.specs.poe_budget}W PoE)`}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        {item.role === 'LAN' && (
+                                            <>
+                                                {item.specs.switching_capacity_gbps && (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="opacity-50">⚡</span>
+                                                        Capacity: {item.specs.switching_capacity_gbps} Gbps
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center gap-1">
+                                                    <span className="opacity-50">🔌</span>
+                                                    Ports: {(item.specs as any).accessPortCount || 0}
+                                                    {item.specs.poe_budget_watts && item.specs.poe_budget_watts > 0 && ` (${item.specs.poe_budget_watts}W PoE)`}
+                                                </div>
+                                                {item.specs.stackable && (
+                                                    <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
+                                                        <span className="opacity-50">📚</span>
+                                                        Stackable: Yes
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        {item.role === 'WLAN' && (
+                                            <>
+                                                {item.specs.wifi_standard && (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="opacity-50">📡</span>
+                                                        {item.specs.wifi_standard}
+                                                    </div>
+                                                )}
+                                                {item.specs.mimo && (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="opacity-50">📶</span>
+                                                        {item.specs.mimo} MIMO
+                                                    </div>
+                                                )}
+                                                {item.specs.max_concurrent_clients && (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="opacity-50">👥</span>
+                                                        Clients: {item.specs.max_concurrent_clients}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        {item.role === 'SECURITY' && (
                                             <div className="flex items-center gap-1">
-                                                <span className="opacity-50">⚡</span>
-                                                {item.specs.ngfw_throughput_mbps} Mbps (NGFW)
-                                            </div>
-                                        )}
-                                        {item.specs.ports && (
-                                            <div className="flex items-center gap-1">
-                                                <span className="opacity-50">🔌</span>
-                                                {item.specs.ports} Ports
-                                                {item.specs.poe_budget && item.specs.poe_budget > 0 && ` (${item.specs.poe_budget}W PoE)`}
-                                            </div>
-                                        )}
-                                        {item.specs.performance_rating && (
-                                            <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
-                                                <span className="opacity-50">🚀</span>
-                                                {item.specs.performance_rating}
-                                            </div>
-                                        )}
-                                        {item.specs.stacking_supported && (
-                                            <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
-                                                <span className="opacity-50">📚</span>
-                                                Stackable ({item.specs.stacking_bandwidth_gbps || 0}G)
+                                                <span className="opacity-50">🛡️</span>
+                                                Security Appliance
                                             </div>
                                         )}
                                     </div>

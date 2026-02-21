@@ -179,6 +179,14 @@ export function calculateThroughputOverhead(
  * Used in both primary candidate ranking and fallback selection.
  */
 export function getEquipmentPerformanceValue(equip: Equipment, throughputBasis?: string): number {
-    const throughputField = throughputBasis || "vpn_throughput_mbps";
-    return (equip.specs[throughputField as keyof Equipment["specs"]] as number ?? equip.specs.vpn_throughput_mbps ?? 0) || equip.specs.ports || 0;
+    if (equip.role === 'WAN') {
+        const throughputField = throughputBasis || "vpn_throughput_mbps";
+        return (equip.specs[throughputField as keyof typeof equip.specs] as number) ?? equip.specs.vpn_throughput_mbps ?? 0;
+    } else if (equip.role === 'LAN') {
+        return equip.specs.switching_capacity_gbps ??
+            (equip.specs.accessPortCount || 0);
+    } else if (equip.role === 'WLAN') {
+        return equip.specs.max_concurrent_clients ?? 0;
+    }
+    return 0;
 }

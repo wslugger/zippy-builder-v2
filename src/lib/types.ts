@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 
 // ============================================================
@@ -32,81 +33,136 @@ export const CELLULAR_TYPES = ["LTE", "5G", "LTE/5G"] as const;
 export const WIFI_STANDARDS = ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"] as const;
 export const EQUIPMENT_STATUSES = ["Supported", "In development", "Not supported"] as const;
 
-export const EquipmentSchema = z.object({
+export const EQUIPMENT_ROLES = ["WAN", "LAN", "WLAN", "SECURITY"] as const;
+export type EquipmentRole = typeof EQUIPMENT_ROLES[number];
+
+export const WANSpecsSchema = z.object({
+  ngfw_throughput_mbps: z.number().optional(),
+  adv_sec_throughput_mbps: z.number().optional(),
+  vpn_throughput_mbps: z.number().optional(),
+  vpn_tunnels: z.number().optional(),
+  wanPortCount: z.number().default(0),
+  lanPortCount: z.number().default(0),
+  sfpPortCount: z.number().optional(),
+  // Support mixed WAN/LAN fields often used in compact branches
+  ports: z.number().optional(),
+  poe_budget: z.number().optional(),
+  rack_units: z.number().optional(),
+  mounting_options: z.array(z.string()).optional(),
+  stacking_supported: z.boolean().optional(),
+  stacking_bandwidth_gbps: z.number().optional(),
+  forwarding_rate_mpps: z.number().optional(),
+  switching_capacity_gbps: z.number().optional(),
+  primary_power_supply: z.string().optional(),
+  secondary_power_supply: z.string().optional(),
+  poe_capabilities: z.string().optional(),
+  power_load_max_watts: z.number().optional(),
+  integrated_cellular: z.boolean().optional(),
+  cellular_type: z.enum(CELLULAR_TYPES).optional(),
+  integrated_wifi: z.boolean().optional(),
+  wifi_standard: z.enum(WIFI_STANDARDS).optional(),
+  modular_cellular: z.boolean().optional(),
+}).strict();
+
+export const LANSpecsSchema = z.object({
+  switching_capacity_gbps: z.number().optional(),
+  forwarding_rate_mpps: z.number().optional(),
+  poe_budget_watts: z.number().optional(), // specifically for the switch data
+  accessPortCount: z.number().default(0),
+  uplinkPortCount: z.number().default(0),
+  accessPortType: z.enum(['1G', 'mGig', '10G']).optional(),
+  uplinkPortType: z.enum(['1G', '10G', '40G', '100G']).optional(),
+  stackable: z.boolean().default(false),
+  // Common extraction fields
+  ports: z.number().optional(),
+  poe_budget: z.number().optional(),
+  rack_units: z.number().optional(),
+  mounting_options: z.array(z.string()).optional(),
+  stacking_supported: z.boolean().optional(),
+  stacking_bandwidth_gbps: z.number().optional(),
+  primary_power_supply: z.string().optional(),
+  secondary_power_supply: z.string().optional(),
+  poe_capabilities: z.string().optional(),
+  power_load_max_watts: z.number().optional(),
+}).strict();
+
+export const WLANSpecsSchema = z.object({
+  wifi_standard: z.enum(WIFI_STANDARDS),
+  radios: z.string().optional(),
+  mimo: z.string().optional(),
+  max_concurrent_clients: z.number().optional(),
+  antenna_type: z.string().optional(),
+  requires_controller: z.boolean().default(false),
+  uplinkPortType: z.enum(['1G', 'mGig']).optional(),
+}).strict();
+
+const BaseEquipmentSchema = z.object({
   id: z.string().describe("Unique ID: vendor_model_sku (e.g. meraki_mx85)"),
   model: z.string(),
+  make: z.string().optional().describe("Manufacturer/Make"),
   active: z.boolean().default(true),
   status: z.enum(EQUIPMENT_STATUSES).default("Supported"),
   vendor_id: z.enum(VENDOR_IDS),
-  purpose: z.array(z.enum(EQUIPMENT_PURPOSES)),
+  primary_purpose: z.enum(EQUIPMENT_PURPOSES).default("LAN"),
+  additional_purposes: z.array(z.enum(EQUIPMENT_PURPOSES)).default([]),
   family: z.string().optional().describe("Product family (e.g. MX, Catalyst 8000)"),
   description: z.string().optional(),
-  end_of_life: z
-    .string()
-    .optional()
-    .describe("ISO Date string or 'Not Announced'"),
-  specs: z.object({
-    ngfw_throughput_mbps: z.number().optional(),
-    adv_sec_throughput_mbps: z.number().optional(),
-    vpn_throughput_mbps: z.number().optional(),
-    vpn_tunnels: z.number().optional(),
-    wan_interfaces_count: z.number().optional(), // numeric sum
-    wan_interfaces_desc: z.string().optional(), // "1x GbE RJ45"
-    lan_interfaces_count: z.number().optional(),
-    lan_interfaces_desc: z.string().optional(),
-    convertible_interfaces_desc: z.string().optional(),
-    access_speed: z.string().optional(),
-    uplink_speed: z.string().optional(),
-    uplink_ports: z.number().optional(),
-    integrated_cellular: z.boolean().optional(),
-    modular_cellular: z.boolean().optional().describe("Supports Pluggable Interface Modules (PIM)"),
-    cellular_type: z.enum(CELLULAR_TYPES).optional(),
-    integrated_wifi: z.boolean().optional(),
-    wifi_standard: z.enum(WIFI_STANDARDS).optional(),
-    power_supply_watts: z.number().optional(),
-    power_load_idle_watts: z.number().optional(),
-    power_load_max_watts: z.number().optional(),
-    recommended_use_case: z.string().optional(),
-    ports: z.number().optional(),
-    poe_budget: z.number().optional(),
-    power_rating_watts: z.number().optional(),
-    rack_units: z.number().optional(),
-    mounting_options: z.array(z.string()).optional(),
-    max_clients: z.number().optional(),
-    power_connector_type: z.string().optional(),
-    stacking_supported: z.boolean().optional(),
-    stacking_bandwidth_gbps: z.number().optional(),
-    forwarding_rate_mpps: z.number().optional(),
-    switching_capacity_gbps: z.number().optional(),
-    primary_power_supply: z.string().optional(),
-    secondary_power_supply: z.string().optional(),
-    poe_capabilities: z.string().optional(),
-    performance_rating: z.string().optional().describe("Fixed to 'Wire Rate' for modern switches"),
-    compatible_uplink_modules: z.array(z.object({
-      part_number: z.string(),
-      description: z.string().optional(),
-      ports: z.number().optional(),
-      speed: z.string().optional()
-    })).optional(),
-    compatible_power_supplies: z.array(z.object({
-      part_number: z.string(),
-      description: z.string().optional(),
-      wattage: z.number().optional(),
-      poe_budget: z.number().optional()
-    })).optional(),
-    compatible_stacking_options: z.array(z.object({
-      part_number: z.string(),
-      description: z.string().optional(),
-      length_cm: z.number().optional()
-    })).optional(),
-  }),
-  images: z.array(z.string()).optional(),
+  end_of_life: z.string().optional().describe("ISO Date string or 'Not Announced'"),
+  formFactor: z.string().optional(),
+  price: z.number().optional(),
   datasheet_url: z.string().optional(),
+  images: z.array(z.string()).optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
 
+export const EquipmentSchema = z.preprocess(
+  (data: unknown) => {
+    if (data && typeof data === 'object') {
+      const d = data as any;
+      const ROLE_MAP: Record<string, string> = { "SDWAN": "WAN", "LAN": "LAN", "WLAN": "WLAN", "Security": "SECURITY" };
+
+      // Backward compatibility: migrate purpose array to primary/additional
+      if (Array.isArray(d.purpose) && !d.primary_purpose) {
+        const firstValidPurpose = d.purpose.find((p: string) => ROLE_MAP[p]);
+        d.primary_purpose = firstValidPurpose || "LAN";
+        d.additional_purposes = d.purpose.filter((p: string) => p !== d.primary_purpose);
+      } else if (typeof d.purpose === 'string' && !d.primary_purpose) {
+        d.primary_purpose = d.purpose;
+        d.additional_purposes = [];
+      }
+
+      // Ensure we have a valid role derived from primary_purpose
+      const role = ROLE_MAP[d.primary_purpose] || d.role || "LAN";
+      return { ...d, role };
+    }
+    return data;
+  },
+  z.discriminatedUnion("role", [
+    BaseEquipmentSchema.extend({
+      role: z.literal("WAN"),
+      specs: WANSpecsSchema,
+    }),
+    BaseEquipmentSchema.extend({
+      role: z.literal("LAN"),
+      specs: LANSpecsSchema,
+    }),
+    BaseEquipmentSchema.extend({
+      role: z.literal("WLAN"),
+      specs: WLANSpecsSchema,
+    }),
+    BaseEquipmentSchema.extend({
+      role: z.literal("SECURITY"),
+      specs: z.record(z.string(), z.unknown()),
+    }),
+  ])
+);
+
 export type Equipment = z.infer<typeof EquipmentSchema>;
+export type BaseEquipment = z.infer<typeof BaseEquipmentSchema>;
+export type WANSpecs = z.infer<typeof WANSpecsSchema>;
+export type LANSpecs = z.infer<typeof LANSpecsSchema>;
+export type WLANSpecs = z.infer<typeof WLANSpecsSchema>;
 
 // ============================================================
 // Service & Package Types

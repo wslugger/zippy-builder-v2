@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { EquipmentSchema } from '@/src/lib/types';
 
 describe('LAN Switch Specifications Schema', () => {
@@ -8,7 +9,7 @@ describe('LAN Switch Specifications Schema', () => {
             active: true,
             status: 'Supported',
             vendor_id: 'cisco_catalyst',
-            purpose: ['LAN'],
+            primary_purpose: "LAN", additional_purposes: [],
             family: 'Catalyst 9200',
             description: 'Catalyst 9200L 24-port PoE+, 4 x 1G, Network Essentials',
             specs: {
@@ -30,11 +31,11 @@ describe('LAN Switch Specifications Schema', () => {
         const result = EquipmentSchema.safeParse(validCatalyst);
         expect(result.success).toBe(true);
         if (result.success) {
-            expect(result.data.specs.stacking_supported).toBe(true);
-            expect(result.data.specs.stacking_bandwidth_gbps).toBe(80);
-            expect(result.data.specs.forwarding_rate_mpps).toBe(41.66);
-            expect(result.data.specs.switching_capacity_gbps).toBe(56);
-            expect(result.data.specs.primary_power_supply).toBe('PWR-C5-600WAC');
+            expect((result.data.specs as any).stacking_supported).toBe(true);
+            expect((result.data.specs as any).stacking_bandwidth_gbps).toBe(80);
+            expect((result.data.specs as any).forwarding_rate_mpps).toBe(41.66);
+            expect((result.data.specs as any).switching_capacity_gbps).toBe(56);
+            expect((result.data.specs as any).primary_power_supply).toBe('PWR-C5-600WAC');
         }
     });
 
@@ -43,7 +44,7 @@ describe('LAN Switch Specifications Schema', () => {
             id: 'generic_switch',
             model: 'Generic 1G',
             vendor_id: 'cisco_catalyst',
-            purpose: ['LAN'],
+            primary_purpose: "LAN", additional_purposes: [],
             specs: {
                 ports: 8
             }

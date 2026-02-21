@@ -8,7 +8,9 @@ import { validateDoc, validateDocs } from "./validation";
 export const EquipmentService = {
     saveEquipment: async (equipment: Equipment) => {
         const docRef = doc(db, EQUIPMENT_COLLECTION, equipment.id);
-        const stamped = applyTimestamps(equipment);
+        // Ensure role is explicitly set if it's missing (though Zod should handle it)
+        const equipmentWithRole = { ...equipment, role: equipment.role || 'WAN' };
+        const stamped = applyTimestamps(equipmentWithRole);
         const cleaned = cleanObject(stamped);
         await setDoc(docRef, cleaned, { merge: true });
         return equipment.id;
@@ -21,7 +23,8 @@ export const EquipmentService = {
         const batch = writeBatch(db);
         items.forEach((item) => {
             const docRef = doc(db, EQUIPMENT_COLLECTION, item.id);
-            const stamped = applyTimestamps(item);
+            const itemWithRole = { ...item, role: item.role || 'WAN' };
+            const stamped = applyTimestamps(itemWithRole);
             const cleaned = cleanObject(stamped);
             batch.set(docRef, cleaned, { merge: true });
         });

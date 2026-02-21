@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import jsonLogic from "json-logic-js";
 import { Site, BOM, BOMLineItem, BOMEngineInput } from "./types";
 import { Equipment, EQUIPMENT_PURPOSES } from "./types";
@@ -105,7 +106,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 return jsonLogic.apply(rule.condition, context);
             });
 
-            const parameterActions = matchingRules.flatMap(r => r.actions).filter(a => a.type === "set_parameter");
+
             const equipmentAction = matchingRules.flatMap(r => r.actions).find(a => a.type === "select_equipment");
 
             if (equipmentAction) {
@@ -152,31 +153,41 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 if (e.vendor_id !== vendorId) return false;
 
                 const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
-                if (requiredPurpose && !e.purpose.includes(requiredPurpose as (typeof EQUIPMENT_PURPOSES)[number])) return false;
+                if (requiredPurpose) {
+                    const candidatePurposes = [e.primary_purpose, ...(e.additional_purposes || [])];
+                    if (!candidatePurposes.includes(requiredPurpose as any)) return false;
+                }
 
                 if (!matchesConstraints(e, siteDef.constraints)) return false;
 
-                if (requiredPurpose === "SDWAN") {
+                if (requiredPurpose === "SDWAN" && e.role === 'WAN') {
                     const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
-                    const deviceThroughput = e.specs[throughputField] ?? e.specs.vpn_throughput_mbps ?? 0;
+                    const deviceThroughput = (e.specs[throughputField as keyof typeof e.specs] as number) ?? e.specs.vpn_throughput_mbps ?? 0;
                     if (deviceThroughput < requiredThroughput) return false;
+
+                    const cpeQuantity = calculateCPEQuantity(site, siteDef);
+                    if (cpeQuantity > 1 && (e.specs.lanPortCount || 0) < 1) {
+                        return false;
+                    }
                 }
 
-                if (requiredPurpose === "LAN") {
-                    let requiredSpeed = site.accessPortSpeed;
-                    const defaultSpeedParam = parameterActions.find(a => a.targetId === "defaultAccessSpeed")?.actionValue;
-                    if (!requiredSpeed && defaultSpeedParam) {
-                        requiredSpeed = String(defaultSpeedParam) as NonNullable<Site["accessPortSpeed"]>;
-                    }
-
-                    if (requiredSpeed && e.specs.access_speed && e.specs.access_speed !== requiredSpeed) {
-                        if (requiredSpeed !== "1GbE" && !e.specs.access_speed?.includes(requiredSpeed.replace("GbE", "G"))) {
-                            return false;
-                        }
-                    }
-
-                    if (site.poeStandard && e.specs.poe_capabilities && !e.specs.poe_capabilities.includes(site.poeStandard)) {
+                if (requiredPurpose === "LAN" && e.role === 'LAN') {
+                    if (site.poeStandard && e.specs.poe_budget_watts && e.specs.poe_budget_watts === 0) {
                         return false;
+                    }
+
+                    const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0);
+                    const maxPorts = e.specs.stackable ? (e.specs.accessPortCount || 0) * 8 : (e.specs.accessPortCount || 0);
+                    if (maxPorts < totalRequiredPorts) {
+                        return false;
+                    }
+
+                    const wlanItem = bomItems.find(item => item.siteName === site.name && item.serviceId === 'managed_wlan');
+                    if (wlanItem) {
+                        const apEquip = equipmentCatalog.find(eq => eq.id === wlanItem.itemId);
+                        if (apEquip && apEquip.role === 'WLAN' && apEquip.specs.uplinkPortType === 'mGig') {
+                            if (e.specs.accessPortType !== 'mGig') return false;
+                        }
                     }
                 }
 
@@ -204,7 +215,9 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 const allPurposeCandidates = equipmentCatalog.filter(e => {
                     if (e.vendor_id !== vendorId) return false;
                     const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
-                    return requiredPurpose && e.purpose.includes(requiredPurpose as (typeof EQUIPMENT_PURPOSES)[number]);
+                    if (!requiredPurpose) return true;
+                    const candidatePurposes = [e.primary_purpose, ...(e.additional_purposes || [])];
+                    return candidatePurposes.includes(requiredPurpose as any);
                 });
 
                 const sortedFallbackCandidates = allPurposeCandidates.sort((a, b) => {
@@ -247,15 +260,15 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                             }
                         }
                     } else {
-                        const requiredPorts = site.lanPorts || 48;
-                        const switchPorts = bestFit.specs.ports || 48;
+                        const requiredPorts = site.lanPorts || (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0) || 48;
+                        const switchPorts = bestFit.role === 'LAN' ? (bestFit.specs.accessPortCount || 48) : 48;
                         quantity = Math.ceil(requiredPorts / switchPorts);
                     }
                     if (quantity === 0) quantity = 1;
                 }
 
                 const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
-                const deviceThroughput = bestFit.specs[throughputField] || bestFit.specs.vpn_throughput_mbps || 0;
+                const deviceThroughput = getEquipmentPerformanceValue(bestFit, throughputField);
 
                 bomItems.push({
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
@@ -308,8 +321,7 @@ function matchesConstraints(equipment: Equipment, constraints: { type: string; d
 }
 
 export function calculateUtilization(site: Site, equipment: Equipment, basis?: string, overhead: number = 0): number {
-    const throughputField = (basis || "vpn_throughput_mbps") as keyof Equipment["specs"];
-    const capacity = (equipment.specs[throughputField] as number) || 0;
+    const capacity = getEquipmentPerformanceValue(equipment, basis);
 
     if (!capacity) return 0;
 
@@ -324,8 +336,8 @@ export function validatePOE(site: Site, bomItems: BOMLineItem[], equipmentCatalo
     for (const item of bomItems) {
         if (item.siteName !== site.name) continue;
         const equip = equipmentCatalog.find(e => e.id === item.itemId);
-        if (equip?.specs.poe_budget) {
-            totalBudget += (equip.specs.poe_budget * item.quantity);
+        if (equip?.role === 'LAN' && equip.specs.poe_budget_watts) {
+            totalBudget += (equip.specs.poe_budget_watts * item.quantity);
         }
     }
 
@@ -340,14 +352,14 @@ export function validatePOE(site: Site, bomItems: BOMLineItem[], equipmentCatalo
 
 function getEquipmentSpecSummary(e: Equipment): string {
     const parts: string[] = [];
-    if (e.purpose.includes("LAN")) {
-        if (e.specs.ports) parts.push(`${e.specs.ports} Ports`);
-        if (e.specs.poe_budget) parts.push(`${e.specs.poe_budget}W PoE`);
-        if (e.specs.access_speed) parts.push(`${e.specs.access_speed} Access`);
-    } else if (e.purpose.includes("SDWAN")) {
+    if (e.role === 'LAN') {
+        const totalPorts = e.specs.accessPortCount || 0;
+        if (totalPorts) parts.push(`${totalPorts} Ports`);
+        if (e.specs.poe_budget_watts) parts.push(`${e.specs.poe_budget_watts}W PoE`);
+    } else if (e.role === 'WAN') {
         const throughput = e.specs.vpn_throughput_mbps || 0;
         if (throughput) parts.push(`${throughput}M VPN`);
-        if (e.specs.wan_interfaces_count) parts.push(`${e.specs.wan_interfaces_count} WAN`);
+        if (e.specs.wanPortCount) parts.push(`${e.specs.wanPortCount} WAN`);
     }
     return parts.join(", ");
 }

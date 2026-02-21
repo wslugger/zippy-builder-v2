@@ -8,16 +8,15 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX67",
         active: true,
         status: "Supported",
-        purpose: ["SDWAN", "Security"],
+        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Entry-level SD-WAN appliance for small branches.",
         specs: {
             ngfw_throughput_mbps: 450,
             vpn_throughput_mbps: 200,
-            wan_interfaces_desc: "1x GbE RJ45",
-            lan_interfaces_desc: "4x GbE RJ45",
-            max_clients: 50,
-            recommended_use_case: "Small Branch (up to 50 users)",
+            wanPortCount: 1,
+            lanPortCount: 4,
+            sfpPortCount: 0
         },
         images: ["/assets/equipment/meraki_mx67.png"]
     },
@@ -27,16 +26,16 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX68",
         active: true,
         status: "Supported",
-        purpose: ["SDWAN", "Security"],
+        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Small branch appliance with more ports and PoE.",
         specs: {
             ngfw_throughput_mbps: 450,
             vpn_throughput_mbps: 200,
-            wan_interfaces_desc: "2x GbE RJ45",
-            lan_interfaces_desc: "10x GbE RJ45 (2x PoE+)",
-            max_clients: 50,
-            recommended_use_case: "Small Branch with PoE needs",
+            wanPortCount: 2,
+            lanPortCount: 10,
+            sfpPortCount: 0,
+            poe_budget: 60
         },
         images: ["/assets/equipment/meraki_mx68.png"]
     },
@@ -46,16 +45,15 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX85",
         active: true,
         status: "Supported",
-        purpose: ["SDWAN", "Security"],
+        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Mid-range SD-WAN appliance for medium branches.",
         specs: {
             ngfw_throughput_mbps: 1000,
             vpn_throughput_mbps: 500,
-            wan_interfaces_desc: "2x GbE RJ45, 2x SFP",
-            lan_interfaces_desc: "8x GbE RJ45, 2x SFP",
-            max_clients: 250,
-            recommended_use_case: "Medium Branch (up to 250 users)",
+            wanPortCount: 4,
+            lanPortCount: 8,
+            sfpPortCount: 2
         },
         images: ["/assets/equipment/meraki_mx85.png"]
     },
@@ -65,16 +63,15 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX105",
         active: true,
         status: "Supported",
-        purpose: ["SDWAN", "Security"],
+        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "High-performance SD-WAN appliance for large branches.",
         specs: {
             ngfw_throughput_mbps: 1500,
             vpn_throughput_mbps: 750,
-            wan_interfaces_desc: "2x 2.5GbE RJ45, 2x SFP+",
-            lan_interfaces_desc: "4x GbE RJ45",
-            max_clients: 750,
-            recommended_use_case: "Large Branch / Campus (up to 750 users)",
+            wanPortCount: 4,
+            lanPortCount: 4,
+            sfpPortCount: 2
         },
         images: ["/assets/equipment/meraki_mx105.png"]
     },
@@ -84,16 +81,15 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX250",
         active: true,
         status: "Supported",
-        purpose: ["SDWAN", "Security"],
+        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "High-capacity SD-WAN appliance for large-scale deployments.",
         specs: {
             ngfw_throughput_mbps: 4000,
             vpn_throughput_mbps: 2000,
-            wan_interfaces_desc: "2x 10GbE SFP+",
-            lan_interfaces_desc: "8x GbE RJ45, 8x SFP, 8x 10GbE SFP+",
-            max_clients: 2000,
-            recommended_use_case: "Campus / Data Center",
+            wanPortCount: 2,
+            lanPortCount: 24,
+            sfpPortCount: 8
         },
         images: ["/assets/equipment/meraki_mx250.png"]
     },
@@ -103,16 +99,15 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "C8455-G2-MX",
         active: true,
         status: "Supported",
-        purpose: ["SDWAN", "Security"],
+        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
         family: "Catalyst 8400",
         description: "Ultra-high performance fixed-platform SD-WAN appliance.",
         specs: {
             ngfw_throughput_mbps: 10000,
             vpn_throughput_mbps: 5000,
-            wan_interfaces_desc: "2x 10G SFP+, 8x 1G RJ45",
-            lan_interfaces_desc: "High-density modular interfaces",
-            max_clients: 5000,
-            recommended_use_case: "Large Data Center / Regional Hub",
+            wanPortCount: 2,
+            lanPortCount: 8,
+            sfpPortCount: 2
         },
         images: ["/assets/equipment/cisco_c8455.png"]
     },
@@ -124,19 +119,17 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "C9200L-24P-4G",
         active: true,
         status: "Supported",
-        purpose: ["LAN"],
-        family: "Catalyst 9200",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Catalyst 9200",
         description: "Stackable enterprise access switch with 24 PoE+ ports.",
         specs: {
-            ports: 24,
-            poe_budget: 370,
-            lan_interfaces_desc: "24x GbE PoE+, 4x 1G SFP Uplinks",
-            recommended_use_case: "Standard Access Layer",
-            stacking_supported: true,
-            stacking_bandwidth_gbps: 80,
-            forwarding_rate_mpps: 41.66,
+            accessPortCount: 24,
+            uplinkPortCount: 4,
+            accessPortType: '1G',
+            uplinkPortType: '1G',
+            poe_budget_watts: 370,
+            stackable: true,
             switching_capacity_gbps: 56,
-            poe_capabilities: "PoE+"
+            forwarding_rate_mpps: 41.66
         }
     },
     {
@@ -145,19 +138,17 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "C9200L-48P-4G",
         active: true,
         status: "Supported",
-        purpose: ["LAN"],
-        family: "Catalyst 9200",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Catalyst 9200",
         description: "Stackable enterprise access switch with 48 PoE+ ports.",
         specs: {
-            ports: 48,
-            poe_budget: 740,
-            lan_interfaces_desc: "48x GbE PoE+, 4x 1G SFP Uplinks",
-            recommended_use_case: "High Density Access Layer",
-            stacking_supported: true,
-            stacking_bandwidth_gbps: 80,
-            forwarding_rate_mpps: 77.38,
+            accessPortCount: 48,
+            uplinkPortCount: 4,
+            accessPortType: '1G',
+            uplinkPortType: '1G',
+            poe_budget_watts: 740,
+            stackable: true,
             switching_capacity_gbps: 104,
-            poe_capabilities: "PoE+"
+            forwarding_rate_mpps: 77.38
         }
     },
 
@@ -168,13 +159,12 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MR44",
         active: true,
         status: "Supported",
-        purpose: ["WLAN"],
-        family: "Meraki MR",
+        primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Meraki MR",
         description: "Wi-Fi 6 Indoor Access Point",
         specs: {
             wifi_standard: "Wi-Fi 6",
-            integrated_wifi: true,
-            recommended_use_case: "General Office"
+            requires_controller: false,
+            max_concurrent_clients: 512
         }
     }
 ];

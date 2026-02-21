@@ -97,10 +97,11 @@ export function WANTab({
                             }}
                             options={catalog
                                 .filter((e) => {
-                                    if (!e.purpose.includes("SDWAN")) return false;
+                                    if (e.primary_purpose !== "SDWAN") return false;
                                     return e.vendor_id === getVendorForService("managed_sdwan");
                                 })
                                 .map((e) => ({ value: e.id, label: e.model }))}
+
                         />
                     </div>
                 </div>
