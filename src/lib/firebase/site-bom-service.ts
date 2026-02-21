@@ -16,10 +16,10 @@ export const SiteBOMService = {
 
         if (equipment.role === 'WAN') {
             throughput = equipment.specs.vpn_throughput_mbps ?? equipment.specs.ngfw_throughput_mbps;
-            ports = ((equipment.specs as any).wanPortCount || 0) + ((equipment.specs as any).lanPortCount || 0);
+            ports = (equipment.specs.wanPortCount || 0) + (equipment.specs.lanPortCount || 0);
         } else if (equipment.role === 'LAN') {
             throughput = equipment.specs.switching_capacity_gbps;
-            ports = (equipment.specs as any).accessPortCount || 0;
+            ports = equipment.specs.accessPortCount || 0;
         }
 
         const snapshot: EmbeddedEquipmentSnapshot = {
