@@ -159,3 +159,9 @@ sequenceDiagram
         1. The Equipment Editor UI.
         2. The AI Ingestion Prompt (as validation rules).
         3. The Filter/Search panels.
+
+### 8. End-to-End (E2E) Testing Strategy
+- **Lesson**: Relying solely on unit tests leaves complex, multi-screen workflows (like the SA CSV import to BOM generation) vulnerable to integration regressions and unexpected UI state errors.
+- **Pattern**: Implement **Playwright E2E Tests** focusing on the "Critical Path."
+    - **Implementation**: Instead of hitting live backend services (which causes test flakiness, slows down execution, and costs money for AI APIs), use `page.route()` to **mock network responses**.
+    - **Benefit**: This guarantees deterministic tests, allowing the CI/CD pipeline to safely and quickly validate that the Next.js UI components correctly process and flow data through the entire complex asynchronous user journey.

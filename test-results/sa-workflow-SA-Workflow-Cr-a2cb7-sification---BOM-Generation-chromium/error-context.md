@@ -1,0 +1,165 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]: ZippyBuilder Architect
+    - main [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e8]:
+          - generic [ref=e9]:
+            - heading "Project Workflow" [level=2] [ref=e10]
+            - link "← Back to Dashboard" [ref=e11] [cursor=pointer]:
+              - /url: /sa/dashboard
+          - generic [ref=e15]:
+            - generic [ref=e16]:
+              - generic [ref=e17]: ✓
+              - generic [ref=e18]: 1. Package Selection
+            - generic [ref=e19]:
+              - generic [ref=e20]: ✓
+              - generic [ref=e21]: 2. Review Package
+            - generic [ref=e22]:
+              - generic [ref=e23]: ✓
+              - generic [ref=e24]: 3. Customize
+            - generic [ref=e25]:
+              - generic [ref=e26]: ✓
+              - generic [ref=e27]: 4. Design Doc
+            - generic [ref=e28]:
+              - generic [ref=e29]: "5"
+              - generic [ref=e30]: 5. BOM Builder
+            - generic [ref=e31]:
+              - generic [ref=e32]: "6"
+              - generic [ref=e33]: 6. HLD
+        - generic [ref=e35]:
+          - generic [ref=e37]:
+            - heading "Sites (0)" [level=2] [ref=e38]
+            - button "Choose File" [ref=e40]
+            - generic [ref=e41]:
+              - generic [ref=e42]:
+                - generic [ref=e43]: Test Package
+                - combobox [ref=e44]:
+                  - option "Select Package..." [disabled]
+                  - option "Cloud Centric"
+                  - option "Cost Centric" [selected]
+                  - option "Performance Focused"
+                  - option "Security Centric"
+                  - option "Security First"
+              - button "Load Sample Sites (Test)" [ref=e45]
+          - generic [ref=e47]:
+            - generic [ref=e48]: Select a site from the sidebar or upload a CSV to begin.
+            - generic [ref=e50]:
+              - generic [ref=e51]:
+                - generic [ref=e52]:
+                  - heading "Review AI Site Analysis" [level=3] [ref=e53]
+                  - paragraph [ref=e54]: Gemini has analyzed your CSV and recommended deployment profiles for 2 sites.
+                - generic [ref=e55]:
+                  - button "Cancel" [ref=e56]
+                  - button "Confirm & Generate BOM" [ref=e57]
+              - table [ref=e59]:
+                - rowgroup [ref=e60]:
+                  - row "Site Name Raw Data (Users/BW) AI Recommendation Reasoning" [ref=e61]:
+                    - columnheader "Site Name" [ref=e62]
+                    - columnheader "Raw Data (Users/BW)" [ref=e63]
+                    - columnheader "AI Recommendation" [ref=e64]
+                    - columnheader "Reasoning" [ref=e65]
+                - rowgroup [ref=e66]:
+                  - row "SiteA 123 Broadway New York NY 👥 150 🚀 1000M No notes Gold (Large Office) 95% 3-Tier Campus (Core/Aggregation/Access) Mocked classification" [ref=e67]:
+                    - cell "SiteA 123 Broadway New York NY" [ref=e68]:
+                      - generic [ref=e69]: SiteA
+                      - generic [ref=e70]: 123 Broadway New York NY
+                    - cell "👥 150 🚀 1000M No notes" [ref=e71]:
+                      - generic [ref=e72]:
+                        - generic [ref=e73]: 👥 150
+                        - generic [ref=e74]: 🚀 1000M
+                      - generic [ref=e75]: No notes
+                    - cell "Gold (Large Office) 95% 3-Tier Campus (Core/Aggregation/Access)" [ref=e76]:
+                      - generic [ref=e77]:
+                        - generic [ref=e78]:
+                          - generic [ref=e79]:
+                            - combobox [ref=e80]:
+                              - option "Select Edge Profile..."
+                              - option "Cloud Instance (vCPE)"
+                              - option "Colocation (CoLo)"
+                              - option "Data Center (DC)"
+                              - option "Gold (Large Office)" [selected]
+                              - option "Silver (Medium Office)"
+                              - option "Micro-Branch / SOHO"
+                              - option "Mobile / Vehicular"
+                              - option "Regional HQ"
+                              - option "Bronze (Small Office / Retail)"
+                            - generic:
+                              - img
+                          - 'generic "Confidence: 95%" [ref=e81]': 95%
+                        - generic [ref=e82]:
+                          - combobox [ref=e83]:
+                            - option "Select LAN Profile..."
+                            - option "2-Tier Collapsed Core"
+                            - option "2 Tier -Collapsed core and Access"
+                            - option "3 Tier - Core, Distribution and Access"
+                            - option "3-Tier Campus (Core/Aggregation/Access)" [selected]
+                            - option "1 tier - Access only"
+                            - option "Flat Network (Layer 2 Only)"
+                            - option "Industrial / IoT (OT)"
+                            - option "Integrated Branch (Router-Switch)"
+                            - option "0 Tier - In Edge device"
+                            - option "SDAccess"
+                            - option "Stacked Edge (Horizontal Expansion)"
+                          - generic:
+                            - img
+                    - cell "Mocked classification" [ref=e84]:
+                      - generic [ref=e85]: Mocked classification
+                  - row "SiteB 456 Sunset Blvd Los Angeles CA 👥 25 🚀 200M No notes Silver (Medium Office) 90% 2-Tier Collapsed Core Mocked classification" [ref=e86]:
+                    - cell "SiteB 456 Sunset Blvd Los Angeles CA" [ref=e87]:
+                      - generic [ref=e88]: SiteB
+                      - generic [ref=e89]: 456 Sunset Blvd Los Angeles CA
+                    - cell "👥 25 🚀 200M No notes" [ref=e90]:
+                      - generic [ref=e91]:
+                        - generic [ref=e92]: 👥 25
+                        - generic [ref=e93]: 🚀 200M
+                      - generic [ref=e94]: No notes
+                    - cell "Silver (Medium Office) 90% 2-Tier Collapsed Core" [ref=e95]:
+                      - generic [ref=e96]:
+                        - generic [ref=e97]:
+                          - generic [ref=e98]:
+                            - combobox [ref=e99]:
+                              - option "Select Edge Profile..."
+                              - option "Cloud Instance (vCPE)"
+                              - option "Colocation (CoLo)"
+                              - option "Data Center (DC)"
+                              - option "Gold (Large Office)"
+                              - option "Silver (Medium Office)" [selected]
+                              - option "Micro-Branch / SOHO"
+                              - option "Mobile / Vehicular"
+                              - option "Regional HQ"
+                              - option "Bronze (Small Office / Retail)"
+                            - generic:
+                              - img
+                          - 'generic "Confidence: 90%" [ref=e100]': 90%
+                        - generic [ref=e101]:
+                          - combobox [ref=e102]:
+                            - option "Select LAN Profile..."
+                            - option "2-Tier Collapsed Core" [selected]
+                            - option "2 Tier -Collapsed core and Access"
+                            - option "3 Tier - Core, Distribution and Access"
+                            - option "3-Tier Campus (Core/Aggregation/Access)"
+                            - option "1 tier - Access only"
+                            - option "Flat Network (Layer 2 Only)"
+                            - option "Industrial / IoT (OT)"
+                            - option "Integrated Branch (Router-Switch)"
+                            - option "0 Tier - In Edge device"
+                            - option "SDAccess"
+                            - option "Stacked Edge (Horizontal Expansion)"
+                          - generic:
+                            - img
+                    - cell "Mocked classification" [ref=e103]:
+                      - generic [ref=e104]: Mocked classification
+              - generic [ref=e105]: Powered by Google Gemini 1.5 Flash
+  - generic [ref=e106]:
+    - img [ref=e108]
+    - button "Open Tanstack query devtools" [ref=e156] [cursor=pointer]:
+      - img [ref=e157]
+  - button "Open Next.js Dev Tools" [ref=e210] [cursor=pointer]:
+    - img [ref=e211]
+  - alert [ref=e214]
+```

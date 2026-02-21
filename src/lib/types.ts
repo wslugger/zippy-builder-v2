@@ -325,6 +325,25 @@ export const SiteTypeSchema = z.object({
 
 // --- Site (individual site from CSV import) ---
 
+export interface EmbeddedEquipmentSnapshot {
+  id: string; // The original Equipment document ID
+  model: string;
+  vendor_id: typeof VENDOR_IDS[number];
+  specs_summary: {
+    throughput?: number;
+    ports?: number;
+  };
+  addedAt: string; // ISO string of when it was attached to the site
+}
+
+export interface EmbeddedServiceSnapshot {
+  id: string; // The original Service document ID
+  name: string;
+  category?: string;
+  addedAt: string;
+}
+
+
 export const SiteSchema = z.object({
   id: z.string().optional(), // specific ID if tracking by ID
   siteTypeId: z.string().optional(), // Reference to SiteType
@@ -348,9 +367,14 @@ export const SiteSchema = z.object({
   uplinkPortType: z.enum(["SFP+", "Copper", "Fiber"]).optional(),
   poeStandard: z.enum(["PoE", "PoE+", "PoE++"]).optional(),
   requiredPoePorts: z.number().optional(),
+  embeddedEquipment: z.array(z.any()).optional(), // typed as EmbeddedEquipmentSnapshot[] in usage
+  embeddedServices: z.array(z.any()).optional(),  // typed as EmbeddedServiceSnapshot[] in usage
 });
 
-export type Site = z.infer<typeof SiteSchema>;
+export type Site = Omit<z.infer<typeof SiteSchema>, 'embeddedEquipment' | 'embeddedServices'> & {
+  embeddedEquipment?: EmbeddedEquipmentSnapshot[];
+  embeddedServices?: EmbeddedServiceSnapshot[];
+};
 
 // --- BOM Logic ---
 
