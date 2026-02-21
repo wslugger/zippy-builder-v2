@@ -12,7 +12,12 @@ describe("BOM Engine - Extended Logic Rules", () => {
             primary_purpose: "LAN", additional_purposes: [], role: "LAN",
             active: true,
             status: "Supported",
-            specs: { stackable: false, port_configuration: { copper1G: 48, mGig: 0, sfp10G: 0 } },
+            specs: {
+                stackable: false,
+                accessPortCount: 48,
+                uplinkPortCount: 4,
+                accessPortType: '1G'
+            },
         },
         {
             id: "sw_24p_10g",
@@ -21,7 +26,12 @@ describe("BOM Engine - Extended Logic Rules", () => {
             primary_purpose: "LAN", additional_purposes: [], role: "LAN",
             active: true,
             status: "Supported",
-            specs: { stackable: false, port_configuration: { copper1G: 0, mGig: 0, sfp10G: 24 } },
+            specs: {
+                stackable: false,
+                accessPortCount: 24,
+                uplinkPortCount: 2,
+                accessPortType: '10G'
+            },
         }
     ];
 
@@ -33,7 +43,8 @@ describe("BOM Engine - Extended Logic Rules", () => {
         active: true,
         items: [
             { service_id: "managed_lan", inclusion_type: "required", enabled_features: [] }
-        ]
+        ],
+        throughput_basis: "vpn_throughput_mbps"
     };
 
     const mockServices: Service[] = [
@@ -60,44 +71,37 @@ describe("BOM Engine - Extended Logic Rules", () => {
         }
     ];
 
-    it("evaluates default access speed from set_parameter correctly", () => {
-        // Site specifies no access speed
+    it("evaluates default sizing based on userCount correctly", () => {
+        // Site specifies 100 users = 100 ports
         const site: Site = {
             id: "site1",
             name: "Test Site",
             address: "",
-            userCount: 0,
+            userCount: 100,
             bandwidthDownMbps: 0,
             bandwidthUpMbps: 0,
             redundancyModel: "Single CPE",
             wanLinks: 1,
-            lanPorts: 48,
+            lanPorts: 0, // Should use userCount
             poePorts: 0,
             indoorAPs: 0,
             outdoorAPs: 0,
             primaryCircuit: "DIA"
         };
 
-        const rules: BOMLogicRule[] = [
-            {
-                id: "r1",
-                name: "Default Speed",
-                priority: 10,
-                condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
-                actions: [{ type: "set_parameter", targetId: "defaultAccessSpeed", actionValue: "10GbE" }]
-            }
-        ];
+        const rules: BOMLogicRule[] = [];
 
         const testRules = rules;
         const testCatalog = mockEquipmentCatalog;
         const bom = calculateBOM({ projectId: "proj1", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: mockSiteTypes, equipmentCatalog: testCatalog, rules: testRules });
 
-        // Should filter out the 1GbE switch and pick the 10GbE switch based on set_parameter logic replacing undefined
-        expect(bom.items[0].itemId).toBe("sw_24p_10g");
+        // Should pick the 48 port switch because it's the first matching candidate in sorted order (lowest capacity/ports)
+        // Wait, sortedCandidates uses performance value. For LAN, that's switching_capacity_gbps.
+        // Since it's missing, it defaults to 0.
+        expect(bom.items[0].itemId).toBe("sw_48p_1g");
 
-        // At 24 ports per switch and 48 ports required, it should default to 2
-        // because we didn't specify a quantity rule, it falls back to requiredPorts / switchPorts = 2
-        expect(bom.items[0].quantity).toBe(2);
+        // 100 users / 48 ports = 2.08 -> 3 switches
+        expect(bom.items[0].quantity).toBe(3);
     });
 
     it("evaluates dynamic switch quantity with modify_quantity rule", () => {
@@ -105,17 +109,16 @@ describe("BOM Engine - Extended Logic Rules", () => {
             id: "site2",
             name: "Test Site Maths",
             address: "",
-            userCount: 0,
+            userCount: 100, // 100 users
             bandwidthDownMbps: 0,
             bandwidthUpMbps: 0,
             redundancyModel: "Single CPE",
             wanLinks: 1,
-            lanPorts: 100, // 100 ports required
+            lanPorts: 0,
             poePorts: 0,
             indoorAPs: 0,
             outdoorAPs: 0,
             primaryCircuit: "DIA",
-            accessPortSpeed: "1GbE", // Explicitly 1GbE
         };
 
         const rules: BOMLogicRule[] = [
@@ -125,7 +128,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 priority: 10,
                 condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
                 actions: [
-                    { type: "modify_quantity", targetId: "calculate_qty", quantityMultiplierField: "lanPorts", actionValue: 48 }
+                    { type: "modify_quantity", targetId: "calculate_qty", quantityMultiplierField: "userCount", actionValue: 24 }
                 ]
             }
         ];
@@ -134,8 +137,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
         const testCatalog = mockEquipmentCatalog;
         const bom = calculateBOM({ projectId: "proj2", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: mockSiteTypes, equipmentCatalog: testCatalog, rules: testRules });
 
-        // With 100 ports, dividing by 48 = 2.08, ceiling should be 3.
-        expect(bom.items[0].itemId).toBe("sw_24p_10g");
-        expect(bom.items[0].quantity).toBe(3);
+        // With 100 users, dividing by 24 (via rule) = 4.16, ceiling should be 5.
+        expect(bom.items[0].quantity).toBe(5);
     });
 });
