@@ -135,11 +135,12 @@ export function LANTab({
                             value={selectedSite.accessPortSpeed || ""}
                             onChange={(e) => handleSiteUpdate({ accessPortSpeed: e.target.value as Site["accessPortSpeed"] })}
                         >
-                            <option value="">Any (1GbE Default)</option>
-                            <option value="1GbE">1GbE</option>
-                            <option value="2.5GbE">2.5GbE (mGig)</option>
-                            <option value="5GbE">5GbE (mGig)</option>
-                            <option value="10GbE">10GbE</option>
+                            <option value="">Any (1G-Copper Default)</option>
+                            <option value="1G-Copper">1G-Copper</option>
+                            <option value="mGig-Copper">mGig-Copper (2.5G/5G)</option>
+                            <option value="10G-Copper">10G-Copper</option>
+                            <option value="1G-Fiber">1G-Fiber</option>
+                            <option value="10G-Fiber">10G-Fiber</option>
                         </select>
                     </div>
                     <div>
@@ -150,7 +151,7 @@ export function LANTab({
                             onChange={(e) => handleSiteUpdate({ poeStandard: e.target.value as Site["poeStandard"] })}
                         >
                             <option value="">Any (PoE Default)</option>
-                            <option value="PoE">PoE (802.3af - 15W)</option>
+                            <option value="None">None</option>
                             <option value="PoE+">PoE+ (802.3at - 30W)</option>
                             <option value="PoE++">PoE++ (802.3bt - 60W/90W)</option>
                         </select>
@@ -164,11 +165,13 @@ export function LANTab({
                             onChange={(e) => handleSiteUpdate({ uplinkPortSpeed: e.target.value as Site["uplinkPortSpeed"] })}
                         >
                             <option value="">Any</option>
-                            <option value="1GbE">1GbE</option>
-                            <option value="10GbE">10GbE</option>
-                            <option value="25GbE">25GbE</option>
-                            <option value="40GbE">40GbE</option>
-                            <option value="100GbE">100GbE</option>
+                            <option value="1G-Copper">1G-Copper</option>
+                            <option value="1G-Fiber">1G-Fiber</option>
+                            <option value="10G-Copper">10G-Copper</option>
+                            <option value="10G-Fiber">10G-Fiber</option>
+                            <option value="25G-Fiber">25G-Fiber</option>
+                            <option value="40G-Fiber">40G-Fiber</option>
+                            <option value="100G-Fiber">100G-Fiber</option>
                         </select>
                     </div>
                     <div>
@@ -179,9 +182,13 @@ export function LANTab({
                             onChange={(e) => handleSiteUpdate({ uplinkPortType: e.target.value as Site["uplinkPortType"] })}
                         >
                             <option value="">Any</option>
-                            <option value="SFP+">SFP / SFP+</option>
-                            <option value="Copper">Copper (RJ-45)</option>
-                            <option value="Fiber">Fiber</option>
+                            <option value="1G-Copper">1G-Copper</option>
+                            <option value="1G-Fiber">1G-Fiber</option>
+                            <option value="10G-Copper">10G-Copper</option>
+                            <option value="10G-Fiber">10G-Fiber</option>
+                            <option value="25G-Fiber">25G-Fiber</option>
+                            <option value="40G-Fiber">40G-Fiber</option>
+                            <option value="100G-Fiber">100G-Fiber</option>
                         </select>
                     </div>
                 </div>
@@ -195,7 +202,7 @@ export function LANTab({
                     <div className="text-right">
                         <div className="text-xs text-slate-500 uppercase">Estimated Capacity Needed</div>
                         <div className="text-lg font-bold text-slate-700">
-                            {((selectedSite.lanPorts || 0) * (selectedSite.accessPortSpeed === "10GbE" ? 10 : selectedSite.accessPortSpeed === "5GbE" ? 5 : selectedSite.accessPortSpeed === "2.5GbE" ? 2.5 : 1))} Gbps
+                            {((selectedSite.lanPorts || 0) * (selectedSite.accessPortSpeed === "10G-Copper" || selectedSite.accessPortSpeed === "10G-Fiber" ? 10 : selectedSite.accessPortSpeed === "mGig-Copper" ? 2.5 : 1))} Gbps
                         </div>
                     </div>
                 </div>

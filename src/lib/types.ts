@@ -404,10 +404,10 @@ export const SiteSchema = z.object({
   primaryCircuit: z.string(), // "DIA", "Broadband"
   secondaryCircuit: z.string().optional(),
   notes: z.string().optional(),
-  accessPortSpeed: z.enum(["1GbE", "2.5GbE", "5GbE", "10GbE"]).optional(),
-  uplinkPortSpeed: z.enum(["1GbE", "10GbE", "25GbE", "40GbE", "100GbE"]).optional(),
-  uplinkPortType: z.enum(["SFP+", "Copper", "Fiber"]).optional(),
-  poeStandard: z.enum(["PoE", "PoE+", "PoE++"]).optional(),
+  accessPortSpeed: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']).optional(),
+  uplinkPortSpeed: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).optional(),
+  uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).optional(),
+  poeStandard: z.enum(['None', 'PoE+', 'PoE++']).optional(),
   requiredPoePorts: z.number().optional(),
   embeddedEquipment: z.array(z.any()).optional(), // typed as EmbeddedEquipmentSnapshot[] in usage
   embeddedServices: z.array(z.any()).optional(),  // typed as EmbeddedServiceSnapshot[] in usage

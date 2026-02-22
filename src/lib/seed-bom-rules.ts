@@ -133,7 +133,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         priority: 60,
         condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
         actions: [
-            { type: "set_parameter", targetId: "defaultAccessSpeed", actionValue: "1GbE" }
+            { type: "set_parameter", targetId: "defaultAccessSpeed", actionValue: "1G-Copper" }
         ]
     },
     {
