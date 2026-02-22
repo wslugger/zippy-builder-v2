@@ -133,9 +133,18 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
         );
 
         if (exists) {
+            // Find all items that are either the exact item, or a child of the item being removed.
+            // A child has the same service_id, and if optionId is provided, the same service_option_id.
+            const itemsToRemove = current.filter(i => {
+                if (i.service_id !== serviceId) return false;
+                if (optionId && i.service_option_id !== optionId) return false;
+                if (designId && i.design_option_id !== designId) return false;
+                return true;
+            });
+
             setPkg({
                 ...pkg,
-                items: current.filter(i => i !== exists)
+                items: current.filter(i => !itemsToRemove.includes(i))
             });
         } else {
             const newItem: PackageItem = {
