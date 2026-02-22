@@ -201,7 +201,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 }
             }
             const defaultMetric = isDistributedSecurity ? "advancedSecurityThroughputMbps" : "sdwanCryptoThroughputMbps";
-            const activeThroughputField = siteParameters['throughputBasis'] || selectedPackage.throughput_basis || defaultMetric;
+            const activeThroughputField = selectedPackage.throughput_basis || siteParameters['throughputBasis'] || defaultMetric;
 
             const candidates = equipmentCatalog.filter(e => {
                 if (e.vendor_id !== vendorId) return false;
