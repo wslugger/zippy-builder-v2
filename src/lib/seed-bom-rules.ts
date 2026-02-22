@@ -123,19 +123,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         ]
     },
     // --- Rule Set 2: Managed LAN Switch Calculation ---
-    // Strategy: 1x 48 port switch per 48 users/ports needed.
-    // Taking a naive approach: If LAN ports > 0, give a switch.
-    // Real logic would be math based. For now, simple buckets.
 
-    {
-        id: "rule_lan_default_speed",
-        name: "Managed LAN - Default Access Speed",
-        priority: 60,
-        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
-        actions: [
-            { type: "set_parameter", targetId: "defaultAccessSpeed", actionValue: "1G-Copper" }
-        ]
-    },
     {
         id: "rule_lan_dynamic_quantity",
         name: "Managed LAN - Dynamic Switch Quantity Math",
@@ -143,6 +131,33 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
         actions: [
             { type: "modify_quantity", targetId: "any_switch", quantityMultiplierField: "lanPorts", actionValue: 48 }
+        ]
+    },
+    {
+        id: "rule_lan_utilization_limit",
+        name: "Managed LAN - 60% Port Utilization Limit",
+        priority: 70,
+        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+        actions: [
+            { type: "set_parameter", targetId: "maxPortUtilization", actionValue: 60 }
+        ]
+    },
+    {
+        id: "rule_lan_max_stack_size",
+        name: "Managed LAN - Max Stack Size",
+        priority: 65,
+        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+        actions: [
+            { type: "set_parameter", targetId: "maxStackSize", actionValue: 8 }
+        ]
+    },
+    {
+        id: "rule_lan_fiber_transceiver_note",
+        name: "Managed LAN - Fiber Transceiver Note",
+        priority: 50,
+        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+        actions: [
+            { type: "set_parameter", targetId: "fiberTransceiverNote", actionValue: true }
         ]
     },
 
@@ -157,13 +172,24 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
             { type: "select_equipment", targetId: "meraki_mr44", quantity: 1, quantityMultiplierField: "indoorAPs" }
         ]
     },
+
+    // --- Rule Set 4: SD-WAN Engine Parameters ---
     {
-        id: "rule_lan_utilization_limit",
-        name: "Managed LAN - 60% Port Utilization Limit",
-        priority: 70,
-        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+        id: "rule_sdwan_ha_lan_port",
+        name: "SD-WAN HA - LAN Port Requirement",
+        priority: 105,
+        condition: { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
         actions: [
-            { type: "set_parameter", targetId: "maxPortUtilization", actionValue: 60 }
+            { type: "set_parameter", targetId: "haLanPortMinimum", actionValue: 1 }
+        ]
+    },
+    {
+        id: "rule_sdwan_throughput_basis",
+        name: "SD-WAN Default Throughput Metric",
+        priority: 3,
+        condition: { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+        actions: [
+            { type: "set_parameter", targetId: "throughputBasis", actionValue: "sdwanCryptoThroughputMbps" }
         ]
     }
 ];

@@ -37,7 +37,11 @@ const PARAMETER_OPTIONS: Record<string, string[]> = {
     defaultUplinkSpeed: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'],
     defaultUplinkType: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'],
     poeStandard: ['None', 'PoE+', 'PoE++'],
-    maxPortUtilization: ['40', '50', '60', '70', '80', '90', '100']
+    maxPortUtilization: ['40', '50', '60', '70', '80', '90', '100'],
+    maxStackSize: ['2', '4', '6', '8'],
+    haLanPortMinimum: ['0', '1', '2'],
+    fiberTransceiverNote: ['true', 'false'],
+    throughputBasis: ['sdwanCryptoThroughputMbps', 'advancedSecurityThroughputMbps', 'rawFirewallThroughputMbps'],
 };
 
 // --- Parsers ---

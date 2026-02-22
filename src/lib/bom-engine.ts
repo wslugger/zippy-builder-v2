@@ -200,7 +200,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     }
                 }
             }
-            const activeThroughputField = selectedPackage.throughput_basis || (isDistributedSecurity ? "advancedSecurityThroughputMbps" : "sdwanCryptoThroughputMbps");
+            const defaultMetric = isDistributedSecurity ? "advancedSecurityThroughputMbps" : "sdwanCryptoThroughputMbps";
+            const activeThroughputField = siteParameters['throughputBasis'] || selectedPackage.throughput_basis || defaultMetric;
 
             const candidates = equipmentCatalog.filter(e => {
                 if (e.vendor_id !== vendorId) return false;
@@ -221,7 +222,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     if (deviceThroughput < requiredThroughput) return false;
 
                     const cpeQuantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
-                    if (cpeQuantity > 1 && (specs.lanPortCount || 0) < 1) {
+                    const haLanPortMinimum = siteParameters['haLanPortMinimum'] ?? 1;
+                    if (cpeQuantity > 1 && (specs.lanPortCount || 0) < haLanPortMinimum) {
                         return false;
                     }
                 }
@@ -254,10 +256,11 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         if ((specs.poeBudgetWatts || 0) < totalRequiredPoEWatts) return false;
                     }
 
-                    // 3. Stacking Limit Check (Max 8 units per stack)
+                    // 3. Stacking Limit Check (configurable max units per stack)
                     if (specs.isStackable) {
-                        const maxStackPorts = (specs.accessPortCount || 0) * 8;
-                        const maxStackPoE = (specs.poeBudgetWatts || 0) * 8;
+                        const maxStackSize = siteParameters['maxStackSize'] ?? 8;
+                        const maxStackPorts = (specs.accessPortCount || 0) * maxStackSize;
+                        const maxStackPoE = (specs.poeBudgetWatts || 0) * maxStackSize;
                         if (maxStackPorts < effectiveRequiredPorts) return false;
                         if (maxStackPoE < totalRequiredPoEWatts) return false;
                     }
@@ -378,8 +381,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 const deviceThroughput = getEquipmentPerformanceValue(bestFit, throughputField);
                 let reasoning = `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`;
 
-                // Add Transceiver note for Fiber uplinks
-                if (bestFit.role === 'LAN' && (bestFit.specs as any).uplinkPortType?.toLowerCase().includes('fiber')) {
+                // Add Transceiver note for Fiber uplinks (configurable via fiberTransceiverNote parameter)
+                if (siteParameters['fiberTransceiverNote'] !== false && bestFit.role === 'LAN' && (bestFit.specs as any).uplinkPortType?.toLowerCase().includes('fiber')) {
                     reasoning += ` NOTE: Requires ${(bestFit.specs as any).uplinkPortCount || 0}x Fiber Transceivers for uplinks.`;
                 }
 
