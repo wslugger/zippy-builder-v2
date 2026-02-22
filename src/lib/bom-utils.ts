@@ -24,10 +24,11 @@ import { SiteType } from "./site-types";
  * the non-identity entries (like "sd_wan_service") can be removed.
  */
 const SERVICE_ID_ALIASES: Record<string, string> = {
-    "sd_wan_service": "managed_sdwan",  // Legacy alias from early prototype
+    "sd_wan_service": "managed_sdwan",
     "managed_sdwan": "managed_sdwan",
     "managed_lan": "managed_lan",
     "managed_wifi": "managed_wifi",
+    "managed_wlan": "managed_wifi",
 };
 
 export function normalizeServiceId(id: string): string {
@@ -181,9 +182,15 @@ export function getEquipmentRole(equip: Equipment): "WAN" | "LAN" | "WLAN" | "Ot
     const pp = String(raw.primary_purpose || "");
     const p = Array.isArray(raw.purpose) ? String(raw.purpose[0] || "") : String(raw.purpose || "");
 
-    if (r === "WAN" || pp.includes("SDWAN") || p.includes("SDWAN")) return "WAN";
-    if (r === "LAN" || pp.includes("LAN") || p.includes("LAN")) return "LAN";
-    if (r === "WLAN" || pp.includes("WLAN") || p.includes("WLAN")) return "WLAN";
+    if (r === "WAN" || pp === "SDWAN" || p === "SDWAN") return "WAN";
+    if (r === "WLAN" || pp === "WLAN" || p === "WLAN") return "WLAN";
+    if (r === "LAN" || pp === "LAN" || p === "LAN") return "LAN";
+
+    // Fallback to fuzzy includes if exact match fails, but WLAN must be checked first
+    if (pp.includes("SDWAN") || p.includes("SDWAN")) return "WAN";
+    if (pp.includes("WLAN") || p.includes("WLAN")) return "WLAN";
+    if (pp.includes("LAN") || p.includes("LAN")) return "LAN";
+
     return "Other";
 }
 

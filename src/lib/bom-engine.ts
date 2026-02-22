@@ -60,8 +60,15 @@ export function calculateBOM(input: BOMEngineInput): BOM {
         // Initialize dynamic parameters for this site
         const siteParameters: Record<string, any> = {};
 
-        // 1. Process Services in Package
-        for (const pkgItem of selectedPackage.items) {
+        // 1. Process Services in Package (Sorted to ensure dependencies like WLAN are processed before LAN)
+        const sortedPackageItems = [...selectedPackage.items].sort((a, b) => {
+            const order = ["managed_wifi", "managed_lan", "managed_sdwan"];
+            const indexA = order.indexOf(normalizeServiceId(a.service_id));
+            const indexB = order.indexOf(normalizeServiceId(b.service_id));
+            return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+        });
+
+        for (const pkgItem of sortedPackageItems) {
             const service = services.find(s => s.id === pkgItem.service_id);
             if (!service) continue;
 
@@ -224,22 +231,37 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 }
 
                 if (requiredPurpose === "LAN" && role === 'LAN') {
-                    if (site.poeStandard && (specs.poeStandard === 'None' || !specs.poeBudgetWatts)) {
-                        return false;
-                    }
+                    // Extract WLAN requirements from already processed items for this site
+                    const wlanItem = bomItems.find(item => item.siteName === site.name && normalizeServiceId(item.serviceId) === 'managed_wifi');
+                    let requiredAccessPortType = '1G-Copper';
+                    let totalRequiredPoEWatts = 0;
 
-                    const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0);
-                    const maxPorts = specs.isStackable ? (specs.accessPortCount || 0) * 8 : (specs.accessPortCount || 0);
-                    if (maxPorts < totalRequiredPorts) {
-                        return false;
-                    }
-
-                    const wlanItem = bomItems.find(item => item.siteName === site.name && item.serviceId === 'managed_wlan');
                     if (wlanItem) {
                         const apEquip = equipmentCatalog.find(eq => eq.id === wlanItem.itemId);
-                        if (apEquip && getEquipmentRole(apEquip) === 'WLAN' && (apEquip.specs as any).uplinkType === 'mGig-Copper') {
-                            if (specs.accessPortType !== 'mGig-Copper') return false;
+                        if (apEquip && getEquipmentRole(apEquip) === 'WLAN') {
+                            const apSpecs = apEquip.specs as any;
+                            requiredAccessPortType = apSpecs.uplinkType || '1G-Copper';
+                            totalRequiredPoEWatts = (apSpecs.powerDrawWatts || 0) * ((site.indoorAPs || 0) + (site.outdoorAPs || 0));
                         }
+                    }
+
+                    // 1. Media Type Match (APs dictate port speed)
+                    if (specs.accessPortType !== requiredAccessPortType) return false;
+
+                    const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0);
+
+                    // 2. Capacity Check (Non-stackable must meet requirements alone)
+                    if (!specs.isStackable) {
+                        if ((specs.accessPortCount || 0) < totalRequiredPorts) return false;
+                        if ((specs.poeBudgetWatts || 0) < totalRequiredPoEWatts) return false;
+                    }
+
+                    // 3. Stacking Limit Check (Max 8 units per stack)
+                    if (specs.isStackable) {
+                        const maxStackPorts = (specs.accessPortCount || 0) * 8;
+                        const maxStackPoE = (specs.poeBudgetWatts || 0) * 8;
+                        if (maxStackPorts < totalRequiredPorts) return false;
+                        if (maxStackPoE < totalRequiredPoEWatts) return false;
                     }
                 }
 
@@ -312,15 +334,37 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                             }
                         }
                     } else {
-                        const requiredPorts = site.lanPorts || (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0) || 48;
-                        const switchPorts = bestFit.role === 'LAN' ? (bestFit.specs.accessPortCount || 48) : 48;
-                        quantity = Math.ceil(requiredPorts / switchPorts);
+                        // LAN Sizing Math: Max(Port-Count Sizing, PoE Budget Sizing)
+                        const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0) || 48;
+                        const wlanItem = bomItems.find(item => item.siteName === site.name && normalizeServiceId(item.serviceId) === 'managed_wifi');
+                        let totalRequiredPoEWatts = 0;
+                        if (wlanItem) {
+                            const apEquip = equipmentCatalog.find(eq => eq.id === wlanItem.itemId);
+                            if (apEquip && getEquipmentRole(apEquip) === 'WLAN') {
+                                totalRequiredPoEWatts = ((apEquip.specs as any).powerDrawWatts || 0) * ((site.indoorAPs || 0) + (site.outdoorAPs || 0));
+                            }
+                        }
+
+                        const switchSpecs = bestFit.specs as any;
+                        const switchPorts = bestFit.role === 'LAN' ? (switchSpecs.accessPortCount || 48) : 48;
+                        const switchPoE = bestFit.role === 'LAN' ? (switchSpecs.poeBudgetWatts || 0) : 0;
+
+                        const qtyByPorts = Math.ceil(totalRequiredPorts / switchPorts);
+                        const qtyByPoE = (switchPoE > 0 && totalRequiredPoEWatts > 0) ? Math.ceil(totalRequiredPoEWatts / switchPoE) : 1;
+
+                        quantity = Math.max(qtyByPorts, qtyByPoE);
                     }
                     if (quantity === 0) quantity = 1;
                 }
 
                 const throughputField = activeThroughputField;
                 const deviceThroughput = getEquipmentPerformanceValue(bestFit, throughputField);
+                let reasoning = `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`;
+
+                // Add Transceiver note for Fiber uplinks
+                if (bestFit.role === 'LAN' && (bestFit.specs as any).uplinkPortType?.toLowerCase().includes('fiber')) {
+                    reasoning += ` NOTE: Requires ${(bestFit.specs as any).uplinkPortCount || 0}x Fiber Transceivers for uplinks.`;
+                }
 
                 bomItems.push({
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
@@ -331,7 +375,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     itemName: `${VENDOR_LABELS[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,
                     itemType: "equipment",
                     quantity: quantity,
-                    reasoning: `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`,
+                    reasoning: reasoning,
                     matchedRules: matchingRules.length > 0 ? matchingRules.map(r => ({
                         ruleId: r.id,
                         ruleName: r.name,
