@@ -22,7 +22,9 @@ jest.mock('@google/generative-ai', () => ({
                                     lanPortCount: 8,
                                     rawFirewallThroughputMbps: 1000,
                                     sdwanCryptoThroughputMbps: 500,
-                                    advancedSecurityThroughputMbps: 0
+                                    advancedSecurityThroughputMbps: 0,
+                                    integrated_cellular: false,
+                                    integrated_wifi: false
                                 }
                             }
                         ]
@@ -60,7 +62,9 @@ describe('Equipment Ingest Logic', () => {
                         lanPortCount: 8,
                         rawFirewallThroughputMbps: 1000,
                         sdwanCryptoThroughputMbps: 500,
-                        advancedSecurityThroughputMbps: 0
+                        advancedSecurityThroughputMbps: 0,
+                        integrated_cellular: false,
+                        integrated_wifi: false
                     }
                 }
             ]
@@ -106,7 +110,18 @@ describe('Equipment Ingest Logic', () => {
 
     it('falls back to user selected purpose if Gemini returns minimal data', () => {
         const geminiExtractionMinimal = {
-            items: [{ model: 'C9200-24P', specs: { ports: 24 } }]
+            items: [{
+                model: 'C9200-24P',
+                specs: {
+                    accessPortCount: 24,
+                    accessPortType: '1G-Copper',
+                    poeBudgetWatts: 370,
+                    poeStandard: 'PoE+',
+                    uplinkPortCount: 4,
+                    uplinkPortType: '10G-Fiber',
+                    isStackable: true
+                }
+            }]
         };
         const vendorId = 'cisco_catalyst';
         const userSelectedPurposes = ['LAN'];
