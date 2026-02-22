@@ -2,6 +2,7 @@
 "use client";
 
 import { Equipment, VENDOR_LABELS, EQUIPMENT_PURPOSES } from "@/src/lib/types";
+import { getEquipmentRole } from "@/src/lib/bom-utils";
 
 interface EquipmentTableProps {
     data: Equipment[];
@@ -79,16 +80,16 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                     <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-2">
                                         {item.model}
                                         <div className="flex gap-1">
-                                            {item.role === 'WAN' && (
+                                            {getEquipmentRole(item) === 'WAN' && (
                                                 <>
-                                                    {item.specs.integrated_cellular && (
+                                                    {(item.specs as any).integrated_cellular && (
                                                         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800" title="Integrated Cellular">
-                                                            {item.specs.cellular_type || "LTE"}
+                                                            {(item.specs as any).cellular_type || "LTE"}
                                                         </span>
                                                     )}
-                                                    {item.specs.integrated_wifi && (
+                                                    {(item.specs as any).integrated_wifi && (
                                                         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800" title="Integrated Wi-Fi">
-                                                            {item.specs.wifi_standard?.replace("Wi-Fi ", "W") || "WIFI"}
+                                                            {(item.specs as any).wifi_standard?.replace("Wi-Fi ", "W") || "WIFI"}
                                                         </span>
                                                     )}
                                                 </>
@@ -118,43 +119,43 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
-                                        {item.role === 'WAN' && (
+                                        {getEquipmentRole(item) === 'WAN' && (
                                             <>
-                                                {item.specs.rawFirewallThroughputMbps ? (
+                                                {(item.specs as any).rawFirewallThroughputMbps ? (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">⚡</span>
-                                                        Firewall: {item.specs.rawFirewallThroughputMbps} Mbps
+                                                        Firewall: {(item.specs as any).rawFirewallThroughputMbps} Mbps
                                                     </div>
                                                 ) : null}
-                                                {item.specs.sdwanCryptoThroughputMbps ? (
+                                                {(item.specs as any).sdwanCryptoThroughputMbps ? (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">🔒</span>
-                                                        Crypto: {item.specs.sdwanCryptoThroughputMbps} Mbps
+                                                        Crypto: {(item.specs as any).sdwanCryptoThroughputMbps} Mbps
                                                     </div>
                                                 ) : null}
-                                                {item.specs.advancedSecurityThroughputMbps ? (
+                                                {(item.specs as any).advancedSecurityThroughputMbps ? (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">🛡️</span>
-                                                        Adv. Sec: {item.specs.advancedSecurityThroughputMbps} Mbps
+                                                        Adv. Sec: {(item.specs as any).advancedSecurityThroughputMbps} Mbps
                                                     </div>
                                                 ) : null}
                                                 {(item.specs as any).wanPortCount !== undefined && (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">🔌</span>
                                                         Ports: {(item.specs as any).wanPortCount}W / {(item.specs as any).lanPortCount}L
-                                                        {item.specs.poe_budget && item.specs.poe_budget > 0 && ` (${item.specs.poe_budget}W PoE)`}
+                                                        {((item.specs as any).poeBudgetWatts || (item.specs as any).poe_budget) ? ` (${(item.specs as any).poeBudgetWatts || (item.specs as any).poe_budget}W PoE)` : ''}
                                                     </div>
                                                 )}
                                             </>
                                         )}
-                                        {item.role === 'LAN' && (
+                                        {getEquipmentRole(item) === 'LAN' && (
                                             <>
                                                 <div className="flex items-center gap-1">
                                                     <span className="opacity-50">🔌</span>
-                                                    Ports: {item.specs.accessPortCount || 0}
-                                                    {item.specs.poeBudgetWatts && item.specs.poeBudgetWatts > 0 && ` (${item.specs.poeBudgetWatts}W PoE)`}
+                                                    Ports: {(item.specs as any).accessPortCount || (item.specs as any).ports || 0}
+                                                    {((item.specs as any).poeBudgetWatts || (item.specs as any).poe_budget) ? ` (${(item.specs as any).poeBudgetWatts || (item.specs as any).poe_budget}W PoE)` : ''}
                                                 </div>
-                                                {item.specs.isStackable && (
+                                                {((item.specs as any).isStackable || (item.specs as any).stackable) && (
                                                     <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
                                                         <span className="opacity-50">📚</span>
                                                         Stackable: Yes
@@ -162,24 +163,24 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                                 )}
                                             </>
                                         )}
-                                        {item.role === 'WLAN' && (
+                                        {getEquipmentRole(item) === 'WLAN' && (
                                             <>
-                                                {item.specs.wifiStandard && (
+                                                {(item.specs as any).wifiStandard && (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">📡</span>
-                                                        {item.specs.wifiStandard}
+                                                        {(item.specs as any).wifiStandard}
                                                     </div>
                                                 )}
-                                                {item.specs.mimoBandwidth && (
+                                                {((item.specs as any).mimoBandwidth || (item.specs as any).mimo) && (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">📶</span>
-                                                        {item.specs.mimoBandwidth} MIMO
+                                                        {(item.specs as any).mimoBandwidth || (item.specs as any).mimo} MIMO
                                                     </div>
                                                 )}
-                                                {item.specs.powerDrawWatts && (
+                                                {((item.specs as any).powerDrawWatts || (item.specs as any).power_load_max_watts) && (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">⚡</span>
-                                                        Power: {item.specs.powerDrawWatts}W
+                                                        Power: {(item.specs as any).powerDrawWatts || (item.specs as any).power_load_max_watts}W
                                                     </div>
                                                 )}
                                             </>
