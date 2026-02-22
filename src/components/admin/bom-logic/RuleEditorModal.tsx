@@ -36,7 +36,8 @@ const PARAMETER_OPTIONS: Record<string, string[]> = {
     defaultAccessSpeed: ['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber'],
     defaultUplinkSpeed: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'],
     defaultUplinkType: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'],
-    poeStandard: ['None', 'PoE+', 'PoE++']
+    poeStandard: ['None', 'PoE+', 'PoE++'],
+    maxPortUtilization: ['40', '50', '60', '70', '80', '90', '100']
 };
 
 // --- Parsers ---

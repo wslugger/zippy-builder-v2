@@ -76,6 +76,21 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
                 uplinkPortType: '1G-Copper',
                 isStackable: false
             } as any
+        },
+        {
+            id: "sw_48p_poe_1g",
+            model: "SW 48 Port PoE 1G",
+            vendor_id: "meraki",
+            role: "LAN", primary_purpose: "LAN", additional_purposes: [], active: true, status: "Supported",
+            specs: {
+                accessPortCount: 48,
+                accessPortType: '1G-Copper',
+                poeBudgetWatts: 740,
+                poeStandard: 'PoE+',
+                uplinkPortCount: 4,
+                uplinkPortType: '10G-Fiber',
+                isStackable: true
+            } as any
         }
     ];
 
@@ -237,5 +252,51 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
         const lanItem = bom.items.find(i => i.serviceId === "managed_lan");
         // sw_24p_poe_1g has uplinkPortType: '10G-Fiber'
         expect(lanItem?.reasoning?.toLowerCase()).toContain("transceiver");
+    });
+
+    it("enforces 60% port utilization rule (18 ports -> 48 port switch)", () => {
+        const site: Site = {
+            id: "site4",
+            name: "18 Port Site",
+            address: "",
+            userCount: 18,
+            bandwidthDownMbps: 0,
+            bandwidthUpMbps: 0,
+            redundancyModel: "Single CPE",
+            wanLinks: 1,
+            lanPorts: 0,
+            poePorts: 0,
+            indoorAPs: 0,
+            outdoorAPs: 0,
+            primaryCircuit: "DIA"
+        };
+
+        const rule60Percent = {
+            id: "rule_60_utilization",
+            name: "60% Utilization Rule",
+            priority: 100,
+            condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+            actions: [{ type: "set_parameter" as const, targetId: "maxPortUtilization", actionValue: 60 }]
+        };
+
+        const bom = calculateBOM({
+            projectId,
+            sites: [site],
+            selectedPackage: mockPackage,
+            services: mockServices,
+            siteTypes: mockSiteTypes,
+            equipmentCatalog: mockEquipmentCatalog,
+            rules: [rule60Percent]
+        });
+
+        const lanItem = bom.items.find(i => i.serviceId === "managed_lan");
+
+        // 18 ports @ 60% utilization means:
+        // 24-port switch capacity = 14 ports (Disqualified if non-stackable, or needs 2 if stackable)
+        // 48-port switch capacity = 28 ports (Qualified, Qty 1)
+
+        // The engine should pick the 48-port switch to satisfy the requirement with a single unit if possible
+        expect(lanItem?.itemId).toBe("sw_48p_poe_1g");
+        expect(lanItem?.quantity).toBe(1);
     });
 });

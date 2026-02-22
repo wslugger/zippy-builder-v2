@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import jsonLogic from "json-logic-js";
 import { Site, BOM, BOMLineItem, BOMEngineInput } from "./types";
-import { Equipment, EQUIPMENT_PURPOSES } from "./types";
+import { Equipment } from "./types";
 import { VENDOR_LABELS } from "./types";
 import { SiteType } from "./site-types";
 import {
@@ -141,11 +141,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
 
             const requiredThroughput = (Number(site.bandwidthDownMbps) || 0) + (Number(site.bandwidthUpMbps) || 0) + (Number(throughputOverhead) || 0);
 
-            // Create evaluation context for equipment selection (with adjusted throughput)
-            const ruleEvaluationSite = {
-                ...site,
-                bandwidthDownMbps: requiredThroughput
-            };
+
 
             // D. Check for explicit "select_equipment" action
             const equipmentAction = matchingRules.flatMap(r => r.actions).find(a => a.type === "select_equipment");
@@ -248,11 +244,13 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     // 1. Media Type Match (APs dictate port speed)
                     if (specs.accessPortType !== requiredAccessPortType) return false;
 
+                    const portUtilization = (siteParameters['maxPortUtilization'] || 100) / 100;
                     const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0);
+                    const effectiveRequiredPorts = Math.ceil(totalRequiredPorts / portUtilization);
 
                     // 2. Capacity Check (Non-stackable must meet requirements alone)
                     if (!specs.isStackable) {
-                        if ((specs.accessPortCount || 0) < totalRequiredPorts) return false;
+                        if ((specs.accessPortCount || 0) < effectiveRequiredPorts) return false;
                         if ((specs.poeBudgetWatts || 0) < totalRequiredPoEWatts) return false;
                     }
 
@@ -260,7 +258,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     if (specs.isStackable) {
                         const maxStackPorts = (specs.accessPortCount || 0) * 8;
                         const maxStackPoE = (specs.poeBudgetWatts || 0) * 8;
-                        if (maxStackPorts < totalRequiredPorts) return false;
+                        if (maxStackPorts < effectiveRequiredPorts) return false;
                         if (maxStackPoE < totalRequiredPoEWatts) return false;
                     }
                 }
@@ -269,6 +267,21 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             });
 
             const sortedCandidates = candidates.sort((a, b) => {
+                // For LAN, prioritize minimizing the number of units (prefer one 48p over two 24p)
+                if (canonicalServiceId === "managed_lan") {
+                    const getPotentialQty = (equip: Equipment) => {
+                        const portUtilization = (siteParameters['maxPortUtilization'] || 100) / 100;
+                        const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0) || 48;
+                        const specs = equip.specs as any;
+                        const switchPorts = specs.accessPortCount || 48;
+                        const effectiveSwitchPorts = Math.floor(switchPorts * portUtilization);
+                        return Math.ceil(totalRequiredPorts / effectiveSwitchPorts);
+                    };
+                    const qtyA = getPotentialQty(a);
+                    const qtyB = getPotentialQty(b);
+                    if (qtyA !== qtyB) return qtyA - qtyB;
+                }
+
                 return getEquipmentPerformanceValue(a, activeThroughputField) - getEquipmentPerformanceValue(b, activeThroughputField);
             });
 
@@ -335,6 +348,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         }
                     } else {
                         // LAN Sizing Math: Max(Port-Count Sizing, PoE Budget Sizing)
+                        const portUtilization = (siteParameters['maxPortUtilization'] || 100) / 100;
                         const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0) || 48;
                         const wlanItem = bomItems.find(item => item.siteName === site.name && normalizeServiceId(item.serviceId) === 'managed_wifi');
                         let totalRequiredPoEWatts = 0;
@@ -349,7 +363,10 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         const switchPorts = bestFit.role === 'LAN' ? (switchSpecs.accessPortCount || 48) : 48;
                         const switchPoE = bestFit.role === 'LAN' ? (switchSpecs.poeBudgetWatts || 0) : 0;
 
-                        const qtyByPorts = Math.ceil(totalRequiredPorts / switchPorts);
+                        // Effective switch capacity based on utilization factor
+                        const effectiveSwitchPorts = Math.floor(switchPorts * portUtilization);
+
+                        const qtyByPorts = Math.ceil(totalRequiredPorts / effectiveSwitchPorts);
                         const qtyByPoE = (switchPoE > 0 && totalRequiredPoEWatts > 0) ? Math.ceil(totalRequiredPoEWatts / switchPoE) : 1;
 
                         quantity = Math.max(qtyByPorts, qtyByPoE);

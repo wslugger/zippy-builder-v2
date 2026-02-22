@@ -156,5 +156,14 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
             // Give 1 AP per 'indoorAPs' count from CSV
             { type: "select_equipment", targetId: "meraki_mr44", quantity: 1, quantityMultiplierField: "indoorAPs" }
         ]
+    },
+    {
+        id: "rule_lan_utilization_limit",
+        name: "Managed LAN - 60% Port Utilization Limit",
+        priority: 70,
+        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+        actions: [
+            { type: "set_parameter", targetId: "maxPortUtilization", actionValue: 60 }
+        ]
     }
 ];
