@@ -4,6 +4,7 @@
 import { useState } from "react";
 import FirebaseDebug from "./FirebaseDebug";
 import { VENDOR_IDS, VENDOR_LABELS, Equipment, EQUIPMENT_PURPOSES } from "@/src/lib/types";
+import { getEquipmentRole } from "@/src/lib/bom-utils";
 
 export default function EquipmentIngestion() {
     const [file, setFile] = useState<File | null>(null);
@@ -151,7 +152,7 @@ export default function EquipmentIngestion() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Assign Purpose to all extracted items</label>
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">Primary Category Hint (Optional)</label>
                     <div className="flex flex-wrap gap-4">
                         {EQUIPMENT_PURPOSES.map((p: string) => (
                             <label key={p} className="flex items-center gap-2 cursor-pointer bg-zinc-50 dark:bg-zinc-800 px-4 py-2 rounded-md border border-zinc-200 dark:border-zinc-700 hover:border-blue-500 transition-colors">
@@ -237,31 +238,45 @@ export default function EquipmentIngestion() {
                                         <span className="block text-xs font-medium text-zinc-500 uppercase">Model</span>
                                         <span className="font-semibold text-zinc-900 dark:text-zinc-100">{item.model}</span>
                                     </div>
-                                    <div>
-                                        <span className="block text-xs font-medium text-zinc-500 uppercase">Throughput</span>
-                                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{(item as any).specs.ngfw_throughput_mbps || 0} Mbps</span>
-                                        <span className="block text-[10px] text-zinc-400">NGFW</span>
-                                    </div>
+                                    {getEquipmentRole(item) === 'LAN' ? (
+                                        <div>
+                                            <span className="block text-xs font-medium text-zinc-500 uppercase">Capacity</span>
+                                            <span className="text-zinc-700 dark:text-zinc-300 font-medium">{(item.specs as any).accessPortCount || (item.specs as any).ports || 0} Ports</span>
+                                            <span className="block text-[10px] text-zinc-400">{(item.specs as any).poeBudgetWatts || (item.specs as any).poe_budget || 0}W PoE Budget</span>
+                                        </div>
+                                    ) : getEquipmentRole(item) === 'WLAN' ? (
+                                        <div>
+                                            <span className="block text-xs font-medium text-zinc-500 uppercase">Wi-Fi Specs</span>
+                                            <span className="text-zinc-700 dark:text-zinc-300 font-medium">{(item.specs as any).wifiStandard || "Unknown"}</span>
+                                            <span className="block text-[10px] text-zinc-400">{(item.specs as any).mimoBandwidth || "Unknown"}</span>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <span className="block text-xs font-medium text-zinc-500 uppercase">Throughput</span>
+                                            <span className="text-zinc-700 dark:text-zinc-300 font-medium">{(item.specs as any).sdwanCryptoThroughputMbps || 0} Mbps</span>
+                                            <span className="block text-[10px] text-zinc-400">Crypto</span>
+                                        </div>
+                                    )}
                                     <div>
                                         <span className="block text-xs font-medium text-zinc-500 uppercase">Interfaces</span>
                                         <div className="text-[10px] leading-tight">
-                                            {item.role === 'WAN' && (
+                                            {getEquipmentRole(item) === 'WAN' && (
                                                 <>
                                                     <div><span className="text-blue-500">W:</span> {(item.specs as any).wanPortCount || 0}</div>
                                                     <div><span className="text-green-500">L:</span> {(item.specs as any).lanPortCount || 0}</div>
                                                 </>
                                             )}
-                                            {item.role === 'LAN' && (
+                                            {getEquipmentRole(item) === 'LAN' && (
                                                 <>
-                                                    <div><span className="text-blue-500">A:</span> {(item.specs as any).accessPortCount || 0}</div>
+                                                    <div><span className="text-blue-500">A:</span> {(item.specs as any).accessPortCount || (item.specs as any).ports || 0}</div>
                                                     <div><span className="text-green-500">U:</span> {(item.specs as any).uplinkPortCount || 0}</div>
                                                 </>
                                             )}
                                         </div>
                                     </div>
                                     <div>
-                                        <span className="block text-xs font-medium text-zinc-500 uppercase">Power (Max)</span>
-                                        <span className="text-zinc-700 dark:text-zinc-300">{(item as any).specs.power_load_max_watts || 0}W</span>
+                                        <span className="block text-xs font-medium text-zinc-500 uppercase">PoE Budget</span>
+                                        <span className="text-zinc-700 dark:text-zinc-300">{(item as any).specs.poeBudgetWatts || (item as any).specs.poe_budget || 0}W</span>
                                     </div>
                                 </div>
 

@@ -37,9 +37,9 @@ export const EQUIPMENT_ROLES = ["WAN", "LAN", "WLAN", "SECURITY"] as const;
 export type EquipmentRole = typeof EQUIPMENT_ROLES[number];
 
 export const WANSpecsSchema = z.object({
-  ngfw_throughput_mbps: z.number().optional(),
-  adv_sec_throughput_mbps: z.number().optional(),
-  vpn_throughput_mbps: z.number().optional(),
+  rawFirewallThroughputMbps: z.number(),
+  sdwanCryptoThroughputMbps: z.number(),
+  advancedSecurityThroughputMbps: z.number(),
   vpn_tunnels: z.number().optional(),
   wanPortCount: z.number().default(0),
   lanPortCount: z.number().default(0),
@@ -65,35 +65,21 @@ export const WANSpecsSchema = z.object({
 }).strict();
 
 export const LANSpecsSchema = z.object({
-  switching_capacity_gbps: z.number().optional(),
-  forwarding_rate_mpps: z.number().optional(),
-  poe_budget_watts: z.number().optional(), // specifically for the switch data
-  accessPortCount: z.number().default(0),
-  uplinkPortCount: z.number().default(0),
-  accessPortType: z.enum(['1G', 'mGig', '10G']).optional(),
-  uplinkPortType: z.enum(['1G', '10G', '40G', '100G']).optional(),
-  stackable: z.boolean().default(false),
-  // Common extraction fields
-  ports: z.number().optional(),
-  poe_budget: z.number().optional(),
-  rack_units: z.number().optional(),
-  mounting_options: z.array(z.string()).optional(),
-  stacking_supported: z.boolean().optional(),
-  stacking_bandwidth_gbps: z.number().optional(),
-  primary_power_supply: z.string().optional(),
-  secondary_power_supply: z.string().optional(),
-  poe_capabilities: z.string().optional(),
-  power_load_max_watts: z.number().optional(),
+  accessPortCount: z.number(),
+  accessPortType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']),
+  poeBudgetWatts: z.number(),
+  poeStandard: z.enum(['None', 'PoE+', 'PoE++']),
+  uplinkPortCount: z.number(),
+  uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']),
+  isStackable: z.boolean(),
 }).strict();
 
 export const WLANSpecsSchema = z.object({
-  wifi_standard: z.enum(WIFI_STANDARDS),
-  radios: z.string().optional(),
-  mimo: z.string().optional(),
-  max_concurrent_clients: z.number().optional(),
-  antenna_type: z.string().optional(),
-  requires_controller: z.boolean().default(false),
-  uplinkPortType: z.enum(['1G', 'mGig']).optional(),
+  wifiStandard: z.enum(['Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7']),
+  mimoBandwidth: z.enum(['2x2', '4x4']),
+  powerDrawWatts: z.number(),
+  uplinkType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper']),
+  environment: z.enum(['Indoor', 'Outdoor', 'Hazardous']),
 }).strict();
 
 const BaseEquipmentSchema = z.object({
@@ -225,7 +211,7 @@ export interface Package extends Timestamps {
   items: PackageItem[];
   collateral?: PackageCollateral[];
   active: boolean;
-  throughput_basis?: "ngfw_throughput_mbps" | "vpn_throughput_mbps" | "adv_sec_throughput_mbps";
+  throughput_basis?: "rawFirewallThroughputMbps" | "sdwanCryptoThroughputMbps" | "advancedSecurityThroughputMbps";
   throughput_overhead_mbps?: number; // Base overhead for the package (e.g. VPN overhead)
 }
 

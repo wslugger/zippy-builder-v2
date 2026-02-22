@@ -7,6 +7,7 @@ import { EquipmentService, MetadataService } from "@/src/lib/firebase";
 import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
 import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
+import { getEquipmentRole } from "@/src/lib/bom-utils";
 
 interface EquipmentModalProps {
     equipment: Equipment;
@@ -111,7 +112,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
         // Only convert to number if it's a numeric field and the input is a string that looks like a number
         const numericFields: string[] = [
-            'ngfw_throughput_mbps', 'adv_sec_throughput_mbps', 'vpn_throughput_mbps',
+            'rawFirewallThroughputMbps', 'sdwanCryptoThroughputMbps', 'advancedSecurityThroughputMbps',
             'vpn_tunnels', 'power_supply_watts', 'power_load_idle_watts', 'power_load_max_watts',
             'ports', 'poe_budget', 'power_rating_watts', 'rack_units', 'max_clients',
             'stacking_bandwidth_gbps', 'forwarding_rate_mpps', 'switching_capacity_gbps',
@@ -328,64 +329,99 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                             </section>
 
                             {/* Throughput & Performance Card - Primarily for WAN */}
-                            {formData.role === 'WAN' && (
+                            {getEquipmentRole(formData) === 'WAN' && (
                                 <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
                                     <h4 className={sectionTitleClass}>Throughput & Performance</h4>
-                                    <div className="grid grid-cols-3 gap-x-8 gap-y-8">
-                                        <div className="col-span-1">
-                                            <label className={labelClass}>NGFW (Mbps)</label>
-                                            <div className="relative">
-                                                <input type="number" value={specs.ngfw_throughput_mbps || 0} onChange={(e) => handleSpecChange("ngfw_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
-                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
+                                    <div className="grid grid-cols-1 gap-y-8">
+                                        <div className="grid grid-cols-3 gap-x-8 gap-y-8">
+                                            <div className="col-span-1">
+                                                <label className={labelClass}>
+                                                    Raw Firewall (Mbps)
+                                                    <span className="text-slate-400 font-normal mt-1 block normal-case tracking-normal">
+                                                        Guidance: Clear-text stateful firewall routing without VPNs or IPS.
+                                                    </span>
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={specs.rawFirewallThroughputMbps ?? 0}
+                                                        onChange={(e) => handleSpecChange("rawFirewallThroughputMbps", e.target.value)}
+                                                        className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`}
+                                                    />
+                                                    <span className="absolute right-4 top-[14px] text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-zinc-800 px-1 py-0.5 rounded">Mbps</span>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-1">
+                                                <label className={labelClass}>
+                                                    SD-WAN Crypto (Mbps)
+                                                    <span className="text-slate-400 font-normal mt-1 block normal-case tracking-normal">
+                                                        Guidance: Throughput with tunnels built but security handled off-box. Look for &apos;VPN throughput&apos;, &apos;IPsec IMIX&apos;, or &apos;SD-WAN Routing&apos; (e.g. Meraki VPN, Cisco IPsec, HPE Silver Peak).
+                                                    </span>
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={specs.sdwanCryptoThroughputMbps ?? 0}
+                                                        onChange={(e) => handleSpecChange("sdwanCryptoThroughputMbps", e.target.value)}
+                                                        className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`}
+                                                    />
+                                                    <span className="absolute right-4 top-[14px] text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-zinc-800 px-1 py-0.5 rounded">Mbps</span>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-1">
+                                                <label className={labelClass}>
+                                                    Advanced Security (Mbps)
+                                                    <span className="text-slate-400 font-normal mt-1 block normal-case tracking-normal">
+                                                        Guidance: Throughput with on-box deep packet inspection (IDS/IPS) active. Look for &apos;Threat Defense&apos;, &apos;IDS/IPS&apos;, or &apos;Advanced Security&apos; (e.g. Meraki Adv. Sec, Cisco Threat Defense, HPE Aruba).
+                                                    </span>
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={specs.advancedSecurityThroughputMbps ?? 0}
+                                                        onChange={(e) => handleSpecChange("advancedSecurityThroughputMbps", e.target.value)}
+                                                        className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`}
+                                                    />
+                                                    <span className="absolute right-4 top-[14px] text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-zinc-800 px-1 py-0.5 rounded">Mbps</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="col-span-1">
-                                            <label className={labelClass}>Adv. Sec (Mbps)</label>
-                                            <div className="relative">
-                                                <input type="number" value={specs.adv_sec_throughput_mbps || 0} onChange={(e) => handleSpecChange("adv_sec_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
-                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
+
+                                        <div className="grid grid-cols-3 gap-x-8 gap-y-8">
+                                            <div className="col-span-1">
+                                                <label className={labelClass}>VPN Tunnels</label>
+                                                <div className="relative">
+                                                    <input type="number" value={specs.vpn_tunnels || 0} onChange={(e) => handleSpecChange("vpn_tunnels", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-zinc-800 px-1 py-0.5 rounded">Tunnels</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="col-span-1">
-                                            <label className={labelClass}>VPN (Mbps)</label>
-                                            <div className="relative">
-                                                <input type="number" value={specs.vpn_throughput_mbps || 0} onChange={(e) => handleSpecChange("vpn_throughput_mbps", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
-                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mbps</span>
+                                            <div className="col-span-2">
+                                                <label className={labelClass}>Recommended Use Case</label>
+                                                <select
+                                                    value={specs.recommended_use_case || ""}
+                                                    onChange={(e) => handleSpecChange("recommended_use_case", e.target.value)}
+                                                    className={inputClass}
+                                                >
+                                                    <option value="">Select Use Case...</option>
+                                                    {recommendedUseCases.map((uc: string) => (
+                                                        <option key={uc} value={uc}>{uc}</option>
+                                                    ))}
+                                                    {specs.recommended_use_case && !recommendedUseCases.includes(specs.recommended_use_case) && (
+                                                        <option value={specs.recommended_use_case}>{specs.recommended_use_case} (Custom)</option>
+                                                    )}
+                                                </select>
                                             </div>
-                                        </div>
-                                        <div className="col-span-1">
-                                            <label className={labelClass}>VPN Tunnels</label>
-                                            <div className="relative">
-                                                <input type="number" value={specs.vpn_tunnels || 0} onChange={(e) => handleSpecChange("vpn_tunnels", e.target.value)} className={`${inputClass} pr-14 font-bold text-slate-900 dark:text-white`} />
-                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Tunnels</span>
-                                            </div>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className={labelClass}>Recommended Use Case</label>
-                                            <select
-                                                value={specs.recommended_use_case || ""}
-                                                onChange={(e) => handleSpecChange("recommended_use_case", e.target.value)}
-                                                className={inputClass}
-                                            >
-                                                <option value="">Select Use Case...</option>
-                                                {recommendedUseCases.map((uc: string) => (
-                                                    <option key={uc} value={uc}>{uc}</option>
-                                                ))}
-                                                {specs.recommended_use_case && !recommendedUseCases.includes(specs.recommended_use_case) && (
-                                                    <option value={specs.recommended_use_case}>{specs.recommended_use_case} (Custom)</option>
-                                                )}
-                                            </select>
                                         </div>
                                     </div>
                                 </section>
                             )}
 
                             {/* Interfaces Card */}
-                            {(formData.role === 'WAN' || formData.role === 'LAN' || formData.role === 'WLAN') && (
+                            {(getEquipmentRole(formData) === 'WAN' || getEquipmentRole(formData) === 'LAN' || getEquipmentRole(formData) === 'WLAN') && (
                                 <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
                                     <h4 className={sectionTitleClass}>Interfaces</h4>
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                                        {formData.role === 'WAN' && (
+                                        {getEquipmentRole(formData) === 'WAN' && (
                                             <>
                                                 <div className="col-span-1">
                                                     <label className={labelClass}>
@@ -416,7 +452,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                             </>
                                         )}
 
-                                        {formData.role === 'LAN' && (
+                                        {getEquipmentRole(formData) === 'LAN' && (
                                             <>
                                                 <div className="col-span-1">
                                                     <label className={labelClass}>Access Port Count</label>
@@ -439,46 +475,132 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <label className={labelClass}>Access Port Speed</label>
+                                                    <label className={labelClass} title="Copper supports PoE. Fiber is for aggregation/distribution. mGig covers 2.5G/5G.">
+                                                        Access Port Type <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
+                                                    </label>
                                                     <select
                                                         value={specs.accessPortType || ""}
                                                         onChange={(e) => handleSpecChange('accessPortType', e.target.value)}
                                                         className={inputClass}
                                                     >
                                                         <option value="">Select Speed...</option>
-                                                        <option value="1G">1G</option>
-                                                        <option value="mGig">mGig</option>
-                                                        <option value="10G">10G</option>
+                                                        <option value="1G-Copper">1G-Copper</option>
+                                                        <option value="mGig-Copper">mGig-Copper</option>
+                                                        <option value="10G-Copper">10G-Copper</option>
+                                                        <option value="1G-Fiber">1G-Fiber</option>
+                                                        <option value="10G-Fiber">10G-Fiber</option>
                                                     </select>
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <label className={labelClass}>Uplink Port Speed</label>
+                                                    <label className={labelClass}>Uplink Port Type</label>
                                                     <select
                                                         value={specs.uplinkPortType || ""}
                                                         onChange={(e) => handleSpecChange('uplinkPortType', e.target.value)}
                                                         className={inputClass}
                                                     >
                                                         <option value="">Select Speed...</option>
-                                                        <option value="1G">1G</option>
-                                                        <option value="10G">10G</option>
-                                                        <option value="40G">40G</option>
-                                                        <option value="100G">100G</option>
+                                                        <option value="1G-Copper">1G-Copper</option>
+                                                        <option value="1G-Fiber">1G-Fiber</option>
+                                                        <option value="10G-Copper">10G-Copper</option>
+                                                        <option value="10G-Fiber">10G-Fiber</option>
+                                                        <option value="25G-Fiber">25G-Fiber</option>
+                                                        <option value="40G-Fiber">40G-Fiber</option>
+                                                        <option value="100G-Fiber">100G-Fiber</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass} title="Total switch PoE capacity (e.g., 370W, 740W).">
+                                                        PoE Budget (Watts) <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={specs.poeBudgetWatts ?? 0}
+                                                        onChange={(e) => handleSpecChange('poeBudgetWatts', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Watts"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>PoE Standard</label>
+                                                    <select
+                                                        value={specs.poeStandard || ""}
+                                                        onChange={(e) => handleSpecChange('poeStandard', e.target.value)}
+                                                        className={inputClass}
+                                                    >
+                                                        <option value="">Select Standard...</option>
+                                                        <option value="None">None</option>
+                                                        <option value="PoE+">PoE+</option>
+                                                        <option value="PoE++">PoE++</option>
                                                     </select>
                                                 </div>
                                             </>
                                         )}
 
                                         {formData.role === 'WLAN' && (
-                                            <div className="col-span-2 grid grid-cols-2 gap-x-8">
+                                            <div className="col-span-2 grid grid-cols-2 gap-x-8 gap-y-8">
                                                 <div className="col-span-1">
-                                                    <label className={labelClass}>Uplink Port Speed</label>
+                                                    <label className={labelClass}>Wi-Fi Standard</label>
                                                     <select
-                                                        value={specs.uplinkPortType || ""}
-                                                        onChange={(e) => handleSpecChange('uplinkPortType', e.target.value)}
+                                                        value={specs.wifiStandard || ""}
+                                                        onChange={(e) => handleSpecChange('wifiStandard', e.target.value)}
                                                         className={inputClass}
                                                     >
-                                                        <option value="1G">1G</option>
-                                                        <option value="mGig">mGig</option>
+                                                        <option value="">Select Standard...</option>
+                                                        <option value="Wi-Fi 6">Wi-Fi 6</option>
+                                                        <option value="Wi-Fi 6E">Wi-Fi 6E</option>
+                                                        <option value="Wi-Fi 7">Wi-Fi 7</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>MIMO Density</label>
+                                                    <select
+                                                        value={specs.mimoBandwidth || ""}
+                                                        onChange={(e) => handleSpecChange('mimoBandwidth', e.target.value)}
+                                                        className={inputClass}
+                                                    >
+                                                        <option value="">Select Density...</option>
+                                                        <option value="2x2">2x2</option>
+                                                        <option value="4x4">4x4</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass} title="The required switchport speed. High-end Wi-Fi 7 often requires 10G-Copper.">
+                                                        Uplink Type <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
+                                                    </label>
+                                                    <select
+                                                        value={specs.uplinkType || ""}
+                                                        onChange={(e) => handleSpecChange('uplinkType', e.target.value)}
+                                                        className={inputClass}
+                                                    >
+                                                        <option value="">Select Type...</option>
+                                                        <option value="1G-Copper">1G-Copper</option>
+                                                        <option value="mGig-Copper">mGig-Copper</option>
+                                                        <option value="10G-Copper">10G-Copper</option>
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass} title="Crucial for switch PoE sizing. (Usually 15W to 45W).">
+                                                        Max Power Draw (Watts) <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={specs.powerDrawWatts ?? 0}
+                                                        onChange={(e) => handleSpecChange('powerDrawWatts', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Watts"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Environment</label>
+                                                    <select
+                                                        value={specs.environment || ""}
+                                                        onChange={(e) => handleSpecChange('environment', e.target.value)}
+                                                        className={inputClass}
+                                                    >
+                                                        <option value="">Select Environment...</option>
+                                                        <option value="Indoor">Indoor</option>
+                                                        <option value="Outdoor">Outdoor</option>
+                                                        <option value="Hazardous">Hazardous</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -552,7 +674,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                     <div className="col-span-1">
                                         <label className={labelClass}>PoE Budget (W)</label>
                                         <div className="relative">
-                                            <input type="number" value={specs.poe_budget || 0} onChange={(e) => handleSpecChange("poe_budget", e.target.value)} className={`${inputClass} pr-10`} />
+                                            <input type="number" value={specs.poeBudgetWatts || 0} onChange={(e) => handleSpecChange("poeBudgetWatts", e.target.value)} className={`${inputClass} pr-10`} />
                                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
                                         </div>
                                     </div>
@@ -622,14 +744,14 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                             <label className="flex items-center gap-3 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500">
                                                 <input
                                                     type="checkbox"
-                                                    checked={specs.stacking_supported || false}
-                                                    onChange={(e) => handleSpecChange("stacking_supported", e.target.checked)}
+                                                    checked={specs.isStackable || specs.stacking_supported || false}
+                                                    onChange={(e) => handleSpecChange("isStackable", e.target.checked)}
                                                     className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                                                 />
                                                 <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Stackable</span>
                                             </label>
                                         </div>
-                                        {specs.stacking_supported && (
+                                        {(specs.isStackable || specs.stacking_supported) && (
                                             <div className="col-span-1">
                                                 <label className={labelClass}>Stack Bandwidth (Gbps)</label>
                                                 <div className="relative">

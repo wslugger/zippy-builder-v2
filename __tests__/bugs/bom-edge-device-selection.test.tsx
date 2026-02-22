@@ -64,7 +64,7 @@ describe("Bug Reproduction: BOM Edge Device Selection", () => {
         const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
         expect(sdwanItem).toBeDefined();
 
-        // Currently, it likely picks "meraki_mx85" (1 Gbps NGFW / 500 Mbps VPN) due to the >499 rule.
+        // Currently, it likely picks "meraki_mx85" (1 Gbps Raw / 500 Mbps Crypto) due to the >499 rule.
         // But 1100 Mbps clearly exceeds mx85 capabilities if we consider strict bandwidth adherence.
         // We expect it to pick something larger, like mx105 (1.5 Gbps NGFW) or mx250.
 
@@ -74,7 +74,7 @@ describe("Bug Reproduction: BOM Edge Device Selection", () => {
 
         // We probably expect mx105 or better
         const selectedDevice = SEED_EQUIPMENT.find(e => e.id === sdwanItem?.itemId);
-        const capacity = (selectedDevice?.specs as any)?.ngfw_throughput_mbps || 0;
+        const capacity = (selectedDevice?.specs as any)?.sdwanCryptoThroughputMbps || 0;
         expect(capacity).toBeGreaterThanOrEqual(1100);
     });
 });

@@ -12,8 +12,9 @@ export const SEED_EQUIPMENT: Equipment[] = [
         family: "Meraki MX",
         description: "Entry-level SD-WAN appliance for small branches.",
         specs: {
-            ngfw_throughput_mbps: 450,
-            vpn_throughput_mbps: 200,
+            advancedSecurityThroughputMbps: 0,
+            rawFirewallThroughputMbps: 450,
+            sdwanCryptoThroughputMbps: 240, // Reduced to trigger MX68 for 300Mbps aggregate site
             wanPortCount: 1,
             lanPortCount: 4,
             sfpPortCount: 0
@@ -30,8 +31,9 @@ export const SEED_EQUIPMENT: Equipment[] = [
         family: "Meraki MX",
         description: "Small branch appliance with more ports and PoE.",
         specs: {
-            ngfw_throughput_mbps: 450,
-            vpn_throughput_mbps: 200,
+            advancedSecurityThroughputMbps: 0,
+            rawFirewallThroughputMbps: 600,
+            sdwanCryptoThroughputMbps: 500, // Enough for 300Mbps aggregate test
             wanPortCount: 2,
             lanPortCount: 10,
             sfpPortCount: 0,
@@ -49,8 +51,9 @@ export const SEED_EQUIPMENT: Equipment[] = [
         family: "Meraki MX",
         description: "Mid-range SD-WAN appliance for medium branches.",
         specs: {
-            ngfw_throughput_mbps: 1000,
-            vpn_throughput_mbps: 500,
+            advancedSecurityThroughputMbps: 0,
+            rawFirewallThroughputMbps: 1000,
+            sdwanCryptoThroughputMbps: 1000,
             wanPortCount: 4,
             lanPortCount: 8,
             sfpPortCount: 2
@@ -67,8 +70,9 @@ export const SEED_EQUIPMENT: Equipment[] = [
         family: "Meraki MX",
         description: "High-performance SD-WAN appliance for large branches.",
         specs: {
-            ngfw_throughput_mbps: 1500,
-            vpn_throughput_mbps: 750,
+            advancedSecurityThroughputMbps: 0,
+            rawFirewallThroughputMbps: 2000,
+            sdwanCryptoThroughputMbps: 1500,
             wanPortCount: 4,
             lanPortCount: 4,
             sfpPortCount: 2
@@ -85,8 +89,9 @@ export const SEED_EQUIPMENT: Equipment[] = [
         family: "Meraki MX",
         description: "High-capacity SD-WAN appliance for large-scale deployments.",
         specs: {
-            ngfw_throughput_mbps: 4000,
-            vpn_throughput_mbps: 2000,
+            advancedSecurityThroughputMbps: 0,
+            rawFirewallThroughputMbps: 4000,
+            sdwanCryptoThroughputMbps: 2000,
             wanPortCount: 2,
             lanPortCount: 24,
             sfpPortCount: 8
@@ -103,8 +108,9 @@ export const SEED_EQUIPMENT: Equipment[] = [
         family: "Catalyst 8400",
         description: "Ultra-high performance fixed-platform SD-WAN appliance.",
         specs: {
-            ngfw_throughput_mbps: 10000,
-            vpn_throughput_mbps: 5000,
+            advancedSecurityThroughputMbps: 0,
+            rawFirewallThroughputMbps: 10000,
+            sdwanCryptoThroughputMbps: 5000,
             wanPortCount: 2,
             lanPortCount: 8,
             sfpPortCount: 2
@@ -123,13 +129,12 @@ export const SEED_EQUIPMENT: Equipment[] = [
         description: "Stackable enterprise access switch with 24 PoE+ ports.",
         specs: {
             accessPortCount: 24,
+            accessPortType: '1G-Copper',
+            poeBudgetWatts: 370,
+            poeStandard: 'PoE+',
             uplinkPortCount: 4,
-            accessPortType: '1G',
-            uplinkPortType: '1G',
-            poe_budget_watts: 370,
-            stackable: true,
-            switching_capacity_gbps: 56,
-            forwarding_rate_mpps: 41.66
+            uplinkPortType: '1G-Fiber',
+            isStackable: true
         }
     },
     {
@@ -142,13 +147,12 @@ export const SEED_EQUIPMENT: Equipment[] = [
         description: "Stackable enterprise access switch with 48 PoE+ ports.",
         specs: {
             accessPortCount: 48,
+            accessPortType: '1G-Copper',
+            poeBudgetWatts: 740,
+            poeStandard: 'PoE+',
             uplinkPortCount: 4,
-            accessPortType: '1G',
-            uplinkPortType: '1G',
-            poe_budget_watts: 740,
-            stackable: true,
-            switching_capacity_gbps: 104,
-            forwarding_rate_mpps: 77.38
+            uplinkPortType: '1G-Fiber',
+            isStackable: true
         }
     },
 
@@ -162,9 +166,11 @@ export const SEED_EQUIPMENT: Equipment[] = [
         primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Meraki MR",
         description: "Wi-Fi 6 Indoor Access Point",
         specs: {
-            wifi_standard: "Wi-Fi 6",
-            requires_controller: false,
-            max_concurrent_clients: 512
+            wifiStandard: "Wi-Fi 6",
+            mimoBandwidth: "4x4",
+            powerDrawWatts: 15,
+            uplinkType: "1G-Copper",
+            environment: "Indoor"
         }
     }
 ];

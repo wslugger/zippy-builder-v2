@@ -1,7 +1,7 @@
 import { Site, BOMLineItem } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { Equipment, Package } from "@/src/lib/types";
-import { isDualRedundancy, isDualCircuit } from "@/src/lib/bom-utils";
+import { isDualRedundancy, isDualCircuit, getEquipmentRole } from "@/src/lib/bom-utils";
 import { ManualDeviceSelector } from "./ManualDeviceSelector";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
 
@@ -97,7 +97,7 @@ export function WANTab({
                             }}
                             options={catalog
                                 .filter((e) => {
-                                    if (e.primary_purpose !== "SDWAN") return false;
+                                    if (getEquipmentRole(e) !== "WAN") return false;
                                     return e.vendor_id === getVendorForService("managed_sdwan");
                                 })
                                 .map((e) => ({ value: e.id, label: e.model }))}
@@ -146,7 +146,7 @@ export function WANTab({
                                 <div className="flex justify-between text-xs mt-1 text-slate-400">
                                     <span>Total Load: {totalLoad} Mbps (Aggregate)</span>
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                    <span>Capacity: {(currentSDWANEquipment.specs as any)[(pkg?.throughput_basis || "vpn_throughput_mbps")] || 0} Mbps ({(pkg?.throughput_basis || "vpn_throughput_mbps").replace(/_/g, " ").toUpperCase()})</span>
+                                    <span>Capacity: {(currentSDWANEquipment.specs as any)[(pkg?.throughput_basis || "sdwanCryptoThroughputMbps")] || 0} Mbps ({(pkg?.throughput_basis || "sdwanCryptoThroughputMbps").replace(/_/g, " ").toUpperCase()})</span>
                                 </div>
                             </div>
                         </div>

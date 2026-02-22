@@ -61,7 +61,7 @@ describe("Bug Reproduction: BOM Throughput Basis", () => {
             short_description: "Desc",
             detailed_description: "Detailed",
             active: true,
-            throughput_basis: "ngfw_throughput_mbps",
+            throughput_basis: "rawFirewallThroughputMbps",
             items: [
                 {
                     service_id: "managed_sdwan",
@@ -86,12 +86,12 @@ describe("Bug Reproduction: BOM Throughput Basis", () => {
         const highLoadSite: Site = { ...mockSite, bandwidthDownMbps: 150, bandwidthUpMbps: 150 }; // 300 Mbps aggregate
 
         // Test with VPN basis
-        const pkgVPN: Package = { ...pkg, throughput_basis: "vpn_throughput_mbps" };
+        const pkgVPN: Package = { ...pkg, throughput_basis: "sdwanCryptoThroughputMbps" };
         const bomVPN = calculateBOM({ projectId: "proj", sites: [highLoadSite], selectedPackage: pkgVPN, services: [mockServiceSDWAN], siteTypes: [mockSiteType], equipmentCatalog: testCatalog, rules: testRules });
         const itemVPN = bomVPN.items.find(i => i.serviceId === "managed_sdwan");
 
         // Test with NGFW basis
-        const pkgNGFW: Package = { ...pkg, throughput_basis: "ngfw_throughput_mbps" };
+        const pkgNGFW: Package = { ...pkg, throughput_basis: "rawFirewallThroughputMbps" };
         const bomNGFW = calculateBOM({ projectId: "proj", sites: [highLoadSite], selectedPackage: pkgNGFW, services: [mockServiceSDWAN], siteTypes: [mockSiteType], equipmentCatalog: testCatalog, rules: testRules });
         const itemNGFW = bomNGFW.items.find(i => i.serviceId === "managed_sdwan");
 
@@ -99,7 +99,7 @@ describe("Bug Reproduction: BOM Throughput Basis", () => {
         console.log(`VPN Basis Item: ${itemVPN?.itemId}`);
         console.log(`NGFW Basis Item: ${itemNGFW?.itemId}`);
 
-        expect(itemVPN?.reasoning).toContain("VPN THROUGHPUT MBPS=500 Mbps");
-        expect(itemNGFW?.reasoning).toContain("NGFW THROUGHPUT MBPS=450 Mbps");
+        expect(itemVPN?.reasoning).toContain("SDWANCRYPTOTHROUGHPUTMBPS=500 Mbps");
+        expect(itemNGFW?.reasoning).toContain("RAWFIREWALLTHROUGHPUTMBPS=450 Mbps");
     });
 });

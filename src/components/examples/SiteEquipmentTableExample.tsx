@@ -32,7 +32,7 @@ export function SiteEquipmentTableBefore({ site }: { site: { equipmentIds: strin
           <tr key={eq.data?.id}>
             <td>{eq.data?.model}</td>
             <td>{eq.data?.vendor_id}</td>
-            <td>{eq.data?.specs.vpn_throughput_mbps} Mbps</td>
+            <td>{eq.data?.specs.sdwanCryptoThroughputMbps} Mbps</td>
           </tr>
         ))}
       </tbody>
@@ -50,36 +50,36 @@ export function SiteEquipmentTableBefore({ site }: { site: { equipmentIds: strin
  */
 
 export function SiteEquipmentTableAfter({ site }: { site: Site }) {
-    // Instant render - no loading states necessary for the row data! Let's go!
+  // Instant render - no loading states necessary for the row data! Let's go!
 
-    if (!site.embeddedEquipment || site.embeddedEquipment.length === 0) {
-        return <p>No equipment attached to this site.</p>;
-    }
+  if (!site.embeddedEquipment || site.embeddedEquipment.length === 0) {
+    return <p>No equipment attached to this site.</p>;
+  }
 
-    return (
-        <div className="overflow-x-auto bg-white rounded shadow">
-            <table className="min-w-full text-sm text-left text-gray-500">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                    <tr>
-                        <th className="px-6 py-3">Model</th>
-                        <th className="px-6 py-3">Vendor ID</th>
-                        <th className="px-6 py-3">Throughput</th>
-                        <th className="px-6 py-3">Ports</th>
-                        <th className="px-6 py-3">Attached Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {site.embeddedEquipment.map((eq) => (
-                        <tr key={eq.id} className="bg-white border-b hover:bg-gray-50">
-                            <td className="px-6 py-4 font-medium text-gray-900">{eq.model}</td>
-                            <td className="px-6 py-4 uppercase">{eq.vendor_id}</td>
-                            <td className="px-6 py-4">{eq.specs_summary?.throughput ?? 'N/A'} Mbps</td>
-                            <td className="px-6 py-4">{eq.specs_summary?.ports ?? 'N/A'}</td>
-                            <td className="px-6 py-4">{new Date(eq.addedAt).toLocaleDateString()}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
+  return (
+    <div className="overflow-x-auto bg-white rounded shadow">
+      <table className="min-w-full text-sm text-left text-gray-500">
+        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+          <tr>
+            <th className="px-6 py-3">Model</th>
+            <th className="px-6 py-3">Vendor ID</th>
+            <th className="px-6 py-3">Throughput</th>
+            <th className="px-6 py-3">Ports</th>
+            <th className="px-6 py-3">Attached Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {site.embeddedEquipment.map((eq) => (
+            <tr key={eq.id} className="bg-white border-b hover:bg-gray-50">
+              <td className="px-6 py-4 font-medium text-gray-900">{eq.model}</td>
+              <td className="px-6 py-4 uppercase">{eq.vendor_id}</td>
+              <td className="px-6 py-4">{eq.specs_summary?.throughput ?? 'N/A'} Mbps</td>
+              <td className="px-6 py-4">{eq.specs_summary?.ports ?? 'N/A'}</td>
+              <td className="px-6 py-4">{new Date(eq.addedAt).toLocaleDateString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }

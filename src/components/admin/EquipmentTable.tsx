@@ -7,9 +7,11 @@ interface EquipmentTableProps {
     data: Equipment[];
     onEdit: (item: Equipment) => void;
     onDelete: (id: string) => void;
+    selectedIds?: Set<string>;
+    onSelectionChange?: (ids: Set<string>) => void;
 }
 
-export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTableProps) {
+export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = new Set(), onSelectionChange }: EquipmentTableProps) {
     if (data.length === 0) {
         return (
             <div className="text-center py-20 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
@@ -24,6 +26,22 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                 <table className="w-full text-left text-sm">
                     <thead className="bg-zinc-50 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 font-medium">
                         <tr>
+                            {onSelectionChange && (
+                                <th className="px-6 py-4 w-12">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.length > 0 && selectedIds.size === data.length}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                onSelectionChange(new Set(data.map((d) => d.id)));
+                                            } else {
+                                                onSelectionChange(new Set());
+                                            }
+                                        }}
+                                        className="rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                                    />
+                                </th>
+                            )}
                             <th className="px-6 py-4">Model</th>
                             <th className="px-6 py-4">Vendor</th>
                             <th className="px-6 py-4">Purpose</th>
@@ -39,6 +57,24 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                 onClick={() => onEdit(item)}
                                 className="group cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-200"
                             >
+                                {onSelectionChange && (
+                                    <td className="px-6 py-4 w-12" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(item.id)}
+                                            onChange={(e) => {
+                                                const newSet = new Set(selectedIds);
+                                                if (e.target.checked) {
+                                                    newSet.add(item.id);
+                                                } else {
+                                                    newSet.delete(item.id);
+                                                }
+                                                onSelectionChange(newSet);
+                                            }}
+                                            className="rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                                        />
+                                    </td>
+                                )}
                                 <td className="px-6 py-4">
                                     <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-2">
                                         {item.model}
@@ -84,18 +120,24 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                     <div className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
                                         {item.role === 'WAN' && (
                                             <>
-                                                {item.specs.ngfw_throughput_mbps && (
+                                                {item.specs.rawFirewallThroughputMbps ? (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">⚡</span>
-                                                        Throughput: {item.specs.ngfw_throughput_mbps} Mbps
+                                                        Firewall: {item.specs.rawFirewallThroughputMbps} Mbps
                                                     </div>
-                                                )}
-                                                {item.specs.vpn_throughput_mbps && (
+                                                ) : null}
+                                                {item.specs.sdwanCryptoThroughputMbps ? (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">🔒</span>
-                                                        Crypto: {item.specs.vpn_throughput_mbps} Mbps
+                                                        Crypto: {item.specs.sdwanCryptoThroughputMbps} Mbps
                                                     </div>
-                                                )}
+                                                ) : null}
+                                                {item.specs.advancedSecurityThroughputMbps ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="opacity-50">🛡️</span>
+                                                        Adv. Sec: {item.specs.advancedSecurityThroughputMbps} Mbps
+                                                    </div>
+                                                ) : null}
                                                 {(item.specs as any).wanPortCount !== undefined && (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">🔌</span>
@@ -107,18 +149,12 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                         )}
                                         {item.role === 'LAN' && (
                                             <>
-                                                {item.specs.switching_capacity_gbps && (
-                                                    <div className="flex items-center gap-1">
-                                                        <span className="opacity-50">⚡</span>
-                                                        Capacity: {item.specs.switching_capacity_gbps} Gbps
-                                                    </div>
-                                                )}
                                                 <div className="flex items-center gap-1">
                                                     <span className="opacity-50">🔌</span>
-                                                    Ports: {(item.specs as any).accessPortCount || 0}
-                                                    {item.specs.poe_budget_watts && item.specs.poe_budget_watts > 0 && ` (${item.specs.poe_budget_watts}W PoE)`}
+                                                    Ports: {item.specs.accessPortCount || 0}
+                                                    {item.specs.poeBudgetWatts && item.specs.poeBudgetWatts > 0 && ` (${item.specs.poeBudgetWatts}W PoE)`}
                                                 </div>
-                                                {item.specs.stackable && (
+                                                {item.specs.isStackable && (
                                                     <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
                                                         <span className="opacity-50">📚</span>
                                                         Stackable: Yes
@@ -128,22 +164,22 @@ export default function EquipmentTable({ data, onEdit, onDelete }: EquipmentTabl
                                         )}
                                         {item.role === 'WLAN' && (
                                             <>
-                                                {item.specs.wifi_standard && (
+                                                {item.specs.wifiStandard && (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">📡</span>
-                                                        {item.specs.wifi_standard}
+                                                        {item.specs.wifiStandard}
                                                     </div>
                                                 )}
-                                                {item.specs.mimo && (
+                                                {item.specs.mimoBandwidth && (
                                                     <div className="flex items-center gap-1">
                                                         <span className="opacity-50">📶</span>
-                                                        {item.specs.mimo} MIMO
+                                                        {item.specs.mimoBandwidth} MIMO
                                                     </div>
                                                 )}
-                                                {item.specs.max_concurrent_clients && (
+                                                {item.specs.powerDrawWatts && (
                                                     <div className="flex items-center gap-1">
-                                                        <span className="opacity-50">👥</span>
-                                                        Clients: {item.specs.max_concurrent_clients}
+                                                        <span className="opacity-50">⚡</span>
+                                                        Power: {item.specs.powerDrawWatts}W
                                                     </div>
                                                 )}
                                             </>

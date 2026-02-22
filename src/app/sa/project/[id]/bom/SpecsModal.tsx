@@ -41,16 +41,16 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                             <dl className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <dt className="text-slate-500">VPN Throughput</dt>
-                                    <dd className="font-semibold text-slate-900">{(item as any).specs.vpn_throughput_mbps} Mbps</dd>
+                                    <dd className="font-semibold text-slate-900">{(item as any).specs.sdwanCryptoThroughputMbps || 0} Mbps</dd>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <dt className="text-slate-500">NGFW Throughput</dt>
-                                    <dd className="font-semibold text-slate-900">{(item as any).specs.ngfw_throughput_mbps || 0} Mbps</dd>
+                                    <dt className="text-slate-500">Firewall Throughput</dt>
+                                    <dd className="font-semibold text-slate-900">{(item as any).specs.rawFirewallThroughputMbps || 0} Mbps</dd>
                                 </div>
-                                {(item as any).specs.adv_sec_throughput_mbps && (
+                                {(item as any).specs.advancedSecurityThroughputMbps && (
                                     <div className="flex justify-between text-sm">
                                         <dt className="text-slate-500">AdvSec Throughput</dt>
-                                        <dd className="font-semibold text-slate-900">{(item as any).specs.adv_sec_throughput_mbps} Mbps</dd>
+                                        <dd className="font-semibold text-slate-900">{(item as any).specs.advancedSecurityThroughputMbps} Mbps</dd>
                                     </div>
                                 )}
                             </dl>

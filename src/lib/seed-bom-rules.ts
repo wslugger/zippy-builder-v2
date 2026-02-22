@@ -99,6 +99,29 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         ]
     },
 
+    {
+        id: "rule_sdwan_ha",
+        name: "SD-WAN High Availability (Dual CPE)",
+        priority: 110,
+        condition: {
+            "and": [
+                { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                { "contains": [{ "var": "site.redundancyModel" }, "dual"] }
+            ]
+        },
+        actions: [
+            { type: "set_parameter", targetId: "cpe_quantity", actionValue: 2 }
+        ]
+    },
+    {
+        id: "rule_sdwan_overhead_default",
+        name: "SD-WAN Default Overhead",
+        priority: 5,
+        condition: { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+        actions: [
+            { type: "set_parameter", targetId: "throughput_overhead_mbps", actionValue: 50 }
+        ]
+    },
     // --- Rule Set 2: Managed LAN Switch Calculation ---
     // Strategy: 1x 48 port switch per 48 users/ports needed.
     // Taking a naive approach: If LAN ports > 0, give a switch.

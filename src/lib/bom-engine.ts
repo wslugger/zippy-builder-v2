@@ -9,12 +9,25 @@ import {
     SERVICE_TO_PURPOSE,
     resolveVendorForService,
     calculateCPEQuantity,
-    getEquipmentPerformanceValue
+    getEquipmentPerformanceValue,
+    getEquipmentRole
 } from "./bom-utils";
 
 /**
  * Generates a Bill of Materials based on pure JSON input via a declarative Rules Engine.
  */
+
+// Add custom logic operators
+jsonLogic.add_operation("contains", (string, substring) => {
+    if (typeof string !== "string") return false;
+    return string.toLowerCase().includes(String(substring).toLowerCase());
+});
+
+jsonLogic.add_operation("includes", (array, value) => {
+    if (!Array.isArray(array)) return false;
+    return array.includes(value);
+});
+
 export function calculateBOM(input: BOMEngineInput): BOM {
     const { projectId, sites, selectedPackage, services, siteTypes, equipmentCatalog, manualSelections = {} } = input;
 
@@ -44,6 +57,9 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             } as SiteType;
         }
 
+        // Initialize dynamic parameters for this site
+        const siteParameters: Record<string, any> = {};
+
         // 1. Process Services in Package
         for (const pkgItem of selectedPackage.items) {
             const service = services.find(s => s.id === pkgItem.service_id);
@@ -53,12 +69,35 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             const selectionKey = `${site.name}:${canonicalServiceId}`;
             const manualOverrideId = manualSelections[selectionKey];
 
+            // A. Evaluate Rules Engine for this service context
+            const matchingRules = rules.filter(rule => {
+                const throughputOverhead = siteParameters['throughput_overhead_mbps'] ?? selectedPackage.throughput_overhead_mbps ?? 0;
+                const aggregateThroughput = (Number(site.bandwidthDownMbps) || 0) + (Number(site.bandwidthUpMbps) || 0) + (Number(throughputOverhead) || 0);
+
+                const context = {
+                    site: {
+                        ...site,
+                        bandwidthDownMbps: aggregateThroughput // Legacy rules expect this to be the aggregate
+                    },
+                    packageId: selectedPackage.id,
+                    serviceId: canonicalServiceId
+                };
+                return jsonLogic.apply(rule.condition, context);
+            });
+
+            // B. Apply "set_parameter" actions to site context
+            matchingRules.flatMap(r => r.actions)
+                .filter(a => a.type === "set_parameter")
+                .forEach(a => {
+                    siteParameters[a.targetId] = a.actionValue;
+                });
+
             if (manualOverrideId) {
                 const equip = equipmentCatalog.find(e => e.id === manualOverrideId);
                 if (equip) {
                     let quantity = 1;
                     if (canonicalServiceId === "managed_sdwan") {
-                        quantity = calculateCPEQuantity(site, siteDef);
+                        quantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
                     }
 
                     console.log(`[BOMEngine] Manual override found: ${equip.model}`);
@@ -78,35 +117,30 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 }
             }
 
-            let throughputOverhead = selectedPackage.throughput_overhead_mbps || 0;
-            if (pkgItem.design_option_id) {
-                const designOption = service.service_options
-                    .flatMap(so => so.design_options)
-                    .find(d => d.id === pkgItem.design_option_id);
+            // C. Calculate Required Throughput (with possible rule override)
+            let throughputOverhead = siteParameters['throughput_overhead_mbps'] ?? 0;
+            if (siteParameters['throughput_overhead_mbps'] === undefined) {
+                throughputOverhead = selectedPackage.throughput_overhead_mbps || 0;
+                if (pkgItem.design_option_id) {
+                    const designOption = service.service_options
+                        .flatMap(so => so.design_options)
+                        .find(d => d.id === pkgItem.design_option_id);
 
-                if (designOption?.throughput_overhead_mbps) {
-                    throughputOverhead += designOption.throughput_overhead_mbps;
+                    if (designOption?.throughput_overhead_mbps) {
+                        throughputOverhead += designOption.throughput_overhead_mbps;
+                    }
                 }
             }
 
-            const requiredThroughput = (Number(site.bandwidthDownMbps) || 0) + (Number(site.bandwidthUpMbps) || 0) + throughputOverhead;
+            const requiredThroughput = (Number(site.bandwidthDownMbps) || 0) + (Number(site.bandwidthUpMbps) || 0) + (Number(throughputOverhead) || 0);
 
+            // Create evaluation context for equipment selection (with adjusted throughput)
             const ruleEvaluationSite = {
                 ...site,
                 bandwidthDownMbps: requiredThroughput
             };
 
-            // Evaluate Rules Engine
-            const matchingRules = rules.filter(rule => {
-                const context = {
-                    site: ruleEvaluationSite,
-                    packageId: selectedPackage.id,
-                    serviceId: canonicalServiceId
-                };
-                return jsonLogic.apply(rule.condition, context);
-            });
-
-
+            // D. Check for explicit "select_equipment" action
             const equipmentAction = matchingRules.flatMap(r => r.actions).find(a => a.type === "select_equipment");
 
             if (equipmentAction) {
@@ -114,7 +148,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 if (equip) {
                     let finalQuantity = equipmentAction.quantity || 1;
                     if (canonicalServiceId === "managed_sdwan") {
-                        finalQuantity = calculateCPEQuantity(site, siteDef);
+                        finalQuantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
                     }
 
                     if (equipmentAction.quantityMultiplierField) {
@@ -147,37 +181,55 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 }
             }
 
+            // E. Dynamic Match Logic (Fallback if no explicit rule match)
             const vendorId = resolveVendorForService(selectedPackage, service.id);
+
+            // Determine Throughput Metric based on Security Architecture
+            let isDistributedSecurity = false;
+            for (const item of selectedPackage.items) {
+                if (item.design_option_id) {
+                    const svc = services.find(s => s.id === item.service_id);
+                    if (svc) {
+                        const dOpt = svc.service_options.flatMap(so => so.design_options).find(d => d.id === item.design_option_id);
+                        if (dOpt && dOpt.name && dOpt.name.toLowerCase().includes("distributed")) {
+                            isDistributedSecurity = true;
+                        }
+                    }
+                }
+            }
+            const activeThroughputField = selectedPackage.throughput_basis || (isDistributedSecurity ? "advancedSecurityThroughputMbps" : "sdwanCryptoThroughputMbps");
 
             const candidates = equipmentCatalog.filter(e => {
                 if (e.vendor_id !== vendorId) return false;
 
+                const role = getEquipmentRole(e);
                 const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
                 if (requiredPurpose) {
-                    const candidatePurposes = [e.primary_purpose, ...(e.additional_purposes || [])];
-                    if (!candidatePurposes.includes(requiredPurpose as any)) return false;
+                    const roleMap: Record<string, string> = { "SDWAN": "WAN", "LAN": "LAN", "WLAN": "WLAN" };
+                    if (role !== roleMap[requiredPurpose]) return false;
                 }
 
                 if (!matchesConstraints(e, siteDef.constraints)) return false;
 
-                if (requiredPurpose === "SDWAN" && e.role === 'WAN') {
-                    const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
-                    const deviceThroughput = (e.specs[throughputField as keyof typeof e.specs] as number) ?? e.specs.vpn_throughput_mbps ?? 0;
+                const specs = e.specs as any;
+                if (requiredPurpose === "SDWAN" && role === 'WAN') {
+                    const throughputField = activeThroughputField;
+                    const deviceThroughput = Number(specs[throughputField] ?? 0);
                     if (deviceThroughput < requiredThroughput) return false;
 
-                    const cpeQuantity = calculateCPEQuantity(site, siteDef);
-                    if (cpeQuantity > 1 && (e.specs.lanPortCount || 0) < 1) {
+                    const cpeQuantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
+                    if (cpeQuantity > 1 && (specs.lanPortCount || 0) < 1) {
                         return false;
                     }
                 }
 
-                if (requiredPurpose === "LAN" && e.role === 'LAN') {
-                    if (site.poeStandard && e.specs.poe_budget_watts && e.specs.poe_budget_watts === 0) {
+                if (requiredPurpose === "LAN" && role === 'LAN') {
+                    if (site.poeStandard && (specs.poeStandard === 'None' || !specs.poeBudgetWatts)) {
                         return false;
                     }
 
                     const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0);
-                    const maxPorts = e.specs.stackable ? (e.specs.accessPortCount || 0) * 8 : (e.specs.accessPortCount || 0);
+                    const maxPorts = specs.isStackable ? (specs.accessPortCount || 0) * 8 : (specs.accessPortCount || 0);
                     if (maxPorts < totalRequiredPorts) {
                         return false;
                     }
@@ -185,8 +237,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     const wlanItem = bomItems.find(item => item.siteName === site.name && item.serviceId === 'managed_wlan');
                     if (wlanItem) {
                         const apEquip = equipmentCatalog.find(eq => eq.id === wlanItem.itemId);
-                        if (apEquip && apEquip.role === 'WLAN' && apEquip.specs.uplinkPortType === 'mGig') {
-                            if (e.specs.accessPortType !== 'mGig') return false;
+                        if (apEquip && getEquipmentRole(apEquip) === 'WLAN' && (apEquip.specs as any).uplinkType === 'mGig-Copper') {
+                            if (specs.accessPortType !== 'mGig-Copper') return false;
                         }
                     }
                 }
@@ -195,7 +247,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             });
 
             const sortedCandidates = candidates.sort((a, b) => {
-                return getEquipmentPerformanceValue(a, selectedPackage.throughput_basis) - getEquipmentPerformanceValue(b, selectedPackage.throughput_basis);
+                return getEquipmentPerformanceValue(a, activeThroughputField) - getEquipmentPerformanceValue(b, activeThroughputField);
             });
 
             let bestFit = sortedCandidates[0];
@@ -221,7 +273,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 });
 
                 const sortedFallbackCandidates = allPurposeCandidates.sort((a, b) => {
-                    return getEquipmentPerformanceValue(b, selectedPackage.throughput_basis) - getEquipmentPerformanceValue(a, selectedPackage.throughput_basis);
+                    return getEquipmentPerformanceValue(b, activeThroughputField) - getEquipmentPerformanceValue(a, activeThroughputField);
                 });
 
                 bestFit = sortedFallbackCandidates[0];
@@ -242,7 +294,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             if (bestFit) {
                 let quantity = 1;
                 if (canonicalServiceId === "managed_sdwan") {
-                    quantity = calculateCPEQuantity(site, siteDef);
+                    quantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
                 } else if (canonicalServiceId === "managed_lan") {
                     const quantityAction = matchingRules.flatMap(r => r.actions).find(a => a.type === "modify_quantity");
 
@@ -267,7 +319,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     if (quantity === 0) quantity = 1;
                 }
 
-                const throughputField = selectedPackage.throughput_basis || "vpn_throughput_mbps";
+                const throughputField = activeThroughputField;
                 const deviceThroughput = getEquipmentPerformanceValue(bestFit, throughputField);
 
                 bomItems.push({
@@ -325,8 +377,8 @@ export function calculateUtilization(site: Site, equipment: Equipment, basis?: s
 
     if (!capacity) return 0;
 
-    const siteLoad = (site.bandwidthDownMbps || 0) + (site.bandwidthUpMbps || 0) + overhead;
-    return Math.round((siteLoad / capacity) * 100);
+    const siteLoad = (Number(site.bandwidthDownMbps) || 0) + (Number(site.bandwidthUpMbps) || 0) + (Number(overhead) || 0);
+    return capacity > 0 ? Math.round((siteLoad / capacity) * 100) : 0;
 }
 
 export function validatePOE(site: Site, bomItems: BOMLineItem[], equipmentCatalog: Equipment[]): string[] {
@@ -336,8 +388,8 @@ export function validatePOE(site: Site, bomItems: BOMLineItem[], equipmentCatalo
     for (const item of bomItems) {
         if (item.siteName !== site.name) continue;
         const equip = equipmentCatalog.find(e => e.id === item.itemId);
-        if (equip?.role === 'LAN' && equip.specs.poe_budget_watts) {
-            totalBudget += (equip.specs.poe_budget_watts * item.quantity);
+        if (equip?.role === 'LAN' && equip.specs.poeBudgetWatts) {
+            totalBudget += (equip.specs.poeBudgetWatts * item.quantity);
         }
     }
 
@@ -355,11 +407,12 @@ function getEquipmentSpecSummary(e: Equipment): string {
     if (e.role === 'LAN') {
         const totalPorts = e.specs.accessPortCount || 0;
         if (totalPorts) parts.push(`${totalPorts} Ports`);
-        if (e.specs.poe_budget_watts) parts.push(`${e.specs.poe_budget_watts}W PoE`);
+        if (e.specs.poeBudgetWatts) parts.push(`${e.specs.poeBudgetWatts}W PoE`);
     } else if (e.role === 'WAN') {
-        const throughput = e.specs.vpn_throughput_mbps || 0;
+        const specs = e.specs as any;
+        const throughput = specs.sdwanCryptoThroughputMbps || 0;
         if (throughput) parts.push(`${throughput}M VPN`);
-        if (e.specs.wanPortCount) parts.push(`${e.specs.wanPortCount} WAN`);
+        if (specs.wanPortCount) parts.push(`${specs.wanPortCount} WAN`);
     }
     return parts.join(", ");
 }

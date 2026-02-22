@@ -9,15 +9,18 @@ describe("Equipment Polymorphic Schema", () => {
             primary_purpose: "SDWAN", additional_purposes: [],
             role: "WAN",
             specs: {
-                ngfw_throughput_mbps: 2000,
-                vpn_throughput_mbps: 5000,
+                rawFirewallThroughputMbps: 2000,
+                sdwanCryptoThroughputMbps: 5000,
+                advancedSecurityThroughputMbps: 0,
+                wanPortCount: 4,
+                lanPortCount: 4,
             },
         };
         const result = EquipmentSchema.safeParse(wanData);
         expect(result.success).toBe(true);
         if (result.success) {
             expect(result.data.role).toBe("WAN");
-            expect(result.data.specs).toHaveProperty("ngfw_throughput_mbps");
+            expect(result.data.specs).toHaveProperty("rawFirewallThroughputMbps");
         }
     });
 
@@ -29,19 +32,20 @@ describe("Equipment Polymorphic Schema", () => {
             primary_purpose: "LAN", additional_purposes: [],
             role: "LAN",
             specs: {
-                switching_capacity_gbps: 56,
-                poe_budget_watts: 370,
                 accessPortCount: 24,
+                accessPortType: '1G-Copper',
+                poeBudgetWatts: 370,
+                poeStandard: 'PoE+',
                 uplinkPortCount: 4,
-                accessPortType: '1G',
-                uplinkPortType: '10G',
+                uplinkPortType: '10G-Fiber',
+                isStackable: false,
             },
         };
         const result = EquipmentSchema.safeParse(lanData);
         expect(result.success).toBe(true);
         if (result.success) {
             expect(result.data.role).toBe("LAN");
-            expect(result.data.specs).toHaveProperty("switching_capacity_gbps");
+            expect(result.data.specs).toHaveProperty("accessPortType");
         }
     });
 
@@ -53,16 +57,18 @@ describe("Equipment Polymorphic Schema", () => {
             primary_purpose: "WLAN", additional_purposes: [],
             role: "WLAN",
             specs: {
-                wifi_standard: "Wi-Fi 6",
-                radios: "2.4 GHz, 5 GHz",
-                mimo: "4x4",
+                wifiStandard: "Wi-Fi 6",
+                mimoBandwidth: "4x4",
+                powerDrawWatts: 15,
+                uplinkType: "1G-Copper",
+                environment: "Indoor"
             },
         };
         const result = EquipmentSchema.safeParse(wlanData);
         expect(result.success).toBe(true);
         if (result.success) {
             expect(result.data.role).toBe("WLAN");
-            expect(result.data.specs).toHaveProperty("wifi_standard");
+            expect(result.data.specs).toHaveProperty("wifiStandard");
         }
     });
 
@@ -73,14 +79,18 @@ describe("Equipment Polymorphic Schema", () => {
             vendor_id: "cisco_catalyst",
             primary_purpose: "SDWAN", additional_purposes: [],
             specs: {
-                ngfw_throughput_mbps: 1000,
+                rawFirewallThroughputMbps: 1000,
+                sdwanCryptoThroughputMbps: 0,
+                advancedSecurityThroughputMbps: 0,
+                wanPortCount: 2,
+                lanPortCount: 4,
             },
         };
         const result = EquipmentSchema.safeParse(legacyData);
         expect(result.success).toBe(true);
         if (result.success) {
             expect(result.data.role).toBe("WAN");
-            expect(result.data.specs).toHaveProperty("ngfw_throughput_mbps");
+            expect(result.data.specs).toHaveProperty("rawFirewallThroughputMbps");
         }
     });
 

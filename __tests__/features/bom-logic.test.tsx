@@ -44,7 +44,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
         items: [
             { service_id: "managed_lan", inclusion_type: "required", enabled_features: [] }
         ],
-        throughput_basis: "vpn_throughput_mbps"
+        throughput_basis: "sdwanCryptoThroughputMbps"
     };
 
     const mockServices: Service[] = [
@@ -139,5 +139,173 @@ describe("BOM Engine - Extended Logic Rules", () => {
 
         // With 100 users, dividing by 24 (via rule) = 4.16, ceiling should be 5.
         expect(bom.items[0].quantity).toBe(5);
+    });
+
+    it("overrides throughput overhead with set_parameter rule", () => {
+        const site: Site = {
+            id: "site3",
+            name: "Test Overhead",
+            address: "",
+            userCount: 10,
+            bandwidthDownMbps: 100,
+            bandwidthUpMbps: 10,
+            redundancyModel: "Single CPE",
+            wanLinks: 1,
+            lanPorts: 0,
+            poePorts: 0,
+            indoorAPs: 0,
+            outdoorAPs: 0,
+            primaryCircuit: "DIA",
+        };
+
+        const rules: BOMLogicRule[] = [
+            {
+                id: "rOverhead",
+                name: "High Overhead Security",
+                priority: 100,
+                condition: { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                actions: [
+                    { type: "set_parameter", targetId: "throughput_overhead_mbps", actionValue: 500 }
+                ]
+            }
+        ];
+
+        // Total required = 100 + 10 + 500 = 610 Mbps.
+        // We'll use managed_sdwan for this test to check throughput logic.
+        const sdwanServices: Service[] = [
+            {
+                id: "managed_sdwan",
+                name: "Managed SD-WAN",
+                short_description: "",
+                detailed_description: "",
+                active: true,
+                service_options: [],
+                caveats: [], assumptions: []
+            }
+        ];
+        const sdwanPackage: Package = {
+            ...mockPackage,
+            items: [{ service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [] }]
+        };
+        const sdwanCatalog: Equipment[] = [
+            {
+                id: "wan_500",
+                model: "WAN 500",
+                vendor_id: "meraki",
+                role: "WAN", primary_purpose: "SDWAN", additional_purposes: [], active: true, status: "Supported",
+                specs: {
+                    sdwanCryptoThroughputMbps: 500,
+                    rawFirewallThroughputMbps: 0,
+                    advancedSecurityThroughputMbps: 0,
+                    wanPortCount: 2,
+                    lanPortCount: 4
+                }
+            },
+            {
+                id: "wan_1000",
+                model: "WAN 1000",
+                vendor_id: "meraki",
+                role: "WAN", primary_purpose: "SDWAN", additional_purposes: [], active: true, status: "Supported",
+                specs: {
+                    sdwanCryptoThroughputMbps: 1000,
+                    rawFirewallThroughputMbps: 0,
+                    advancedSecurityThroughputMbps: 0,
+                    wanPortCount: 2,
+                    lanPortCount: 4
+                }
+            }
+        ];
+
+        const bom = calculateBOM({
+            projectId: "proj3",
+            sites: [site],
+            selectedPackage: sdwanPackage,
+            services: sdwanServices,
+            siteTypes: mockSiteTypes,
+            equipmentCatalog: sdwanCatalog,
+            rules: rules
+        });
+
+        // 610 Mbps needs the WAN 1000
+        expect(bom.items[0].itemId).toBe("wan_1000");
+    });
+
+    it("sets cpe_quantity to 2 when redundancyModel contains 'dual'", () => {
+        const site: Site = {
+            id: "site4",
+            name: "Test HA",
+            address: "",
+            userCount: 0,
+            bandwidthDownMbps: 100,
+            bandwidthUpMbps: 10,
+            redundancyModel: "Dual CPE", // Contains 'dual'
+            wanLinks: 2,
+            lanPorts: 0,
+            poePorts: 0,
+            indoorAPs: 0,
+            outdoorAPs: 0,
+            primaryCircuit: "DIA",
+        };
+
+        const rules: BOMLogicRule[] = [
+            {
+                id: "rHA",
+                name: "Dual CPE Rule",
+                priority: 100,
+                condition: {
+                    "and": [
+                        { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                        { "contains": [{ "var": "site.redundancyModel" }, "dual"] }
+                    ]
+                },
+                actions: [
+                    { type: "set_parameter", targetId: "cpe_quantity", actionValue: 2 }
+                ]
+            }
+        ];
+
+        const sdwanServices: Service[] = [
+            {
+                id: "managed_sdwan",
+                name: "Managed SD-WAN",
+                short_description: "",
+                detailed_description: "",
+                active: true,
+                service_options: [],
+                caveats: [], assumptions: []
+            }
+        ];
+        const sdwanPackage: Package = {
+            ...mockPackage,
+            items: [{ service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [] }]
+        };
+        const sdwanCatalog: Equipment[] = [
+            {
+                id: "wan_basic",
+                model: "WAN Basic",
+                vendor_id: "meraki",
+                role: "WAN", primary_purpose: "SDWAN", additional_purposes: [], active: true, status: "Supported",
+                specs: {
+                    sdwanCryptoThroughputMbps: 1000,
+                    rawFirewallThroughputMbps: 0,
+                    advancedSecurityThroughputMbps: 0,
+                    wanPortCount: 2,
+                    lanPortCount: 4
+                }
+            }
+        ];
+
+        const bom = calculateBOM({
+            projectId: "proj4",
+            sites: [site],
+            selectedPackage: sdwanPackage,
+            services: sdwanServices,
+            siteTypes: mockSiteTypes,
+            equipmentCatalog: sdwanCatalog,
+            rules: rules
+        });
+
+        // Quantity should be 2 because of the parameter
+        expect(bom.items[0].quantity).toBe(2);
     });
 });

@@ -2,7 +2,7 @@
 import { EquipmentSchema } from '@/src/lib/types';
 
 describe('LAN Switch Specifications Schema', () => {
-    it('successfully validates a Catalyst 9200 configuration with all new fields', () => {
+    it('successfully validates a Catalyst 9200 configuration with refined physical fields', () => {
         const validCatalyst = {
             id: 'cisco_catalyst_9200l_24p_4g',
             model: 'C9200L-24P-4G',
@@ -13,44 +13,39 @@ describe('LAN Switch Specifications Schema', () => {
             family: 'Catalyst 9200',
             description: 'Catalyst 9200L 24-port PoE+, 4 x 1G, Network Essentials',
             specs: {
-                ports: 24,
-                poe_budget: 370,
-                rack_units: 1,
-                mounting_options: ['Rack'],
-                stacking_supported: true,
-                stacking_bandwidth_gbps: 80,
-                forwarding_rate_mpps: 41.66,
-                switching_capacity_gbps: 56,
-                primary_power_supply: 'PWR-C5-600WAC',
-                secondary_power_supply: 'n/a',
-                poe_capabilities: 'PoE+',
-                power_load_max_watts: 450
+                accessPortCount: 24,
+                accessPortType: '1G-Copper',
+                poeBudgetWatts: 370,
+                poeStandard: 'PoE+',
+                uplinkPortCount: 4,
+                uplinkPortType: '1G-Fiber',
+                isStackable: true
             }
         };
 
         const result = EquipmentSchema.safeParse(validCatalyst);
         expect(result.success).toBe(true);
         if (result.success) {
-            expect((result.data.specs as any).stacking_supported).toBe(true);
-            expect((result.data.specs as any).stacking_bandwidth_gbps).toBe(80);
-            expect((result.data.specs as any).forwarding_rate_mpps).toBe(41.66);
-            expect((result.data.specs as any).switching_capacity_gbps).toBe(56);
-            expect((result.data.specs as any).primary_power_supply).toBe('PWR-C5-600WAC');
+            expect((result.data.specs as any).isStackable).toBe(true);
+            expect((result.data.specs as any).accessPortCount).toBe(24);
+            expect((result.data.specs as any).poeBudgetWatts).toBe(370);
+            expect((result.data.specs as any).poeStandard).toBe('PoE+');
         }
     });
 
-    it('works with minimal fields for backward compatibility', () => {
-        const minimalDevice = {
-            id: 'generic_switch',
+    it('fails with legacy fields no longer in schema', () => {
+        const legacyDevice = {
+            id: 'legacy_switch',
             model: 'Generic 1G',
             vendor_id: 'cisco_catalyst',
             primary_purpose: "LAN", additional_purposes: [],
             specs: {
-                ports: 8
+                ports: 8,
+                switching_capacity_gbps: 56
             }
         };
 
-        const result = EquipmentSchema.safeParse(minimalDevice);
-        expect(result.success).toBe(true);
+        const result = EquipmentSchema.safeParse(legacyDevice);
+        expect(result.success).toBe(false);
     });
 });

@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { EQUIPMENT_PURPOSES } from "@/src/lib/types";
 import { MetadataService } from "@/src/lib/firebase";
@@ -8,7 +7,7 @@ import { MetadataService } from "@/src/lib/firebase";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -44,7 +43,7 @@ export async function POST(req: NextRequest) {
       1. For Meraki Switches (MS Series): Set "performance_rating" to "Wire Rate".
       2. For Meraki Switches: Extract SFP/SFP+ uplink module compatibility if listed.
       3. For Meraki Switches: Extract power supply part numbers and PoE budgets.
-      4. For Meraki Switches: If it's an MX Security appliance, use the previous logic: Look at "NGFW Throughput" for ngfw_throughput_mbps, etc.
+      4. For Meraki Switches: If it's an MX Security appliance, look at "Stateful Firewall Throughput" for rawFirewallThroughputMbps, "VPN Throughput" for sdwanCryptoThroughputMbps, and "Advanced Security Throughput" for advancedSecurityThroughputMbps.
             `
         : `
       1. Extract performance metrics as found in documentation.
@@ -55,36 +54,38 @@ export async function POST(req: NextRequest) {
       Your task is to extract technical specifications for ALL equipment models listed in the provided datasheet.
       
       Target Vendor: ${vendorId}
-      ${userSelectedPurposes && userSelectedPurposes.length > 0 ? `The items in this document are categorized for the following purposes: ${userSelectedPurposes.join(", ")}. Please prioritize extracting technical specs.` : ''}
+      ${userSelectedPurposes && userSelectedPurposes.length > 0 ? `HINT: The items in this document likely fall under: ${userSelectedPurposes.join(", ")}. However, prioritize the actual configuration and role found in the datasheet.` : ''}
       
       The datasheet may contain multiple models in tables. Please extract each unique model as a separate object.
       Return a JSON array of objects adhering to this schema:
       {
         "items": [
           {
-            "model": "Model Name (e.g. C9200-24T)",
+            "model": "Model Name (e.g. C9200-24T, MX85)",
             "description": "Short description",
-            "primary_purpose": "LAN",
-            "additional_purposes": [],
-            "family": "Product Family (e.g. Catalyst 9200)",
+            "primary_purpose": "SDWAN | LAN | WLAN | Security",
+            "additional_purposes": ["SDWAN", "Security", etc],
+            "family": "Product Family (e.g. Catalyst 9200, Meraki MX)",
             "specs": {
-              "performance_rating": "Wire Rate",
-              "ports": Number,
-              "poe_budget": Number,
+              "performance_rating": "Wire Rate | etc",
+              "ports": Number (Total),
+              "poe_budget": Number (Watts),
+              "wanPortCount": Number (WAN-dedicated interfaces),
+              "lanPortCount": Number (LAN-dedicated interfaces),
+              "accessPortCount": Number (LAN access ports),
+              "uplinkPortCount": Number (Uplink/SFP ports),
               "poe_capabilities": String (e.g. "PoE+", "UPOE"),
-              "wan_interfaces_desc": String,
-              "lan_interfaces_desc": String,
               "rack_units": Number,
               "stacking_supported": Boolean,
-              "stacking_bandwidth_gbps": Number,
+              "wifi_standard": "Wi-Fi 6 | Wi-Fi 6E | Wi-Fi 7",
+              "rawFirewallThroughputMbps": Number,
+              "sdwanCryptoThroughputMbps": Number,
+              "advancedSecurityThroughputMbps": Number,
               "compatible_uplink_modules": [
                 { "part_number": String, "description": String, "ports": Number, "speed": String }
               ],
               "compatible_power_supplies": [
                 { "part_number": String, "description": String, "wattage": Number, "poe_budget": Number }
-              ],
-              "compatible_stacking_options": [
-                { "part_number": String, "description": String, "length_cm": Number }
               ]
             }
           }
@@ -93,7 +94,11 @@ export async function POST(req: NextRequest) {
 
       CRITICAL INSTRUCTIONS:
       ${vendorSpecificInstructions}
-      6. Return ONLY the JSON object. No markdown.
+      6. MAPPING THROUGHPUT METRICS:
+         - rawFirewallThroughputMbps: Plain stateful firewall / NAT / Forwarding. (Used for DIA-only sites with no advanced security or tunnels).
+         - sdwanCryptoThroughputMbps: IPsec + SD-WAN routing. (Used for sites sending traffic to a Hub/SASE where security is handled off-box).
+         - advancedSecurityThroughputMbps: IPsec + SD-WAN + IDS/IPS/Malware. (Used for sites doing on-box advanced threat protection).
+      7. Return ONLY the JSON object. No markdown.
     `;
 
     const result = await model.generateContent([
@@ -116,18 +121,19 @@ export async function POST(req: NextRequest) {
 
     try {
       const parsedResponse = JSON.parse(jsonString);
-      const items = parsedResponse.items || [parsedResponse]; // Fallback to single object if not in array
+      const items = parsedResponse.items || (Array.isArray(parsedResponse) ? parsedResponse : [parsedResponse]);
 
-      const finalItems = items.map((item: any) => {
-        const activeId = `${vendorId}_${item.model.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}`;
-        const finalPurpose = (userSelectedPurposes && userSelectedPurposes.length > 0) ? userSelectedPurposes : (item.purpose || (item.primary_purpose ? [item.primary_purpose, ...(item.additional_purposes || [])] : ["LAN"]));
+      const finalItems = items.map((item: unknown) => {
+        const itemObj = item as Record<string, unknown>;
+        const modelName = String(itemObj.model || "");
+        const activeId = `${vendorId}_${modelName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}`;
 
-        const ROLE_MAP: Record<string, string> = { "SDWAN": "WAN", "LAN": "LAN", "WLAN": "WLAN", "Security": "SECURITY" };
-        const primary = finalPurpose.find((p: string) => ROLE_MAP[p]) || finalPurpose[0] || "LAN";
-        const additional = finalPurpose.filter((p: string) => p !== primary);
+        // If Gemini didn't provide purposes, fallback to user selection or LAN
+        const primary = (itemObj.primary_purpose as string) || (userSelectedPurposes?.[0] || "LAN");
+        const additional = (itemObj.additional_purposes as string[]) || (userSelectedPurposes?.length > 1 ? userSelectedPurposes.slice(1) : []);
 
         return {
-          ...item,
+          ...itemObj,
           id: activeId,
           vendor_id: vendorId,
           primary_purpose: primary,

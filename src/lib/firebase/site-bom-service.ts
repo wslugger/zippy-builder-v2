@@ -15,11 +15,13 @@ export const SiteBOMService = {
         let ports: number | undefined;
 
         if (equipment.role === 'WAN') {
-            throughput = equipment.specs.vpn_throughput_mbps ?? equipment.specs.ngfw_throughput_mbps;
-            ports = (equipment.specs.wanPortCount || 0) + (equipment.specs.lanPortCount || 0);
+            const rawSpecs = equipment.specs as Record<string, unknown>;
+            throughput = Number(rawSpecs.sdwanCryptoThroughputMbps ?? rawSpecs.rawFirewallThroughputMbps);
+            ports = Number(rawSpecs.wanPortCount || 0) + Number(rawSpecs.lanPortCount || 0);
         } else if (equipment.role === 'LAN') {
-            throughput = equipment.specs.switching_capacity_gbps;
-            ports = equipment.specs.accessPortCount || 0;
+            const rawSpecs = equipment.specs as Record<string, unknown>;
+            throughput = Number(rawSpecs.accessPortCount || 0); // Using port count as performance proxy for LAN in simple summary
+            ports = Number(rawSpecs.accessPortCount || 0);
         }
 
         const snapshot: EmbeddedEquipmentSnapshot = {

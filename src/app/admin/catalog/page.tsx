@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Equipment } from "@/src/lib/types";
+import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES } from "@/src/lib/types";
 import { useEquipment } from "@/src/hooks/useEquipment";
 import EquipmentTable from "@/src/components/admin/EquipmentTable";
 import EquipmentFilters from "@/src/components/admin/EquipmentFilters";
@@ -20,6 +20,13 @@ export default function CatalogPage() {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<Equipment | null>(null);
+
+    // Bulk Edit State
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkVendor, setBulkVendor] = useState<string>("");
+    const [bulkPurpose, setBulkPurpose] = useState<string>("");
+    const [bulkStatus, setBulkStatus] = useState<string>("");
+    const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
     // Filter Logic
     const filteredData = data.filter((item) => {
@@ -60,6 +67,12 @@ export default function CatalogPage() {
 
             if (res.ok) {
                 fetchData();
+                // Remove from selection if it was selected
+                const newSelection = new Set(selectedIds);
+                if (newSelection.has(id)) {
+                    newSelection.delete(id);
+                    setSelectedIds(newSelection);
+                }
             } else {
                 const error = await res.json();
                 alert(`Error: ${error.error}`);
@@ -68,6 +81,73 @@ export default function CatalogPage() {
             console.error(e);
             alert("Failed to delete equipment");
         }
+    };
+
+    const handleBulkUpdate = async () => {
+        if (selectedIds.size === 0) return;
+        if (!bulkVendor && !bulkPurpose && !bulkStatus) {
+            alert("Please select at least one field to update.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to update ${selectedIds.size} items?`)) return;
+
+        setIsBulkUpdating(true);
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const id of Array.from(selectedIds)) {
+            const item = data.find((d) => d.id === id);
+            if (!item) continue;
+
+            const updatedItem = { ...item };
+            if (bulkVendor) updatedItem.vendor_id = bulkVendor as Equipment["vendor_id"];
+            if (bulkStatus) updatedItem.status = bulkStatus as Equipment["status"];
+
+            if (bulkPurpose) {
+                (updatedItem as any).primary_purpose = bulkPurpose;
+                // Auto-infer role if strictly mapping to standard ones
+                const pLower = bulkPurpose.toLowerCase();
+                if (pLower.includes("wlan") || pLower.includes("ap")) {
+                    updatedItem.role = "WLAN";
+                } else if (pLower.includes("lan") || pLower.includes("switch")) {
+                    updatedItem.role = "LAN";
+                } else if (pLower.includes("sdwan") || pLower.includes("edge") || pLower.includes("gateway") || pLower.includes("router")) {
+                    updatedItem.role = "WAN";
+                }
+            }
+
+            try {
+                const res = await fetch("/api/admin/catalog/save", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ equipment: updatedItem }),
+                });
+                if (res.ok) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                }
+            } catch (e) {
+                errorCount++;
+            }
+
+            // Wait slightly to not overwhelm the API
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        setIsBulkUpdating(false);
+        if (errorCount > 0) {
+            alert(`Finished: ${successCount} successful, ${errorCount} failed.`);
+        } else {
+            alert(`Successfully updated ${successCount} items.`);
+        }
+
+        setSelectedIds(new Set());
+        setBulkVendor("");
+        setBulkPurpose("");
+        setBulkStatus("");
+        fetchData();
     };
 
     return (
@@ -101,7 +181,63 @@ export default function CatalogPage() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                 ) : (
-                    <EquipmentTable data={filteredData} onEdit={handleEdit} onDelete={handleDelete} />
+                    <>
+                        {selectedIds.size > 0 && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 flex flex-wrap items-center justify-between shadow-sm gap-4">
+                                <div className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                                    {selectedIds.size} item(s) selected
+                                </div>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <select
+                                        value={bulkVendor}
+                                        onChange={(e) => setBulkVendor(e.target.value)}
+                                        className="text-sm rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black py-1.5"
+                                    >
+                                        <option value="">-- Change Vendor --</option>
+                                        {VENDOR_IDS.map((v: string) => <option key={v} value={v}>{VENDOR_LABELS[v as keyof typeof VENDOR_LABELS]}</option>)}
+                                    </select>
+                                    <select
+                                        value={bulkPurpose}
+                                        onChange={(e) => setBulkPurpose(e.target.value)}
+                                        className="text-sm rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black py-1.5"
+                                    >
+                                        <option value="">-- Change Purpose --</option>
+                                        {EQUIPMENT_PURPOSES.map((p: string) => <option key={p} value={p}>{p}</option>)}
+                                    </select>
+                                    <select
+                                        value={bulkStatus}
+                                        onChange={(e) => setBulkStatus(e.target.value)}
+                                        className="text-sm rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black py-1.5"
+                                    >
+                                        <option value="">-- Change Status --</option>
+                                        <option value="Supported">Supported</option>
+                                        <option value="In development">In development</option>
+                                        <option value="Not supported">Not supported</option>
+                                    </select>
+                                    <button
+                                        onClick={handleBulkUpdate}
+                                        disabled={isBulkUpdating || (!bulkVendor && !bulkPurpose && !bulkStatus)}
+                                        className="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
+                                    >
+                                        {isBulkUpdating ? "Updating..." : "Apply Changes"}
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedIds(new Set())}
+                                        className="px-3 py-1.5 text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        <EquipmentTable
+                            data={filteredData}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                            selectedIds={selectedIds}
+                            onSelectionChange={setSelectedIds}
+                        />
+                    </>
                 )}
             </main>
 

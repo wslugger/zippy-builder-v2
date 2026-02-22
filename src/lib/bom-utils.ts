@@ -107,18 +107,15 @@ export function calculateCPEQuantity(site: Site, siteDef: SiteType): number {
     const siteModel = (site.redundancyModel || "").toLowerCase();
     const profileRedundancy = (siteDef.defaults.redundancy?.cpe || "").toLowerCase();
 
-    // 1. If SiteType is NOT generic, it should be the primary source of truth
+    // 1. Explicit Site-level override (e.g. from CSV)
+    if (isDualRedundancy(siteModel)) return 2;
+    if (siteModel.includes("single")) return 1;
+
+    // 2. If SiteType is NOT generic, it should be the primary hint for unspecified sites
     if (siteDef.id !== "generic" && profileRedundancy) {
         if (isDualRedundancy(profileRedundancy)) return 2;
         if (profileRedundancy.includes("single")) return 1;
     }
-
-    // 2. Explicit Site-level override (e.g. from CSV)
-    if (isDualRedundancy(siteModel)) return 2;
-    if (siteModel.includes("single")) return 1;
-
-    // 3. Last fallback: Check if profile has anything at all
-    if (isDualRedundancy(profileRedundancy)) return 2;
 
     return 1; // Default to single
 }
@@ -175,18 +172,39 @@ export function calculateThroughputOverhead(
 // ============================================================
 
 /**
+ * Detects the primary functional role of a device using fuzzy matching on 
+ * purpose strings (to handle Firestore's multi-purpose labels).
+ */
+export function getEquipmentRole(equip: Equipment): "WAN" | "LAN" | "WLAN" | "Other" {
+    const raw = equip as Record<string, unknown>;
+    const r = String(raw.role || "");
+    const pp = String(raw.primary_purpose || "");
+    const p = Array.isArray(raw.purpose) ? String(raw.purpose[0] || "") : String(raw.purpose || "");
+
+    if (r === "WAN" || pp.includes("SDWAN") || p.includes("SDWAN")) return "WAN";
+    if (r === "LAN" || pp.includes("LAN") || p.includes("LAN")) return "LAN";
+    if (r === "WLAN" || pp.includes("WLAN") || p.includes("WLAN")) return "WLAN";
+    return "Other";
+}
+
+/**
  * Sort key for equipment by performance (throughput or ports).
  * Used in both primary candidate ranking and fallback selection.
  */
 export function getEquipmentPerformanceValue(equip: Equipment, throughputBasis?: string): number {
-    if (equip.role === 'WAN') {
-        const throughputField = throughputBasis || "vpn_throughput_mbps";
-        return (equip.specs[throughputField as keyof typeof equip.specs] as number) ?? equip.specs.vpn_throughput_mbps ?? 0;
-    } else if (equip.role === 'LAN') {
-        return equip.specs.switching_capacity_gbps ??
-            (equip.specs.accessPortCount || 0);
-    } else if (equip.role === 'WLAN') {
-        return equip.specs.max_concurrent_clients ?? 0;
+    const role = getEquipmentRole(equip);
+
+    if (role === "WAN") {
+        const throughputField = throughputBasis || "sdwanCryptoThroughputMbps";
+        const specs = equip.specs as Record<string, unknown>;
+        const val = specs[throughputField] ?? specs.sdwanCryptoThroughputMbps ?? 0;
+        return Number(val) || 0;
+    } else if (role === "LAN") {
+        const specs = equip.specs as Record<string, unknown>;
+        return Number(specs.accessPortCount ?? 0);
+    } else if (role === "WLAN") {
+        const specs = equip.specs as Record<string, unknown>;
+        return Number(specs.powerDrawWatts ?? 0);
     }
     return 0;
 }
