@@ -140,6 +140,44 @@ export default function RuleEditorModal({
         actions: [],
     });
     const [saving, setSaving] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState("");
+
+    const handleAIGenerate = async () => {
+        if (!aiPrompt.trim()) return;
+        setIsGenerating(true);
+        try {
+            const res = await fetch('/api/copilot-suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contextType: 'bom_logic_rule',
+                    promptData: {
+                        instruction: aiPrompt,
+                        serviceCategory: serviceCategory,
+                    }
+                })
+            });
+
+            if (!res.ok) throw new Error("Failed to generate rule");
+
+            const generatedRule = await res.json();
+
+            setRule({
+                ...rule,
+                name: generatedRule.name || rule.name,
+                condition: generatedRule.condition || rule.condition,
+                actions: generatedRule.actions || rule.actions,
+            });
+            setShowRawJson(false); // Try to show visually first
+            setAiPrompt(""); // clear after setting
+        } catch (err) {
+            console.error(err);
+            alert("Failed to generate rule with AI");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     // Derived state for the visual builder
     const parsedSimpleConditions = useMemo(() => parseCondition(rule.condition), [rule.condition]);
@@ -258,6 +296,39 @@ export default function RuleEditorModal({
 
                 <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
                     <form id="rule-form" onSubmit={handleSave} className="space-y-8">
+                        {/* AI Assistant Section */}
+                        <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-5 shadow-sm">
+                            <h3 className="text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                                <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                Generate with AI
+                            </h3>
+                            <div className="flex gap-3 relative">
+                                <textarea
+                                    value={aiPrompt}
+                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                    placeholder="Describe the rule (e.g., 'Require mGig switches if there are any indoor APs')"
+                                    className="flex-1 border border-indigo-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 bg-white resize-none shadow-sm"
+                                    rows={2}
+                                    disabled={isGenerating}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleAIGenerate}
+                                    disabled={isGenerating || !aiPrompt.trim()}
+                                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+                                >
+                                    {isGenerating ? (
+                                        <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    ) : "Generate"}
+                                </button>
+                            </div>
+                        </div>
+
                         <section className="grid grid-cols-2 gap-6 p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
