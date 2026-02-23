@@ -105,7 +105,7 @@ export const PackageSchema = z.object({
     items: z.array(PackageItemSchema).default([]),
     collateral: z.array(PackageCollateralSchema).optional(),
     active: z.boolean().default(true),
-    throughput_basis: z.enum(["rawFirewallThroughputMbps", "sdwanCryptoThroughputMbps", "advancedSecurityThroughputMbps"]).optional(),
+    throughput_basis: z.enum(["rawFirewallThroughputMbps", "sdwanCryptoThroughputMbps", "advancedSecurityThroughputMbps"]).nullish().catch(undefined),
     throughput_overhead_mbps: z.number().optional(),
 });
 
