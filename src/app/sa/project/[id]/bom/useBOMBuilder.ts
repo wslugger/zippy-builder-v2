@@ -138,51 +138,66 @@ export function useBOMBuilder(): BOMBuilderState {
         async function loadData() {
             if (!projectId) return;
 
-            let p: Project | null;
-            if (projectId === "demo") {
-                const pkgs = await PackageService.getAllPackages();
-                const preferredPkg = pkgs.find((pk) => pk.id === "cost_centric") || pkgs[0];
-                p = {
-                    id: "demo",
-                    userId: "demo-user",
-                    name: "Demo Project",
-                    customerName: "Demo Corporation",
-                    description: "Automated test project for BOM troubleshooting.",
-                    status: "completed",
-                    currentStep: 5,
-                    selectedPackageId: preferredPkg?.id || "cost_centric",
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                } as Project;
-            } else {
-                p = await ProjectService.getProject(projectId);
-            }
+            try {
+                let p: Project | null = null;
+                if (projectId === "demo") {
+                    // Pre-emptively set demo project so UI doesn't hang on Loading state
+                    p = {
+                        id: "demo",
+                        userId: "demo-user",
+                        name: "Demo Project",
+                        customerName: "Demo Corporation",
+                        description: "Automated test project for BOM troubleshooting.",
+                        status: "completed",
+                        currentStep: 5,
+                        selectedPackageId: "cost_centric",
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    } as Project;
+                    setProject(p);
 
-            setProject(p);
+                    // Then load real packages to refine
+                    const pkgs = await PackageService.getAllPackages();
+                    const preferredPkg = pkgs.find((pk) => pk.id === "cost_centric") || pkgs[0];
+                    if (preferredPkg) {
+                        setPkg(preferredPkg);
+                        setProject(prev => prev ? { ...prev, selectedPackageId: preferredPkg.id } : prev);
+                    }
+                } else {
+                    p = await ProjectService.getProject(projectId);
+                    setProject(p);
 
-            if (p?.selectedPackageId) {
-                const pk = await PackageService.getPackageById(p.selectedPackageId);
-                setPkg(pk);
-            }
+                    if (p?.selectedPackageId) {
+                        const pk = await PackageService.getPackageById(p.selectedPackageId);
+                        setPkg(pk);
+                    }
+                }
 
-            const [allPkgs, svcs, eq, globalParams] = await Promise.all([
-                PackageService.getAllPackages(),
-                ServiceService.getAllServices(),
-                EquipmentService.getAllEquipment(),
-                getGlobalParameters(),
-            ]);
+                const [allPkgs, svcs, eq, globalParams] = await Promise.all([
+                    PackageService.getAllPackages().catch(() => []),
+                    ServiceService.getAllServices().catch(() => []),
+                    EquipmentService.getAllEquipment().catch(() => []),
+                    getGlobalParameters().catch(() => ({})),
+                ]);
 
-            setAllPackages(allPkgs);
-            setServices(svcs);
-            if (eq.length > 0) setCatalog(eq);
-            setGlobalParameters(globalParams);
+                setAllPackages(allPkgs);
+                setServices(svcs);
+                if (eq.length > 0) setCatalog(eq);
+                setGlobalParameters(globalParams);
 
-            const st = await SiteDefinitionService.getAllSiteDefinitions();
-            if (st.length === 0) {
-                const { ALL_SITE_TYPES } = await import("@/src/lib/seed-site-catalog");
-                setSiteTypes(ALL_SITE_TYPES);
-            } else {
-                setSiteTypes(st);
+                const st = await SiteDefinitionService.getAllSiteDefinitions().catch(() => []);
+                if (st.length === 0) {
+                    const { ALL_SITE_TYPES } = await import("@/src/lib/seed-site-catalog");
+                    setSiteTypes(ALL_SITE_TYPES);
+                } else {
+                    setSiteTypes(st);
+                }
+            } catch (error) {
+                console.error("Error in loadData:", error);
+                // Ensure we at least have some state if it fails
+                if (projectId === "demo" && !project) {
+                    setProject({ id: "demo", name: "Demo Project" } as Project);
+                }
             }
         }
 
