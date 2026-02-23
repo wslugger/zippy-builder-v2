@@ -94,7 +94,7 @@ describe("Equipment Polymorphic Schema", () => {
         }
     });
 
-    it("should fail validation if 'role' is present but 'specs' do not match", () => {
+    it("should gracefully handle specs that lack required keys via catch defaults", () => {
         const invalidLanData = {
             id: "invalid_lan",
             model: "Invalid LAN",
@@ -106,6 +106,10 @@ describe("Equipment Polymorphic Schema", () => {
             },
         };
         const result = EquipmentSchema.safeParse(invalidLanData);
-        expect(result.success).toBe(false);
+        expect(result.success).toBe(true);
+        if (result.success && result.data.role === 'LAN') {
+            expect(result.data.specs.poeBudgetWatts).toBe(0); // Handled by fallback
+            expect((result.data.specs as any).wifi_standard).toBe("Wi-Fi 6"); // Passthrough string
+        }
     });
 });

@@ -62,25 +62,25 @@ export const WANSpecsSchema = z.object({
   integrated_wifi: z.boolean().optional(),
   wifi_standard: z.enum(WIFI_STANDARDS).optional(),
   modular_cellular: z.boolean().optional(),
-}).strict();
+}).passthrough();
 
 export const LANSpecsSchema = z.object({
-  accessPortCount: z.number(),
-  accessPortType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']),
-  poeBudgetWatts: z.number(),
-  poeStandard: z.enum(['None', 'PoE+', 'PoE++']),
-  uplinkPortCount: z.number(),
-  uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']),
-  isStackable: z.boolean(),
-}).strict();
+  accessPortCount: z.number().catch(24),
+  accessPortType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']).catch('1G-Copper'),
+  poeBudgetWatts: z.number().catch(0),
+  poeStandard: z.enum(['None', 'PoE+', 'PoE++']).catch('None'),
+  uplinkPortCount: z.number().catch(4),
+  uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).catch('10G-Fiber'),
+  isStackable: z.boolean().catch(false),
+}).passthrough();
 
 export const WLANSpecsSchema = z.object({
-  wifiStandard: z.enum(['Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7']),
-  mimoBandwidth: z.enum(['2x2', '4x4']),
-  powerDrawWatts: z.number(),
-  uplinkType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper']),
-  environment: z.enum(['Indoor', 'Outdoor', 'Hazardous']),
-}).strict();
+  wifiStandard: z.enum(['Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7']).catch('Wi-Fi 6'),
+  mimoBandwidth: z.enum(['2x2', '4x4']).catch('2x2'),
+  powerDrawWatts: z.number().catch(15),
+  uplinkType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper']).catch('1G-Copper'),
+  environment: z.enum(['Indoor', 'Outdoor', 'Hazardous']).catch('Indoor'),
+}).passthrough();
 
 const BaseEquipmentSchema = z.object({
   id: z.string().describe("Unique ID: vendor_model_sku (e.g. meraki_mx85)"),

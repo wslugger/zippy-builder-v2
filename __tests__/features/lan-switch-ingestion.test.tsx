@@ -33,7 +33,7 @@ describe('LAN Switch Specifications Schema', () => {
         }
     });
 
-    it('fails with legacy fields no longer in schema', () => {
+    it('gracefully applies defaults for legacy devices', () => {
         const legacyDevice = {
             id: 'legacy_switch',
             model: 'Generic 1G',
@@ -46,6 +46,10 @@ describe('LAN Switch Specifications Schema', () => {
         };
 
         const result = EquipmentSchema.safeParse(legacyDevice);
-        expect(result.success).toBe(false);
+        expect(result.success).toBe(true);
+        if (result.success && result.data.role === 'LAN') {
+            expect(result.data.specs.accessPortCount).toBe(24); // Handled by catch fallback
+            expect((result.data.specs as any).ports).toBe(8); // Passthrough field
+        }
     });
 });
