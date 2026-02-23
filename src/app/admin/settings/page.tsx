@@ -403,7 +403,10 @@ export default function AdminSettingsPage() {
                                     </p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">Default Redundancy Factor</label>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Default Redundancy Factor</label>
+                                            <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">
+                                                The multiplier applied to equipment quantities when redundant/HA hardware is required.
+                                            </p>
                                             <input
                                                 type="number"
                                                 step="0.1"
@@ -413,7 +416,10 @@ export default function AdminSettingsPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">WAN Throughput Buffer (%)</label>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">WAN Throughput Buffer (%)</label>
+                                            <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">
+                                                Additional capacity buffer added to site bandwidth requirements when selecting WAN devices.
+                                            </p>
                                             <input
                                                 type="number"
                                                 value={draftConfig.calculationBaselines.wanThroughputBuffer}

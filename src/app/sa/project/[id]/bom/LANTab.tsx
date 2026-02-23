@@ -157,23 +157,7 @@ export function LANTab({
                         </select>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1">Uplink Speed</label>
-                        <select
-                            className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            value={selectedSite.uplinkPortSpeed || ""}
-                            onChange={(e) => handleSiteUpdate({ uplinkPortSpeed: e.target.value as Site["uplinkPortSpeed"] })}
-                        >
-                            <option value="">Any</option>
-                            <option value="1G-Copper">1G-Copper</option>
-                            <option value="1G-Fiber">1G-Fiber</option>
-                            <option value="10G-Copper">10G-Copper</option>
-                            <option value="10G-Fiber">10G-Fiber</option>
-                            <option value="25G-Fiber">25G-Fiber</option>
-                            <option value="40G-Fiber">40G-Fiber</option>
-                            <option value="100G-Fiber">100G-Fiber</option>
-                        </select>
-                    </div>
+
                     <div>
                         <label className="block text-xs font-medium text-slate-500 uppercase mb-1">Uplink Type</label>
                         <select

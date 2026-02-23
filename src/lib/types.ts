@@ -405,7 +405,6 @@ export const SiteSchema = z.object({
   secondaryCircuit: z.string().optional(),
   notes: z.string().optional(),
   accessPortSpeed: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']).optional(),
-  uplinkPortSpeed: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).optional(),
   uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).optional(),
   poeStandard: z.enum(['None', 'PoE+', 'PoE++']).optional(),
   requiredPoePorts: z.number().optional(),
@@ -439,7 +438,6 @@ export interface SystemParameterDefinition {
 
 export const SYSTEM_PARAMETERS: SystemParameterDefinition[] = [
   { id: 'defaultAccessSpeed', label: 'Default Access Speed', description: 'The default port speed for LAN access switches.', type: 'enum', options: ['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber'], defaultValue: '1G-Copper' },
-  { id: 'defaultUplinkSpeed', label: 'Default Uplink Speed', description: 'The default port speed for LAN switch uplinks.', type: 'enum', options: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'], defaultValue: '10G-Fiber' },
   { id: 'defaultUplinkType', label: 'Default Uplink Type', description: 'The default media type for LAN switch uplinks.', type: 'enum', options: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'], defaultValue: '10G-Fiber' },
   { id: 'poeStandard', label: 'PoE Standard', description: 'Required Power over Ethernet standard.', type: 'enum', options: ['None', 'PoE+', 'PoE++'], defaultValue: 'PoE+' },
   { id: 'maxPortUtilization', label: 'Max Port Utilization (%)', description: 'Target maximum utilization for switch ports before adding another switch.', type: 'number', defaultValue: 100 },
