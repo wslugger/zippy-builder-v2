@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSystemConfig } from '@/src/hooks/useSystemConfig';
-import { SystemConfig, SystemConfigSchema, SYSTEM_PARAMETERS, SystemParameterDefinition } from '@/src/lib/types';
+import { SystemConfig, SystemConfigSchema, SYSTEM_PARAMETERS, SystemParameterDefinition, BOMLogicRule } from '@/src/lib/types';
+import { useBOMRules } from "@/src/hooks/useBOMRules";
+import RuleList from "@/src/components/admin/bom-logic/RuleList";
+import RuleEditorModal from "@/src/components/admin/bom-logic/RuleEditorModal";
+import { BOMService } from "@/src/lib/firebase/bom-service";
 
 // Tab enum
 type Tab = 'general' | 'taxonomy' | 'bom_logic';
@@ -13,6 +17,13 @@ export default function AdminSettingsPage() {
     const [draftConfig, setDraftConfig] = useState<SystemConfig | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccessToast, setShowSuccessToast] = useState(false);
+
+    // Rules Management State
+    const { rules, loading: rulesLoading, refreshRules: loadRules } = useBOMRules();
+    const [seeding, setSeeding] = useState(false);
+    const [activeRuleCategory, setActiveRuleCategory] = useState<"managed_sdwan" | "managed_lan" | "managed_wifi">("managed_sdwan");
+    const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
+    const [ruleToEdit, setRuleToEdit] = useState<BOMLogicRule | null>(null);
 
     useEffect(() => {
         if (config) {
@@ -35,6 +46,45 @@ export default function AdminSettingsPage() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    // Rule Handlers
+    const handleSeedRules = async () => {
+        if (!confirm("This will overwrite existing rules with defaults. Are you sure?")) return;
+        setSeeding(true);
+        try {
+            const res = await fetch("/api/admin/seed");
+            const json = await res.json();
+            if (json.success) {
+                setShowSuccessToast(true);
+                setTimeout(() => setShowSuccessToast(false), 3000);
+                loadRules();
+            }
+        } catch (e) { console.error(e); }
+        setSeeding(false);
+    };
+
+    const handleSaveRule = async (rule: BOMLogicRule) => {
+        await BOMService.saveRule(rule);
+        setIsRuleModalOpen(false);
+        setRuleToEdit(null);
+        loadRules();
+    };
+
+    const handleDeleteRule = async (id: string) => {
+        if (!confirm("Delete this rule?")) return;
+        await BOMService.deleteRule(id);
+        loadRules();
+    };
+
+    const openCreateRule = () => {
+        setRuleToEdit(null);
+        setIsRuleModalOpen(true);
+    };
+
+    const openEditRule = (rule: BOMLogicRule) => {
+        setRuleToEdit(rule);
+        setIsRuleModalOpen(true);
     };
 
     const handleArrayChange = (category: 'taxonomy', field: string, value: string) => {
@@ -345,30 +395,119 @@ export default function AdminSettingsPage() {
 
                         {/* BOM LOGIC TAB */}
                         {activeTab === 'bom_logic' && (
-                            <>
-                                <p className="text-sm text-gray-500 -mt-2 mb-6">
-                                    These calculation baselines directly impact the BOM Engine output.
-                                </p>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">Default Redundancy Factor</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={draftConfig.calculationBaselines.defaultRedundancyFactor}
-                                        onChange={(e) => handleNumberChange('calculationBaselines', 'defaultRedundancyFactor', e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            <div className="space-y-10">
+                                <section>
+                                    <h2 className="text-xl font-bold text-slate-800 mb-2">Calculation Baselines</h2>
+                                    <p className="text-sm text-slate-500 mb-6">
+                                        Foundational factors and buffers that impact every device selection.
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Default Redundancy Factor</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={draftConfig.calculationBaselines.defaultRedundancyFactor}
+                                                onChange={(e) => handleNumberChange('calculationBaselines', 'defaultRedundancyFactor', e.target.value)}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">WAN Throughput Buffer (%)</label>
+                                            <input
+                                                type="number"
+                                                value={draftConfig.calculationBaselines.wanThroughputBuffer}
+                                                onChange={(e) => handleNumberChange('calculationBaselines', 'wanThroughputBuffer', e.target.value)}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <hr className="border-slate-100" />
+
+                                <section>
+                                    <div className="flex justify-between items-end mb-6">
+                                        <div>
+                                            <h2 className="text-xl font-bold text-slate-800 mb-2">BOM Logic Rules</h2>
+                                            <p className="text-sm text-slate-500">
+                                                Conditional rules that drive equipment selection based on site specs.
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleSeedRules}
+                                                disabled={seeding}
+                                                className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                                            >
+                                                {seeding ? 'Seeding...' : 'Reset Defaults'}
+                                            </button>
+                                            <button
+                                                onClick={openCreateRule}
+                                                className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                            >
+                                                + New Rule
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Sub-tabs for Rules */}
+                                    <div className="flex space-x-1 border-b border-slate-100 mb-6">
+                                        {[
+                                            { id: "managed_sdwan", label: "SD-WAN" },
+                                            { id: "managed_lan", label: "LAN" },
+                                            { id: "managed_wifi", label: "WLAN" }
+                                        ].map((tab) => (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => setActiveRuleCategory(tab.id as any)}
+                                                className={`px-4 py-2 font-bold text-xs tracking-tight transition-all rounded-t-xl border-t border-l border-r
+                                                    ${activeRuleCategory === tab.id
+                                                        ? "bg-white border-slate-100 text-blue-600 -mb-px"
+                                                        : "text-slate-400 border-transparent bg-transparent hover:text-slate-600"}
+                                                `}
+                                            >
+                                                {tab.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <RuleList
+                                        rules={rules.filter(r => JSON.stringify(r.condition || {}).includes(activeRuleCategory))}
+                                        onEdit={openEditRule}
+                                        onDelete={handleDeleteRule}
                                     />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">WAN Throughput Buffer (%)</label>
-                                    <input
-                                        type="number"
-                                        value={draftConfig.calculationBaselines.wanThroughputBuffer}
-                                        onChange={(e) => handleNumberChange('calculationBaselines', 'wanThroughputBuffer', e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    />
-                                </div>
-                            </>
+                                </section>
+
+                                <hr className="border-slate-100" />
+
+                                <section>
+                                    <h2 className="text-xl font-bold text-slate-800 mb-2">Global Parameters</h2>
+                                    <p className="text-sm text-slate-500 mb-6">
+                                        Fallbacks and thresholds used when no specific rules apply.
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+                                        {SYSTEM_PARAMETERS.map(paramDef => (
+                                            <div key={paramDef.id} className="group">
+                                                <div className="flex items-baseline justify-between mb-1">
+                                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">{paramDef.label}</label>
+                                                    <span className="text-[9px] text-slate-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity">{paramDef.id}</span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">{paramDef.description}</p>
+                                                {renderBOMParameterInput(paramDef)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <RuleEditorModal
+                                    isOpen={isRuleModalOpen}
+                                    ruleToEdit={ruleToEdit}
+                                    serviceCategory={activeRuleCategory}
+                                    onClose={() => setIsRuleModalOpen(false)}
+                                    onSave={handleSaveRule}
+                                />
+                            </div>
                         )}
                     </div>
                 </div>
@@ -398,7 +537,7 @@ export default function AdminSettingsPage() {
                         )}
                     </button>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }
