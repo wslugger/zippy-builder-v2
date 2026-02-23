@@ -16,6 +16,12 @@ export default function AdminLayout({
                             </div>
                             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                                 <Link
+                                    href="/admin/dashboard"
+                                    className="border-transparent hover:border-blue-500 text-zinc-900 dark:text-zinc-100 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
+                                >
+                                    Dashboard
+                                </Link>
+                                <Link
                                     href="/admin/catalog"
                                     className="border-transparent hover:border-blue-500 text-zinc-900 dark:text-zinc-100 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
                                 >
