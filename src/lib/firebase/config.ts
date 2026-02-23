@@ -49,3 +49,4 @@ export const PROJECTS_COLLECTION = "projects";
 export const DEFAULTS_COLLECTION = "system_defaults";
 export const SITE_DEFINITIONS_COLLECTION = "site_definitions";
 export const BOM_RULES_COLLECTION = "bom_rules";
+export const SYSTEM_CONFIG_COLLECTION = "system_config";

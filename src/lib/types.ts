@@ -507,3 +507,23 @@ export interface BOMEngineInput {
   globalParameters?: Record<string, any>;
 }
 
+export const SystemConfigSchema = z.object({
+  taxonomy: z.object({
+    regions: z.array(z.string()).default([]),
+    siteTypes: z.array(z.string()).default([]),
+    vendors: z.array(z.string()).default([]),
+  }).catchall(z.any()).default({ regions: [], siteTypes: [], vendors: [] }),
+  calculationBaselines: z.object({
+    defaultRedundancyFactor: z.number().default(1),
+    wanThroughputBuffer: z.number().default(0),
+  }).catchall(z.any()).default({ defaultRedundancyFactor: 1, wanThroughputBuffer: 0 }),
+  defaults: z.object({
+    currency: z.string().default('USD'),
+    defaultTermMonths: z.number().default(36),
+  }).catchall(z.any()).default({ currency: 'USD', defaultTermMonths: 36 }),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+}).catchall(z.any());
+
+export type SystemConfig = z.infer<typeof SystemConfigSchema>;
+
