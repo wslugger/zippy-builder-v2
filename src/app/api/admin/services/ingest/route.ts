@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { MetadataService } from "@/src/lib/firebase";
+import { SystemConfigService } from "@/src/lib/firebase/system-config-service";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "File is required" }, { status: 400 });
         }
 
-        const metadata = await MetadataService.getCatalogMetadata("service_catalog");
-        const activeCategories = metadata?.fields?.service_categories?.values || [
+        const config = await SystemConfigService.getConfig();
+        const activeCategories = (config?.taxonomy as Record<string, string[]>)?.service_categories || [
             "Connectivity", "Cybersecurity", "Cloud", "Professional Services", "Managed Services"
         ];
 

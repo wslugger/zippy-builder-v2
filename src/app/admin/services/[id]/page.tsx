@@ -2,12 +2,12 @@
 
 import { useEffect, useState, use } from "react";
 import { Service, ServiceItem, SERVICE_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
-import { ServiceService, MetadataService, SystemDefaultsService } from "@/src/lib/firebase";
+import { ServiceService, SystemDefaultsService } from "@/src/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ServiceItemForm from "@/src/components/admin/ServiceItemForm";
 import ServiceOptionList from "@/src/components/admin/ServiceOptionList";
-import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 
 export default function ServiceEditorPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
@@ -30,8 +30,8 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState<"general" | "service-options">("general");
 
-    const { metadata } = useCatalogMetadata("service_catalog");
-    const categories: string[] = metadata?.fields?.service_categories?.values || [...DEFAULT_CATEGORIES];
+    const { config, updateConfigAsync } = useSystemConfig();
+    const categories: string[] = (config?.taxonomy as Record<string, string[]>)?.service_categories || [...DEFAULT_CATEGORIES];
 
     useEffect(() => {
         if (!isNew) {
@@ -68,13 +68,17 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
                 metadata: { ...service.metadata, category: finalCategory }
             } as Service;
 
-            // If category is new, add it to master metadata
+            let taxonomyUpdated = false;
+            const updatedTaxonomy: Record<string, string[]> = { ...(config?.taxonomy as Record<string, string[]> || {}) };
+
+            // If category is new, add it to taxonomy
             if (finalCategory && !categories.includes(finalCategory)) {
-                await MetadataService.updateCatalogField("service_catalog", "service_categories", finalCategory);
+                updatedTaxonomy.service_categories = [...(updatedTaxonomy.service_categories || []), finalCategory];
+                taxonomyUpdated = true;
             }
 
             // Also check for new design option categories
-            const designCategories = metadata?.fields?.design_option_categories?.values || [];
+            const designCategories = updatedTaxonomy.design_option_categories || [];
             const newDesignCategories = new Set<string>();
             finalService.service_options?.forEach(opt => {
                 opt.design_options?.forEach(design => {
@@ -84,8 +88,13 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
                 });
             });
 
-            for (const newCat of Array.from(newDesignCategories)) {
-                await MetadataService.updateCatalogField("service_catalog", "design_option_categories", newCat);
+            if (newDesignCategories.size > 0) {
+                updatedTaxonomy.design_option_categories = [...designCategories, ...Array.from(newDesignCategories)];
+                taxonomyUpdated = true;
+            }
+
+            if (taxonomyUpdated) {
+                await updateConfigAsync({ taxonomy: updatedTaxonomy as any });
             }
 
             await ServiceService.saveService(finalService);

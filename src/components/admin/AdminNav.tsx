@@ -92,9 +92,8 @@ export default function AdminNav() {
     ].includes(pathname);
     const isSettingsActive = [
         '/admin/ingest',
-        '/admin/metadata',
-        '/admin/bom-logic',
-        '/admin/bom-parameters'
+        '/admin/settings',
+        '/admin/bom-logic'
     ].some(path => pathname.startsWith(path));
 
     return (
@@ -127,9 +126,8 @@ export default function AdminNav() {
                                 active={isSettingsActive}
                                 items={[
                                     { href: '/admin/ingest', label: 'Ingestion' },
-                                    { href: '/admin/metadata', label: 'Metadata' },
+                                    { href: '/admin/settings', label: 'Settings Hub' },
                                     { href: '/admin/bom-logic', label: 'BOM Logic' },
-                                    { href: '/admin/bom-parameters', label: 'Global Params' },
                                 ]}
                             />
                         </div>

@@ -12,6 +12,13 @@ const mockFeatures: TechnicalFeature[] = [
 const mockServices: Service[] = [];
 const mockPackages: Package[] = [];
 
+jest.mock('@/src/hooks/useSystemConfig', () => ({
+    useSystemConfig: () => ({
+        config: { taxonomy: { feature_categories: ['Routing', 'Security', 'General'] } },
+        isLoading: false,
+    })
+}));
+
 describe('FeatureList Search', () => {
     it('filters features by name correctly', () => {
         render(

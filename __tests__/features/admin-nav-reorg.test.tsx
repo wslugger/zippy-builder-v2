@@ -42,11 +42,10 @@ describe('Admin Navigation & Hub', () => {
 
             // Logic section
             expect(screen.getByText('BOM Logic')).toBeInTheDocument();
-            expect(screen.getByText('Global Params')).toBeInTheDocument();
 
             // Data section
             expect(screen.getByText('Ingestion')).toBeInTheDocument();
-            expect(screen.getByText('Metadata')).toBeInTheDocument();
+            expect(screen.getByText('Settings Hub')).toBeInTheDocument();
             expect(screen.getByText('Features')).toBeInTheDocument();
             expect(screen.getByText('Site Types')).toBeInTheDocument();
 

@@ -41,6 +41,13 @@ const mockPackages: Package[] = [
     }
 ];
 
+jest.mock('@/src/hooks/useSystemConfig', () => ({
+    useSystemConfig: () => ({
+        config: { taxonomy: { feature_categories: ['Routing', 'Security', 'General'] } },
+        isLoading: false,
+    })
+}));
+
 describe('FeatureList Improvements', () => {
     it('shows linked items when usage badge is clicked', () => {
         render(

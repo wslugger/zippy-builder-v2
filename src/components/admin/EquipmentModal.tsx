@@ -3,8 +3,8 @@
 
 import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES as DEFAULT_PURPOSES, CELLULAR_TYPES as DEFAULT_CELLULAR_TYPES, WIFI_STANDARDS as DEFAULT_WIFI_STANDARDS, EQUIPMENT_STATUSES as DEFAULT_STATUSES } from "@/src/lib/types";
 import { useState } from "react";
-import { EquipmentService, MetadataService } from "@/src/lib/firebase";
-import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { EquipmentService } from "@/src/lib/firebase";
+import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 import { getEquipmentRole } from "@/src/lib/bom-utils";
@@ -30,15 +30,16 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
     const [activeTab, setActiveTab] = useState<"details" | "json">("details");
     const [isSaving, setIsSaving] = useState(false);
 
-    const { metadata } = useCatalogMetadata("equipment_catalog");
+    const { config, updateConfigAsync } = useSystemConfig();
     const specs = formData.specs as any;
-    const purposes = metadata?.fields?.purposes?.values || DEFAULT_PURPOSES;
-    const cellularTypes = metadata?.fields?.cellular_types?.values || DEFAULT_CELLULAR_TYPES;
-    const wifiStandards = metadata?.fields?.wifi_standards?.values || DEFAULT_WIFI_STANDARDS;
-    const statuses = metadata?.fields?.statuses?.values || DEFAULT_STATUSES;
-    const mountingOptions = metadata?.fields?.mounting_options?.values || [];
-    const recommendedUseCases = metadata?.fields?.recommended_use_cases?.values || [];
-    const powerConnectorTypes = metadata?.fields?.power_connector_types?.values || [];
+    const taxonomy = (config?.taxonomy as Record<string, string[]>) || {};
+    const purposes = taxonomy.purposes || DEFAULT_PURPOSES;
+    const cellularTypes = taxonomy.cellular_types || DEFAULT_CELLULAR_TYPES;
+    const wifiStandards = taxonomy.wifi_standards || DEFAULT_WIFI_STANDARDS;
+    const statuses = taxonomy.statuses || DEFAULT_STATUSES;
+    const mountingOptions = taxonomy.mounting_options || [];
+    const recommendedUseCases = taxonomy.recommended_use_cases || [];
+    const powerConnectorTypes = taxonomy.power_connector_types || [];
 
     const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
     const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
@@ -81,15 +82,28 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                 { field: 'power_connector_types', value: specs.power_connector_type || "" }
             ];
 
+            let taxonomyUpdated = false;
+            const updatedTaxonomy = { ...taxonomy };
+
             for (const update of metadataUpdates) {
                 const values = Array.isArray(update.value) ? update.value : [update.value];
-                const existingValues = (metadata?.fields?.[update.field]?.values || []) as string[];
+                const existingValues = updatedTaxonomy[update.field] || [];
+                let fieldUpdated = false;
 
                 for (const val of values) {
                     if (val && !existingValues.includes(val)) {
-                        await MetadataService.updateCatalogField("equipment_catalog", update.field, val);
+                        existingValues.push(val);
+                        fieldUpdated = true;
                     }
                 }
+                if (fieldUpdated) {
+                    updatedTaxonomy[update.field] = existingValues;
+                    taxonomyUpdated = true;
+                }
+            }
+
+            if (taxonomyUpdated) {
+                await updateConfigAsync({ taxonomy: updatedTaxonomy as any });
             }
 
             await EquipmentService.saveEquipment(formData);

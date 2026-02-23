@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { SystemDefaultsService, ServiceService, FeatureService, PackageService, MetadataService, BOMService } from "@/src/lib/firebase";
+import { SystemDefaultsService, ServiceService, FeatureService, PackageService, BOMService } from "@/src/lib/firebase";
 
 export async function POST() {
     try {
         console.log("Snapshotting current database state as system defaults...");
 
         // Read the LIVE data from the database
-        const [services, features, packages, metadata, bomRules] = await Promise.all([
+        const [services, features, packages, bomRules] = await Promise.all([
             ServiceService.getAllServices(),
             FeatureService.getAllFeatures(),
             PackageService.getAllPackages(),
-            MetadataService.getAllCatalogMetadata(),
             BOMService.getAllRules(),
         ]);
 
@@ -19,13 +18,12 @@ export async function POST() {
             features,
             services,
             packages,
-            metadata,
             bomRules,
         });
 
         return NextResponse.json({
             success: true,
-            message: `Defaults set successfully! Snapshot contains ${services.length} services, ${features.length} features, ${packages.length} packages, and ${metadata.length} metadata catalogs.`
+            message: `Defaults set successfully! Snapshot contains ${services.length} services, ${features.length} features, ${packages.length} packages.`
         });
     } catch (error) {
         console.error("Set defaults error:", error);

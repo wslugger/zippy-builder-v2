@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { TechnicalFeature, EQUIPMENT_STATUSES } from "@/src/lib/types";
-import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 
@@ -26,7 +26,7 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
         }
     );
     const [saving, setSaving] = useState(false);
-    const { metadata: featureMetadata, loading: metadataLoading } = useCatalogMetadata("feature_catalog");
+    const { config, isLoading: metadataLoading } = useSystemConfig();
 
     const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
     const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
@@ -115,8 +115,8 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
     };
 
     const categories = useMemo(() => {
-        return featureMetadata?.fields?.feature_categories?.values || [];
-    }, [featureMetadata]);
+        return (config?.taxonomy as Record<string, string[]>)?.feature_categories || [];
+    }, [config]);
 
     if (!isOpen) return null;
 

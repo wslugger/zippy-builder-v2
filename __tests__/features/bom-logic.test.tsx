@@ -13,10 +13,13 @@ describe("BOM Engine - Extended Logic Rules", () => {
             active: true,
             status: "Supported",
             specs: {
-                stackable: false,
+                isStackable: false,
                 accessPortCount: 48,
                 uplinkPortCount: 4,
-                accessPortType: '1G'
+                accessPortType: '1G-Copper',
+                poeBudgetWatts: 370,
+                poeStandard: 'PoE+',
+                uplinkPortType: '10G-Fiber'
             },
         },
         {
@@ -27,10 +30,13 @@ describe("BOM Engine - Extended Logic Rules", () => {
             active: true,
             status: "Supported",
             specs: {
-                stackable: false,
+                isStackable: false,
                 accessPortCount: 24,
                 uplinkPortCount: 2,
-                accessPortType: '10G'
+                accessPortType: '10G-Copper',
+                poeBudgetWatts: 0,
+                poeStandard: 'None',
+                uplinkPortType: '10G-Fiber'
             },
         }
     ];

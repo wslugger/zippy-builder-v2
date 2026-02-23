@@ -26,6 +26,13 @@ jest.mock('@/src/lib/firebase', () => ({
     }
 }));
 
+jest.mock('@/src/hooks/useSystemConfig', () => ({
+    useSystemConfig: () => ({
+        config: { taxonomy: { purposes: ["SDWAN", "LAN"] } },
+        isLoading: false,
+    })
+}));
+
 describe('Site Definition Redundancy UI', () => {
     it('shows redundancy settings when category is SD-WAN', () => {
         render(<EditSiteDefinitionPage />);

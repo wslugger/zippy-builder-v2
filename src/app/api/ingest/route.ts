@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { EQUIPMENT_PURPOSES } from "@/src/lib/types";
-import { MetadataService } from "@/src/lib/firebase";
+import { SystemConfigService } from "@/src/lib/firebase/system-config-service";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -18,13 +18,14 @@ export async function POST(req: Request) {
     if (!file || !vendorId) {
       return NextResponse.json({ error: "File and Vendor ID are required" }, { status: 400 });
     }
-    const metadata = await MetadataService.getCatalogMetadata("equipment_catalog");
-    const activePurposes = metadata?.fields?.purposes?.values || EQUIPMENT_PURPOSES;
-    const activeCellularTypes = metadata?.fields?.cellular_types?.values || ["LTE", "5G", "LTE/5G"];
-    const activeWifiStandards = metadata?.fields?.wifi_standards?.values || ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"];
-    const activeMountingOptions = metadata?.fields?.mounting_options?.values || ["Rack", "Wall", "Desktop", "DIN rail"];
-    const activeUseCases = metadata?.fields?.recommended_use_cases?.values || ["Small branch"];
-    const activeInterfaceTypes = metadata?.fields?.interface_types?.values || ["1GE RJ45", "10GE SFP+"];
+    const config = await SystemConfigService.getConfig();
+    const taxonomy = (config?.taxonomy as Record<string, string[]>) || {};
+    const activePurposes = taxonomy.purposes || EQUIPMENT_PURPOSES;
+    const activeCellularTypes = taxonomy.cellular_types || ["LTE", "5G", "LTE/5G"];
+    const activeWifiStandards = taxonomy.wifi_standards || ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"];
+    const activeMountingOptions = taxonomy.mounting_options || ["Rack", "Wall", "Desktop", "DIN rail"];
+    const activeUseCases = taxonomy.recommended_use_cases || ["Small branch"];
+    const activeInterfaceTypes = taxonomy.interface_types || ["1GE RJ45", "10GE SFP+"];
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);

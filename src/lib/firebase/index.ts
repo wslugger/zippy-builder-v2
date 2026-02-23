@@ -23,7 +23,7 @@ export {
 
 // Service modules
 export { EquipmentService } from "./equipment-service";
-export { MetadataService } from "./metadata-service";
+
 export { ServiceService } from "./service-service";
 export { FeatureService } from "./feature-service";
 export { PackageService } from "./package-service";

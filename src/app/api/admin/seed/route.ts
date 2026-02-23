@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { MetadataService, FeatureService, ServiceService, PackageService, SystemDefaultsService, SiteDefinitionService, BOMService } from "@/src/lib/firebase";
+import { FeatureService, ServiceService, PackageService, SystemDefaultsService, SiteDefinitionService, BOMService } from "@/src/lib/firebase";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 
@@ -10,14 +10,6 @@ export async function GET() {
 
         if (!defaults) {
             throw new Error("System defaults not found! Please run the bootstrap process first.");
-        }
-
-        // 2. Reset Metadata (Full Overwrite)
-        if (defaults.metadata) {
-            console.log("Resetting metadata from DB defaults...");
-            for (const metadata of defaults.metadata) {
-                await MetadataService.saveCatalogMetadata(metadata, true);
-            }
         }
 
         // 3. Seed Technical Features

@@ -1,7 +1,7 @@
 "use client";
 
 import { EQUIPMENT_PURPOSES as DEFAULT_PURPOSES, VENDOR_IDS, VENDOR_LABELS } from "@/src/lib/types";
-import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 
 interface EquipmentFiltersProps {
     search: string;
@@ -20,8 +20,8 @@ export default function EquipmentFilters({
     selectedPurpose,
     onPurposeChange,
 }: EquipmentFiltersProps) {
-    const { metadata } = useCatalogMetadata("equipment_catalog");
-    const activePurposes = metadata?.fields?.purposes?.values || DEFAULT_PURPOSES;
+    const { config } = useSystemConfig();
+    const activePurposes = (config?.taxonomy?.purposes as string[]) || DEFAULT_PURPOSES;
     return (
         <div className="flex flex-col gap-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">

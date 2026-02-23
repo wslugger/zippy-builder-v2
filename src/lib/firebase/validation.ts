@@ -171,7 +171,6 @@ export const SystemDefaultsSchema = z.object({
     features: z.array(TechnicalFeatureSchema).default([]),
     services: z.array(ServiceSchema).default([]),
     packages: z.array(PackageSchema).default([]),
-    metadata: z.array(CatalogMetadataSchema).default([]),
     workflowSteps: z.array(z.object({
         id: z.string(),
         label: z.string(),

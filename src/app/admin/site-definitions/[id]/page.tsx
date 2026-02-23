@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { SiteDefinitionService, MetadataService } from "@/src/lib/firebase";
+import { SiteDefinitionService } from "@/src/lib/firebase";
 import { SiteType, SiteConstraint } from "@/src/lib/site-types";
-import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 
 export default function EditSiteDefinitionPage() {
     const { id } = useParams();
@@ -15,11 +15,11 @@ export default function EditSiteDefinitionPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    const { metadata: siteMetadata, loading: metadataLoading } = useCatalogMetadata("site_type_catalog");
+    const { config, isLoading: metadataLoading } = useSystemConfig();
 
     // Helper to get values from catalog or fallback to empty array
     const getCatalogValues = (fieldKey: string) => {
-        return siteMetadata?.fields[fieldKey]?.values || [];
+        return (config?.taxonomy as Record<string, string[]>)?.[fieldKey] || [];
     };
 
     useEffect(() => {

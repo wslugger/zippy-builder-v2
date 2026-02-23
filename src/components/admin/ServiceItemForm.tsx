@@ -2,7 +2,7 @@
 
 import { DesignOption, DESIGN_OPTION_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
 import { useState } from "react";
-import { useCatalogMetadata } from "@/src/hooks/useCatalogMetadata";
+import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 import { useTechnicalFeatures } from "@/src/hooks/useTechnicalFeatures";
 import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
@@ -15,9 +15,9 @@ interface ServiceItemFormProps {
 }
 
 export default function ServiceItemForm({ item, onChange, title, showDesignFields }: ServiceItemFormProps) {
-    const { metadata } = useCatalogMetadata("service_catalog");
+    const { config } = useSystemConfig();
     const { features } = useTechnicalFeatures();
-    const categories: string[] = metadata?.fields?.design_option_categories?.values || [...DEFAULT_CATEGORIES];
+    const categories: string[] = (config?.taxonomy as Record<string, string[]>)?.design_option_categories || [...DEFAULT_CATEGORIES];
     const [featureSearch, setFeatureSearch] = useState("");
     const [showSelectedOnly, setShowSelectedOnly] = useState(false);
 
