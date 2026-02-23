@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     BarChart,
     Bar,
@@ -13,11 +13,11 @@ import {
     Pie,
     Cell,
     Legend,
-    LineChart,
-    Line,
     AreaChart,
     Area
 } from 'recharts';
+import { ProjectService } from '@/src/lib/firebase/project-service';
+import { Project } from '@/src/lib/types';
 
 // --- Mock Data ---
 
@@ -25,32 +25,6 @@ const userActivityData = [
     { name: 'Today', uniqueUsers: 1, returningUsers: 1 },
     { name: 'This Week', uniqueUsers: 1, returningUsers: 1 },
     { name: 'This Month', uniqueUsers: 1, returningUsers: 0 },
-];
-
-const lifecycleData = [
-    { name: 'Started', value: 44, color: '#3B82F6' },
-    { name: 'Recommended Package', value: 28, color: '#8B5CF6' },
-    { name: 'Recommended Design', value: 17, color: '#10B981' },
-    { name: 'BOM', value: 0, color: '#94A3B8' },
-];
-
-const conversionData = [
-    { name: 'Recommended Package', value: 0 },
-    { name: 'Recommended Design', value: 0 },
-    { name: 'BOM', value: 0 },
-];
-
-const packagePopularityData = [
-    { name: 'Cost Centric', value: 28, percentage: '64%', color: '#3B82F6' },
-    { name: 'Business-Critical', value: 8, percentage: '18%', color: '#8B5CF6' },
-    { name: 'Cloud Centric', value: 4, percentage: '9%', color: '#10B981' },
-    { name: 'Security Centric', value: 2, percentage: '5%', color: '#F59E0B' },
-    { name: 'Generic Enterprise', value: 2, percentage: '5%', color: '#3B82F6' },
-];
-
-const vendorPreferenceData = [
-    { name: 'meraki', value: 28, percentage: '64%', color: '#3B82F6' },
-    { name: 'cisco', value: 16, percentage: '36%', color: '#8B5CF6' },
 ];
 
 // --- Components ---
@@ -101,7 +75,91 @@ const ChartContainer = ({ title, icon, children }: ChartContainerProps) => (
 
 export default function MetricsDashboard() {
     const [lastUpdated] = useState(new Date().toLocaleString());
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const allProjects = await ProjectService.getAllProjects();
+                setProjects(allProjects);
+            } catch (error) {
+                console.error("Error fetching projects:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
+    }, []);
+
+    // --- Dynamic Calculations ---
+
+    const totalProjects = projects.length;
+    const projectsWithPackage = projects.filter(p => p.currentStep >= 2).length;
+    const projectsWithDesign = projects.filter(p => p.currentStep >= 4).length;
+    const projectsWithBOM = projects.filter(p => p.currentStep >= 5).length;
+    const projectsWithHLD = projects.filter(p => p.currentStep >= 6).length;
+
+    const lifecycleData = [
+        { name: 'Started', value: totalProjects, color: '#3B82F6' },
+        { name: 'Recommended Package', value: projectsWithPackage, color: '#8B5CF6' },
+        { name: 'Recommended Design', value: projectsWithDesign, color: '#10B981' },
+        { name: 'BOM', value: projectsWithBOM, color: '#F59E0B' },
+        { name: 'HLD', value: projectsWithHLD, color: '#EC4899' },
+    ];
+
+    const conversionData = [
+        { name: 'Recommended Package', value: totalProjects > 0 ? (projectsWithPackage / totalProjects) * 100 : 0 },
+        { name: 'Recommended Design', value: totalProjects > 0 ? (projectsWithDesign / totalProjects) * 100 : 0 },
+        { name: 'BOM', value: totalProjects > 0 ? (projectsWithBOM / totalProjects) * 100 : 0 },
+        { name: 'HLD', value: totalProjects > 0 ? (projectsWithHLD / totalProjects) * 100 : 0 },
+    ];
+
+    // Package Popularity
+    const packageCounts: Record<string, number> = {};
+    projects.forEach(p => {
+        if (p.selectedPackageId) {
+            const name = p.selectedPackageId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            packageCounts[name] = (packageCounts[name] || 0) + 1;
+        }
+    });
+
+    const COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#3B82F6', '#EF4444', '#6366F1'];
+    const packagePopularityData = Object.entries(packageCounts)
+        .map(([name, value], index) => ({
+            name,
+            value,
+            percentage: `${totalProjects > 0 ? Math.round((value / totalProjects) * 100) : 0}%`,
+            color: COLORS[index % COLORS.length]
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+    // If no data, provide minimal fallback or empty state
+    if (packagePopularityData.length === 0) {
+        packagePopularityData.push({ name: 'No Data', value: 0, percentage: '0%', color: '#94A3B8' });
+    }
+
+    // Vendor Preference (Mocked for now as it's harder to derive without deeper scanning)
+    const vendorPreferenceData = [
+        { name: 'meraki', value: projects.filter(p => p.selectedPackageId?.includes('meraki')).length, percentage: '0%', color: '#3B82F6' },
+        { name: 'cisco', value: projects.filter(p => p.selectedPackageId?.includes('cisco')).length, percentage: '0%', color: '#8B5CF6' },
+    ];
+    const totalVendors = vendorPreferenceData.reduce((acc, v) => acc + v.value, 0);
+    vendorPreferenceData.forEach(v => {
+        v.percentage = totalVendors > 0 ? `${Math.round((v.value / totalVendors) * 100)}%` : '0%';
+    });
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p className="text-slate-500 font-medium tracking-tight">Loading Dashboard...</p>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="min-h-screen bg-slate-50 p-8">
             {/* Header */}
@@ -136,7 +194,7 @@ export default function MetricsDashboard() {
                 />
                 <StatCard
                     title="Total Active Projects"
-                    value="87"
+                    value={totalProjects.toString()}
                     icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
                     colorClass="text-purple-500"
                     bgColorClass="bg-purple-50"
@@ -204,11 +262,12 @@ export default function MetricsDashboard() {
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {[
-                        { label: 'Recommended Package', value: '0%', sub: '0 of 44 projects' },
-                        { label: 'Recommended Design', value: '0%', sub: '0 of 17 projects' },
-                        { label: 'BOM', value: '0%', sub: '0 of 0 projects' },
+                        { label: 'Recommended Package', value: totalProjects > 0 ? `${Math.round((projectsWithPackage / totalProjects) * 100)}%` : '0%', sub: `${projectsWithPackage} of ${totalProjects} projects` },
+                        { label: 'Recommended Design', value: totalProjects > 0 ? `${Math.round((projectsWithDesign / totalProjects) * 100)}%` : '0%', sub: `${projectsWithDesign} of ${totalProjects} projects` },
+                        { label: 'BOM', value: totalProjects > 0 ? `${Math.round((projectsWithBOM / totalProjects) * 100)}%` : '0%', sub: `${projectsWithBOM} of ${totalProjects} projects` },
+                        { label: 'HLD', value: totalProjects > 0 ? `${Math.round((projectsWithHLD / totalProjects) * 100)}%` : '0%', sub: `${projectsWithHLD} of ${totalProjects} projects` },
                     ].map((item, idx) => (
                         <div key={idx} className="border border-slate-200 rounded-xl p-4">
                             <p className="text-xs text-slate-400 font-medium mb-1">{item.label}</p>

@@ -66,5 +66,16 @@ export const ProjectService = {
             console.error("Requirements Upload Error:", error);
             throw error;
         }
+    },
+
+    getAllProjects: async (): Promise<Project[]> => {
+        try {
+            const projectsRef = collection(db, PROJECTS_COLLECTION);
+            const snapshot = await getDocs(projectsRef);
+            return snapshot.docs.map(d => validateDoc(ProjectSchema, d.data(), d.id));
+        } catch (error) {
+            console.error("[ProjectService] Failed to fetch all projects:", error);
+            throw error;
+        }
     }
 };
