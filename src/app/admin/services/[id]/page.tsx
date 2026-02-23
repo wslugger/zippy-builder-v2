@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { Service, ServiceItem, SERVICE_CATEGORIES as DEFAULT_CATEGORIES } from "@/src/lib/types";
+import { Service, ServiceItem, SERVICE_CATEGORIES as DEFAULT_CATEGORIES, SystemConfig } from "@/src/lib/types";
 import { ServiceService, SystemDefaultsService } from "@/src/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -94,7 +94,7 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
             }
 
             if (taxonomyUpdated) {
-                await updateConfigAsync({ taxonomy: updatedTaxonomy as any });
+                await updateConfigAsync({ taxonomy: updatedTaxonomy } as Partial<SystemConfig>);
             }
 
             await ServiceService.saveService(finalService);

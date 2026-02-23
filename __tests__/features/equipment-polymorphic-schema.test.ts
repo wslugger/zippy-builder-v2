@@ -109,7 +109,7 @@ describe("Equipment Polymorphic Schema", () => {
         expect(result.success).toBe(true);
         if (result.success && result.data.role === 'LAN') {
             expect(result.data.specs.poeBudgetWatts).toBe(0); // Handled by fallback
-            expect((result.data.specs as any).wifi_standard).toBe("Wi-Fi 6"); // Passthrough string
+            expect((result.data.specs as Record<string, unknown>).wifi_standard).toBe("Wi-Fi 6"); // Passthrough string
         }
     });
 });

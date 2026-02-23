@@ -121,7 +121,7 @@ export default function AdminSettingsPage() {
         });
     };
 
-    const handleBOMParameterChange = (id: string, value: any) => {
+    const handleBOMParameterChange = (id: string, value: string | number | boolean) => {
         if (!draftConfig) return;
         setDraftConfig({
             ...draftConfig,
@@ -460,7 +460,7 @@ export default function AdminSettingsPage() {
                                         ].map((tab) => (
                                             <button
                                                 key={tab.id}
-                                                onClick={() => setActiveRuleCategory(tab.id as any)}
+                                                onClick={() => setActiveRuleCategory(tab.id as "managed_sdwan" | "managed_lan" | "managed_wifi")}
                                                 className={`px-4 py-2 font-bold text-xs tracking-tight transition-all rounded-t-xl border-t border-l border-r
                                                     ${activeRuleCategory === tab.id
                                                         ? "bg-white border-slate-100 text-blue-600 -mb-px"
