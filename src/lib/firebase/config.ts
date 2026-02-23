@@ -23,10 +23,8 @@ if (missingKeys.length > 0 && typeof window !== 'undefined') {
 // Initialize Firebase (Singleton pattern)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore with settings to avoid hanging on some networks
-export const db = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-});
+// Initialize Firestore
+export const db = initializeFirestore(app, {});
 
 let storage: FirebaseStorage;
 try {
