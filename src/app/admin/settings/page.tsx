@@ -201,6 +201,87 @@ export default function AdminSettingsPage() {
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Equipment Purposes (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.purposes?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'purposes', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Cellular Types (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.cellular_types?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'cellular_types', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Wi-Fi Standards (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.wifi_standards?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'wifi_standards', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Mounting Options (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.mounting_options?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'mounting_options', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Recommended Use Cases (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.recommended_use_cases?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'recommended_use_cases', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Interface Types (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.interface_types?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'interface_types', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Feature Categories (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.feature_categories?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'feature_categories', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Service Categories (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.service_categories?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'service_categories', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Design Option Categories (Comma separated)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={draftConfig.taxonomy.design_option_categories?.join(', ') || ''}
+                                        onChange={(e) => handleArrayChange('taxonomy', 'design_option_categories', e.target.value)}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
                             </>
                         )}
 

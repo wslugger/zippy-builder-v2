@@ -512,7 +512,21 @@ export const SystemConfigSchema = z.object({
     regions: z.array(z.string()).default([]),
     siteTypes: z.array(z.string()).default([]),
     vendors: z.array(z.string()).default([]),
-  }).catchall(z.any()).default({ regions: [], siteTypes: [], vendors: [] }),
+    purposes: z.array(z.string()).default([]),
+    cellular_types: z.array(z.string()).default([]),
+    wifi_standards: z.array(z.string()).default([]),
+    mounting_options: z.array(z.string()).default([]),
+    recommended_use_cases: z.array(z.string()).default([]),
+    interface_types: z.array(z.string()).default([]),
+    feature_categories: z.array(z.string()).default([]),
+    service_categories: z.array(z.string()).default([]),
+    design_option_categories: z.array(z.string()).default([]),
+  }).catchall(z.any()).default({
+    regions: [], siteTypes: [], vendors: [],
+    purposes: [], cellular_types: [], wifi_standards: [],
+    mounting_options: [], recommended_use_cases: [], interface_types: [],
+    feature_categories: [], service_categories: [], design_option_categories: []
+  }),
   calculationBaselines: z.object({
     defaultRedundancyFactor: z.number().default(1),
     wanThroughputBuffer: z.number().default(0),
