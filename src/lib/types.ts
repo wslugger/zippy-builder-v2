@@ -522,10 +522,18 @@ export const SystemConfigSchema = z.object({
     service_categories: z.array(z.string()).default([]),
     design_option_categories: z.array(z.string()).default([]),
   }).catchall(z.any()).default({
-    regions: [], siteTypes: [], vendors: [],
-    purposes: [], cellular_types: [], wifi_standards: [],
-    mounting_options: [], recommended_use_cases: [], interface_types: [],
-    feature_categories: [], service_categories: [], design_option_categories: []
+    regions: ['North America', 'Europe', 'Asia Pacific', 'Latin America'],
+    siteTypes: ['Small Branch', 'Medium Branch', 'Large Branch', 'Headquarters', 'Data Center', 'Remote/Home Office'],
+    vendors: ['Cisco Catalyst', 'Meraki', 'HPE Aruba'],
+    purposes: ['WAN', 'LAN', 'WLAN', 'SECURITY'],
+    cellular_types: ['LTE', '5G', 'LTE/5G'],
+    wifi_standards: ['Wi-Fi 5', 'Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7'],
+    mounting_options: ['Rack', 'Wall', 'Desktop', 'Ceiling'],
+    recommended_use_cases: ['High Density', 'Outdoor', 'Harsh Environment', 'Standard Office'],
+    interface_types: ['1G-Copper', '10G-Copper', 'mGig-Copper', '1G-Fiber', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'],
+    feature_categories: ['SD-WAN', 'Security', 'Routing', 'Switching', 'Wireless', 'Visibility'],
+    service_categories: ['Managed WAN', 'Managed LAN', 'Managed WLAN', 'Managed Security'],
+    design_option_categories: ['Redundancy', 'Performance', 'Scale', 'Topology']
   }),
   calculationBaselines: z.object({
     defaultRedundancyFactor: z.number().default(1),
