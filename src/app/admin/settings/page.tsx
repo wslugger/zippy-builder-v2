@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSystemConfig } from '@/src/hooks/useSystemConfig';
-import { SystemConfig } from '@/src/lib/types';
+import { SystemConfig, SystemConfigSchema } from '@/src/lib/types';
 
 // Tab enum
 type Tab = 'general' | 'taxonomy' | 'bom_logic';
@@ -17,8 +17,11 @@ export default function AdminSettingsPage() {
     useEffect(() => {
         if (config) {
             setDraftConfig(config);
+            // If config is explicitly null and we broke out of loading state, that means we need to populate a default
+        } else if (config === null && !isLoading) {
+            setDraftConfig(SystemConfigSchema.parse({}));
         }
-    }, [config]);
+    }, [config, isLoading]);
 
     const handleSave = async () => {
         if (!draftConfig) return;
