@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSystemConfig } from '@/src/hooks/useSystemConfig';
-import { SystemConfig, SystemConfigSchema } from '@/src/lib/types';
+import { SystemConfig, SystemConfigSchema, SYSTEM_PARAMETERS, SystemParameterDefinition } from '@/src/lib/types';
 
 // Tab enum
 type Tab = 'general' | 'taxonomy' | 'bom_logic';
@@ -69,6 +69,64 @@ export default function AdminSettingsPage() {
                 [field]: value
             }
         });
+    };
+
+    const handleBOMParameterChange = (id: string, value: any) => {
+        if (!draftConfig) return;
+        setDraftConfig({
+            ...draftConfig,
+            calculationBaselines: {
+                ...draftConfig.calculationBaselines,
+                [id]: value
+            }
+        });
+    };
+
+    const renderBOMParameterInput = (paramDef: SystemParameterDefinition) => {
+        const value = draftConfig?.calculationBaselines?.[paramDef.id] !== undefined
+            ? draftConfig.calculationBaselines[paramDef.id]
+            : paramDef.defaultValue;
+
+        if (paramDef.options) {
+            return (
+                <select
+                    value={value as string}
+                    onChange={(e) => handleBOMParameterChange(paramDef.id, e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                    {paramDef.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            );
+        }
+
+        if (paramDef.type === 'boolean') {
+            return (
+                <div className="flex items-center mt-2">
+                    <input
+                        type="checkbox"
+                        checked={Boolean(value)}
+                        onChange={(e) => handleBOMParameterChange(paramDef.id, e.target.checked)}
+                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm text-slate-600 font-medium">{value ? "Enabled" : "Disabled"}</span>
+                </div>
+            );
+        }
+
+        return (
+            <input
+                type={paramDef.type === 'number' ? "number" : "text"}
+                value={value as string | number}
+                onChange={(e) => {
+                    const val = e.target.value;
+                    const parsedVal = paramDef.type === "number" ? (val === '' ? '' : Number(val)) : val;
+                    handleBOMParameterChange(paramDef.id, parsedVal);
+                }}
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+        );
     };
 
     if (isLoading || !draftConfig) {
