@@ -63,6 +63,12 @@ export default function AdminLayout({
                                 >
                                     BOM Logic
                                 </Link>
+                                <Link
+                                    href="/admin/bom-parameters"
+                                    className="border-transparent hover:border-blue-500 text-zinc-900 dark:text-zinc-100 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
+                                >
+                                    Global Params
+                                </Link>
                             </div>
                         </div>
                         <div className="flex items-center">

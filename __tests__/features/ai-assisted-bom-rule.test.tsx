@@ -82,8 +82,9 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
         expect(actionTypeSelect).toBeInTheDocument();
 
         // Check target ID
-        const targetIdInput = screen.getByPlaceholderText(/e\.g\. meraki_mx85/i);
-        expect(targetIdInput).toHaveValue("defaultAccessSpeed");
+        const targetIdSelect = screen.getByDisplayValue(/Default Access Speed/i);
+        expect(targetIdSelect).toBeInTheDocument();
+        expect(targetIdSelect).toHaveValue("defaultAccessSpeed");
 
         // Setup options dropdown since setting a parameter dynamically loads predefined dropdown options if provided
         const actionValueSelect = screen.queryByDisplayValue(/mGig-Copper/i);

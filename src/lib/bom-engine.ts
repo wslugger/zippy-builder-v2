@@ -4,6 +4,7 @@ import { Site, BOM, BOMLineItem, BOMEngineInput } from "./types";
 import { Equipment } from "./types";
 import { VENDOR_LABELS } from "./types";
 import { SiteType } from "./site-types";
+import { SYSTEM_PARAMETERS } from "./types";
 import {
     normalizeServiceId,
     SERVICE_TO_PURPOSE,
@@ -29,7 +30,7 @@ jsonLogic.add_operation("includes", (array, value) => {
 });
 
 export function calculateBOM(input: BOMEngineInput): BOM {
-    const { projectId, sites, selectedPackage, services, siteTypes, equipmentCatalog, manualSelections = {} } = input;
+    const { projectId, sites, selectedPackage, services, siteTypes, equipmentCatalog, manualSelections = {}, globalParameters = {} } = input;
 
     // Sort rules by priority descending
     const rules = [...input.rules].sort((a, b) => b.priority - a.priority);
@@ -59,6 +60,9 @@ export function calculateBOM(input: BOMEngineInput): BOM {
 
         // Initialize dynamic parameters for this site
         const siteParameters: Record<string, any> = {};
+        for (const param of SYSTEM_PARAMETERS) {
+            siteParameters[param.id] = globalParameters[param.id] !== undefined ? globalParameters[param.id] : param.defaultValue;
+        }
 
         // 1. Process Services in Package (Sorted to ensure dependencies like WLAN are processed before LAN)
         const sortedPackageItems = [...selectedPackage.items].sort((a, b) => {

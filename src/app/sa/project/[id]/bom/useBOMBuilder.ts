@@ -12,6 +12,7 @@ import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
 import { AIService } from "@/src/lib/ai-service";
 import { resolveVendorForService, calculateThroughputOverhead } from "@/src/lib/bom-utils";
+import { getGlobalParameters } from "@/src/lib/firebase/settings";
 
 // -------------------------------------------------------
 // Sample CSV embedded in module scope (not in component)
@@ -111,6 +112,8 @@ export function useBOMBuilder(): BOMBuilderState {
     const [services, setServices] = useState<Service[]>([]);
     const [siteTypes, setSiteTypes] = useState<SiteType[]>([]);
     const [catalog, setCatalog] = useState<Equipment[]>(SEED_EQUIPMENT);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [globalParameters, setGlobalParameters] = useState<Record<string, any>>({});
 
     // ---- Sites ----
     const [sites, setSites] = useState<Site[]>([]);
@@ -162,15 +165,17 @@ export function useBOMBuilder(): BOMBuilderState {
                 setPkg(pk);
             }
 
-            const [allPkgs, svcs, eq] = await Promise.all([
+            const [allPkgs, svcs, eq, globalParams] = await Promise.all([
                 PackageService.getAllPackages(),
                 ServiceService.getAllServices(),
                 EquipmentService.getAllEquipment(),
+                getGlobalParameters(),
             ]);
 
             setAllPackages(allPkgs);
             setServices(svcs);
             if (eq.length > 0) setCatalog(eq);
+            setGlobalParameters(globalParams);
 
             const st = await SiteDefinitionService.getAllSiteDefinitions();
             if (st.length === 0) {
@@ -253,11 +258,12 @@ export function useBOMBuilder(): BOMBuilderState {
                 siteTypes,
                 equipmentCatalog: catalog,
                 rules: SEED_BOM_RULES,
-                manualSelections
+                manualSelections,
+                globalParameters
             });
         }
         return null;
-    }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections]);
+    }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections, globalParameters]);
 
     const selectedSite = selectedSiteIndex !== null ? sites[selectedSiteIndex] : undefined;
     const siteBOMItems = bom?.items.filter((i) => i.siteName === selectedSite?.name) ?? [];

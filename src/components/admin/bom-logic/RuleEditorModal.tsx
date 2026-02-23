@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { BOMLogicRule, BOMLogicAction } from "@/src/lib/types";
+import { BOMLogicRule, BOMLogicAction, SYSTEM_PARAMETERS } from "@/src/lib/types";
 
 // --- Visual Builder Types & Constants ---
 interface SimpleCondition {
@@ -32,17 +32,7 @@ const FIELDS = [
     { label: "Site: Outdoor APs", value: "site.outdoorAPs" },
 ];
 
-const PARAMETER_OPTIONS: Record<string, string[]> = {
-    defaultAccessSpeed: ['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber'],
-    defaultUplinkSpeed: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'],
-    defaultUplinkType: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'],
-    poeStandard: ['None', 'PoE+', 'PoE++'],
-    maxPortUtilization: ['40', '50', '60', '70', '80', '90', '100'],
-    maxStackSize: ['2', '4', '6', '8'],
-    haLanPortMinimum: ['0', '1', '2'],
-    fiberTransceiverNote: ['true', 'false'],
-    throughputBasis: ['sdwanCryptoThroughputMbps', 'advancedSecurityThroughputMbps', 'rawFirewallThroughputMbps'],
-};
+
 
 // --- Parsers ---
 
@@ -536,46 +526,94 @@ export default function RuleEditorModal({
                                             </div>
                                             <div className="flex-1">
                                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Target ID</label>
-                                                <input
-                                                    type="text"
-                                                    value={a.targetId}
-                                                    onChange={(e) => updateAction(i, { targetId: e.target.value })}
-                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white font-mono text-slate-700 placeholder:text-slate-300 placeholder:font-sans transition-colors"
-                                                    placeholder="e.g. meraki_mx85, default_uplink"
-                                                    required
-                                                />
+                                                {a.type === 'set_parameter' ? (
+                                                    <select
+                                                        value={a.targetId}
+                                                        onChange={(e) => updateAction(i, { targetId: e.target.value, actionValue: '' })}
+                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-50 hover:bg-white transition-colors"
+                                                    >
+                                                        <option value="" disabled>Select Parameter</option>
+                                                        {SYSTEM_PARAMETERS.map(p => (
+                                                            <option key={p.id} value={p.id}>{p.label} ({p.id})</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={a.targetId}
+                                                        onChange={(e) => updateAction(i, { targetId: e.target.value })}
+                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white font-mono text-slate-700 placeholder:text-slate-300 placeholder:font-sans transition-colors"
+                                                        placeholder="e.g. meraki_mx85, default_uplink"
+                                                        required
+                                                    />
+                                                )}
                                             </div>
                                         </div>
 
                                         {(a.type === 'set_parameter' || a.type === 'set_configuration') && (
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Value To Set</label>
-                                                {PARAMETER_OPTIONS[a.targetId] ? (
-                                                    <select
-                                                        value={String(a.actionValue || '')}
-                                                        onChange={(e) => updateAction(i, { actionValue: e.target.value })}
-                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-50 hover:bg-white transition-colors"
-                                                        required
-                                                    >
-                                                        <option value="" disabled>Select an option</option>
-                                                        {PARAMETER_OPTIONS[a.targetId].map(opt => (
-                                                            <option key={opt} value={opt}>{opt}</option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    <input
-                                                        type="text"
-                                                        value={String(a.actionValue || '')}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            const numVal = Number(val);
-                                                            updateAction(i, { actionValue: (isNaN(numVal) || val === '') ? val : numVal });
-                                                        }}
-                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white font-mono placeholder:text-slate-300 placeholder:font-sans transition-colors"
-                                                        placeholder="e.g., 10GbE or true"
-                                                        required
-                                                    />
-                                                )}
+                                                {(() => {
+                                                    const paramDef = SYSTEM_PARAMETERS.find(p => p.id === a.targetId);
+
+                                                    const renderInput = () => {
+                                                        if (paramDef && paramDef.options) {
+                                                            return (
+                                                                <select
+                                                                    value={String(a.actionValue || '')}
+                                                                    onChange={(e) => updateAction(i, { actionValue: e.target.value })}
+                                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-50 hover:bg-white transition-colors"
+                                                                    required
+                                                                >
+                                                                    <option value="" disabled>Select an option</option>
+                                                                    {paramDef.options.map(opt => (
+                                                                        <option key={opt} value={opt}>{opt}</option>
+                                                                    ))}
+                                                                </select>
+                                                            );
+                                                        }
+                                                        if (paramDef && paramDef.type === 'boolean') {
+                                                            return (
+                                                                <select
+                                                                    value={String(a.actionValue || '')}
+                                                                    onChange={(e) => updateAction(i, { actionValue: e.target.value === 'true' })}
+                                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-50 hover:bg-white transition-colors"
+                                                                    required
+                                                                >
+                                                                    <option value="" disabled>Select True/False</option>
+                                                                    <option value="true">True</option>
+                                                                    <option value="false">False</option>
+                                                                </select>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <input
+                                                                type="text"
+                                                                value={String(a.actionValue || '')}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    const numVal = Number(val);
+                                                                    updateAction(i, { actionValue: (isNaN(numVal) || val === '') ? val : numVal });
+                                                                }}
+                                                                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white font-mono placeholder:text-slate-300 placeholder:font-sans transition-colors"
+                                                                placeholder="e.g., 80 or true"
+                                                                required
+                                                            />
+                                                        );
+                                                    };
+
+                                                    return (
+                                                        <div className="space-y-2">
+                                                            {renderInput()}
+                                                            {paramDef && (
+                                                                <div className="text-[11px] text-slate-500 bg-slate-100 p-2 rounded border border-slate-200">
+                                                                    <span className="font-bold text-slate-700">Description:</span> {paramDef.description}<br />
+                                                                    <span className="font-bold text-slate-700">System Default:</span> {String(paramDef.defaultValue)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         )}
 

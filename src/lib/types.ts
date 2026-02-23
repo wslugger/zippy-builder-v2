@@ -428,6 +428,27 @@ export interface LogicCondition {
   value: string | number | boolean | string[];
 }
 
+export interface SystemParameterDefinition {
+  id: string; // e.g. "maxPortUtilization"
+  label: string; // "Max Port Utilization (%)"
+  description: string;
+  type: "number" | "boolean" | "string" | "enum";
+  options?: string[]; // Only if type is "enum"
+  defaultValue: any;
+}
+
+export const SYSTEM_PARAMETERS: SystemParameterDefinition[] = [
+  { id: 'defaultAccessSpeed', label: 'Default Access Speed', description: 'The default port speed for LAN access switches.', type: 'enum', options: ['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber'], defaultValue: '1G-Copper' },
+  { id: 'defaultUplinkSpeed', label: 'Default Uplink Speed', description: 'The default port speed for LAN switch uplinks.', type: 'enum', options: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'], defaultValue: '10G-Fiber' },
+  { id: 'defaultUplinkType', label: 'Default Uplink Type', description: 'The default media type for LAN switch uplinks.', type: 'enum', options: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'], defaultValue: '10G-Fiber' },
+  { id: 'poeStandard', label: 'PoE Standard', description: 'Required Power over Ethernet standard.', type: 'enum', options: ['None', 'PoE+', 'PoE++'], defaultValue: 'PoE+' },
+  { id: 'maxPortUtilization', label: 'Max Port Utilization (%)', description: 'Target maximum utilization for switch ports before adding another switch.', type: 'number', defaultValue: 100 },
+  { id: 'maxStackSize', label: 'Max Stack Size', description: 'Maximum number of switches in a stack.', type: 'number', defaultValue: 8 },
+  { id: 'haLanPortMinimum', label: 'HA LAN Port Minimum', description: 'Minimum number of free LAN ports required on a WAN device for HA sync links.', type: 'number', defaultValue: 1 },
+  { id: 'fiberTransceiverNote', label: 'Fiber Transceiver Note', description: 'Automatically add a note requiring transceivers when selecting fiber uplinks.', type: 'boolean', defaultValue: true },
+  { id: 'throughputBasis', label: 'Throughput Basis', description: 'The performance metric to use when selecting network equipment throughput capabilities.', type: 'enum', options: ['sdwanCryptoThroughputMbps', 'advancedSecurityThroughputMbps', 'rawFirewallThroughputMbps'], defaultValue: 'sdwanCryptoThroughputMbps' },
+];
+
 export interface BOMLogicAction {
   type: "select_equipment" | "enable_feature" | "set_configuration" | "set_parameter" | "modify_quantity";
   targetId: string; // SKU, Feature ID, or Parameter Name
@@ -483,5 +504,6 @@ export interface BOMEngineInput {
   equipmentCatalog: Equipment[];
   rules: BOMLogicRule[];
   manualSelections?: Record<string, string>;
+  globalParameters?: Record<string, any>;
 }
 
