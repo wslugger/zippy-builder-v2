@@ -209,7 +209,7 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
                     let category = "WAN"; // Default
                     if (equip) {
                         const purpose = equip.primary_purpose;
-                        if (purpose === "SDWAN" || purpose === "Security") category = "WAN";
+                        if (purpose === "WAN" || purpose === "Security") category = "WAN";
                         else if (purpose === "LAN") category = "LAN";
                         else if (purpose === "WLAN") category = "WLAN";
                     }

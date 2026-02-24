@@ -145,7 +145,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
     const handlePrimaryPurposeChange = (purpose: string) => {
         const ROLE_MAP: Record<string, string> = {
-            "SDWAN": "WAN",
+            "WAN": "WAN",
             "LAN": "LAN",
             "WLAN": "WLAN",
             "Security": "SECURITY"

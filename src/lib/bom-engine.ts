@@ -231,14 +231,14 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 const role = getEquipmentRole(e);
                 const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
                 if (requiredPurpose) {
-                    const roleMap: Record<string, string> = { "SDWAN": "WAN", "LAN": "LAN", "WLAN": "WLAN" };
+                    const roleMap: Record<string, string> = { "WAN": "WAN", "LAN": "LAN", "WLAN": "WLAN" };
                     if (role !== roleMap[requiredPurpose]) return false;
                 }
 
                 if (!matchesConstraints(e, siteDef.constraints)) return false;
 
                 const specs = e.specs as any;
-                if (requiredPurpose === "SDWAN" && role === 'WAN') {
+                if (requiredPurpose === "WAN" && role === 'WAN') {
                     const throughputField = activeThroughputField;
                     const deviceThroughput = Number(specs[throughputField] ?? 0);
                     if (deviceThroughput < requiredThroughput) return false;

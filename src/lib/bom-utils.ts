@@ -41,7 +41,7 @@ export function normalizeServiceId(id: string): string {
 
 /** Maps canonical service IDs to the equipment purpose categories */
 export const SERVICE_TO_PURPOSE: Record<string, (typeof EQUIPMENT_PURPOSES)[number]> = {
-    "managed_sdwan": "SDWAN",
+    "managed_sdwan": "WAN",
     "managed_lan": "LAN",
     "managed_wifi": "WLAN",
 };
@@ -182,12 +182,12 @@ export function getEquipmentRole(equip: Equipment): "WAN" | "LAN" | "WLAN" | "Ot
     const pp = String(raw.primary_purpose || "");
     const p = Array.isArray(raw.purpose) ? String(raw.purpose[0] || "") : String(raw.purpose || "");
 
-    if (r === "WAN" || pp === "SDWAN" || p === "SDWAN") return "WAN";
+    if (r === "WAN" || pp === "WAN" || p === "WAN") return "WAN";
     if (r === "WLAN" || pp === "WLAN" || p === "WLAN") return "WLAN";
     if (r === "LAN" || pp === "LAN" || p === "LAN") return "LAN";
 
     // Fallback to fuzzy includes if exact match fails, but WLAN must be checked first
-    if (pp.includes("SDWAN") || p.includes("SDWAN")) return "WAN";
+    if (pp.includes("WAN") || p.includes("WAN")) return "WAN";
     if (pp.includes("WLAN") || p.includes("WLAN")) return "WLAN";
     if (pp.includes("LAN") || p.includes("LAN")) return "LAN";
 

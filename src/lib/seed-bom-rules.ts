@@ -6,7 +6,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
 
     {
         id: "rule_sdwan_low_bw",
-        name: "Cost Centric - Small Branch SDWAN",
+        name: "Cost Centric - Small Branch WAN",
         priority: 100,
         condition: {
             "and": [
@@ -21,7 +21,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
     },
     {
         id: "rule_sdwan_med_bw",
-        name: "Cost Centric - Medium Branch SDWAN",
+        name: "Cost Centric - Medium Branch WAN",
         priority: 90,
         condition: {
             "and": [
@@ -37,7 +37,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
     },
     {
         id: "rule_sdwan_high_bw",
-        name: "Cost Centric - High Branch SDWAN",
+        name: "Cost Centric - High Branch WAN",
         priority: 80,
         condition: {
             "and": [
@@ -53,7 +53,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
     },
     {
         id: "rule_sdwan_gigabit",
-        name: "Cost Centric - Gigabit Branch SDWAN",
+        name: "Cost Centric - Gigabit Branch WAN",
         priority: 70,
         condition: {
             "and": [
@@ -69,7 +69,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
     },
     {
         id: "rule_sdwan_multigig",
-        name: "Cost Centric - Multi-Gigabit Branch SDWAN",
+        name: "Cost Centric - Multi-Gigabit Branch WAN",
         priority: 60,
         condition: {
             "and": [
@@ -85,7 +85,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
     },
     {
         id: "rule_sdwan_ultra_high",
-        name: "Cost Centric - DC / Regional Hub SDWAN",
+        name: "Cost Centric - DC / Regional Hub WAN",
         priority: 55,
         condition: {
             "and": [

@@ -64,8 +64,8 @@ export async function POST(req: Request) {
           {
             "model": "Model Name (e.g. C9200-24T, MX85)",
             "description": "Short description",
-            "primary_purpose": "SDWAN | LAN | WLAN | Security",
-            "additional_purposes": ["SDWAN", "Security", etc],
+            "primary_purpose": "WAN | LAN | WLAN | Security",
+            "additional_purposes": ["WAN", "Security", etc],
             "family": "Product Family (e.g. Catalyst 9200, Meraki MX)",
             "specs": {
               "performance_rating": "Wire Rate | etc",

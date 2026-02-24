@@ -28,7 +28,7 @@ export const VENDOR_LABELS: Record<typeof VENDOR_IDS[number], string> = {
   hpe_aruba_sdbranch: "HPE Aruba SD BRANCH"
 };
 
-export const EQUIPMENT_PURPOSES = ["SDWAN", "LAN", "WLAN", "Security"] as const;
+export const EQUIPMENT_PURPOSES = ["WAN", "LAN", "WLAN", "Security"] as const;
 export const CELLULAR_TYPES = ["LTE", "5G", "LTE/5G"] as const;
 export const WIFI_STANDARDS = ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"] as const;
 export const EQUIPMENT_STATUSES = ["Supported", "In development", "Not supported", "eos"] as const;
@@ -109,7 +109,7 @@ export const EquipmentSchema = z.preprocess(
   (data: unknown) => {
     if (data && typeof data === 'object') {
       const d = data as any;
-      const ROLE_MAP: Record<string, string> = { "SDWAN": "WAN", "LAN": "LAN", "WLAN": "WLAN", "Security": "SECURITY" };
+      const ROLE_MAP: Record<string, string> = { "WAN": "WAN", "LAN": "LAN", "WLAN": "WLAN", "Security": "SECURITY" };
 
       // Backward compatibility: migrate purpose array to primary/additional
       if (Array.isArray(d.purpose) && !d.primary_purpose) {

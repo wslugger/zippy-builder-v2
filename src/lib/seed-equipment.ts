@@ -8,7 +8,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX67",
         active: true,
         status: "Supported",
-        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
+        primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Entry-level SD-WAN appliance for small branches.",
         specs: {
@@ -27,7 +27,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX68",
         active: true,
         status: "Supported",
-        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
+        primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Small branch appliance with more ports and PoE.",
         specs: {
@@ -47,7 +47,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX85",
         active: true,
         status: "Supported",
-        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
+        primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Mid-range SD-WAN appliance for medium branches.",
         specs: {
@@ -66,7 +66,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX105",
         active: true,
         status: "Supported",
-        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
+        primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "High-performance SD-WAN appliance for large branches.",
         specs: {
@@ -85,7 +85,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "MX250",
         active: true,
         status: "Supported",
-        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
+        primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "High-capacity SD-WAN appliance for large-scale deployments.",
         specs: {
@@ -104,7 +104,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         model: "C8455-G2-MX",
         active: true,
         status: "Supported",
-        primary_purpose: "SDWAN", role: "WAN", additional_purposes: ["Security"],
+        primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Catalyst 8400",
         description: "Ultra-high performance fixed-platform SD-WAN appliance.",
         specs: {
