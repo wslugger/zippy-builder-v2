@@ -255,7 +255,7 @@ ${document.appendixB}
                         </section>
 
                         <section className="mb-12">
-                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-6">3. Site Profiles</h2>
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-6">3. Site Profiles & Equipment</h2>
                             <div className="space-y-12">
                                 {(() => {
                                     // Order categories: SD-WAN -> LAN -> WLAN
@@ -269,8 +269,8 @@ ${document.appendixB}
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="text-xl font-bold text-slate-900">{st.name}</h3>
                                                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${st.category === 'SD-WAN' ? 'bg-blue-100 text-blue-700' :
-                                                        st.category === 'LAN' ? 'bg-emerald-100 text-emerald-700' :
-                                                            'bg-amber-100 text-amber-700'
+                                                    st.category === 'LAN' ? 'bg-emerald-100 text-emerald-700' :
+                                                        'bg-amber-100 text-amber-700'
                                                     }`}>
                                                     {st.category}
                                                 </span>
@@ -280,8 +280,8 @@ ${document.appendixB}
                                                 {st.description}
                                             </p>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-xl border border-slate-200/60">
-                                                <div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                                                <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-200/60">
                                                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Service Profile Traits</h4>
                                                     <ul className="space-y-2">
                                                         <li className="text-sm flex justify-between">
@@ -298,7 +298,7 @@ ${document.appendixB}
                                                         </li>
                                                     </ul>
                                                 </div>
-                                                <div>
+                                                <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-200/60">
                                                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Logic Profile</h4>
                                                     <div className="flex flex-wrap gap-2">
                                                         {st.requiredServices.length > 0 ? st.requiredServices.map((rs, ri) => (
@@ -309,6 +309,33 @@ ${document.appendixB}
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {st.bomItems.length > 0 && (
+                                                <div className="ml-2">
+                                                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                        Equipment Assignments
+                                                    </h4>
+                                                    <div className="overflow-hidden rounded-lg border border-slate-100">
+                                                        <table className="min-w-full divide-y divide-slate-100">
+                                                            <thead className="bg-slate-50/50">
+                                                                <tr>
+                                                                    <th scope="col" className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
+                                                                    <th scope="col" className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Device / Model</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-50 bg-white">
+                                                                {st.bomItems.map((item, ii) => (
+                                                                    <tr key={ii}>
+                                                                        <td className="whitespace-nowrap px-4 py-2 text-sm font-bold text-blue-600">{item.quantity}</td>
+                                                                        <td className="px-4 py-2 text-sm text-slate-700 font-medium">{item.itemName}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ));
                                 })()}
@@ -316,14 +343,7 @@ ${document.appendixB}
                         </section>
 
                         <section className="mb-12">
-                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">4. BOM Summary</h2>
-                            <div className="bg-white">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.bomSummary}</ReactMarkdown>
-                            </div>
-                        </section>
-
-                        <section className="mb-12">
-                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">5. Conclusion</h2>
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">4. Conclusion</h2>
                             <textarea
                                 className="w-full min-h-[150px] p-4 bg-slate-50 border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none print:hidden"
                                 value={document.conclusion}

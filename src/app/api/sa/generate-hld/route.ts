@@ -21,9 +21,10 @@ You MUST respond in pure JSON format matching this schema:
 RULES:
 - Do NOT invent, summarize, or alter the technical descriptions, caveats, or assumptions. Use the text exactly as provided in the JSON.
 - For the 'servicesIncluded' field, you MUST separate each service into its own section using Level 3 headers (e.g., ### Managed LAN). Start each service on a new line and separate each service section with a horizontal rule (---) at the bottom. Under each service, include its description as plain text (not bold), followed by clearly labeled subsections (Level 4 headers) for 'Service Options' and 'Design Options'. 
-- Do NOT generate a 'Site Profiles' or 'Site Types' section. This is handled deterministically by the UI.
+- Do NOT generate a 'Site Profiles', 'Site Types', or 'BOM Summary' section. These are handled deterministically by the UI.
 - For 'Design Options', if the options have a "category" field provided in the JSON, you MUST group them by that category. Output the category name on its own line as bold text (e.g., **Topology**). Directly underneath the category name, list the option as a bullet point using bold text for the option name and plain text for its description (e.g., - **Hub and Spoke (Standard)**: Branch MXs establish...). Ensure you include the exact detailed descriptions as provided in the JSON.
-- Do NOT generate a detailed Bill of Materials table in any section. Only include the 'bomSummary' in the bomSummary field.
+- For the 'executiveSummary' field, include a single concluding sentence that summarizes the total equipment scope (e.g., "The solution encompasses a total of X devices across Y sites...").
+- In the 'bomSummary' field of the JSON response, provide a brief, high-level narrative of the equipment strategy (e.g., why certain models were chosen). This will be used in the Background context.
 - In appendixA, state that the detailed BOM is provided as a separate CSV export.
 - In appendixB, you MUST aggregate and comprehensively list ALL caveats, assumptions, and site technical constraints provided in the payload. Group them by their source (e.g., by service, feature name, or site type name). Use clear bulleted lists.`,
     generationConfig: {

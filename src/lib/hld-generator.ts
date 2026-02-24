@@ -38,6 +38,7 @@ export interface HLDPayload {
         circuitRedundancy: string;
         requiredServices: string[];
         constraints: Array<{ description: string; type: string }>;
+        bomItems: Array<{ itemName: string; quantity: number }>;
     }>;
     servicesIncluded: Array<{
         name: string;
@@ -194,12 +195,23 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         }
     }
 
+    const siteIdLookup = new Map(sites.map(s => [s.name, s.siteTypeId || "generic"]));
+    const equipmentBySiteType: Record<string, Record<string, number>> = {};
+
+    if (bom && bom.items) {
+        bom.items.forEach(item => {
+            if (item.itemType === 'equipment') {
+                const stId = siteIdLookup.get(item.siteName) || "generic";
+                if (!equipmentBySiteType[stId]) equipmentBySiteType[stId] = {};
+                equipmentBySiteType[stId][item.itemName] = (equipmentBySiteType[stId][item.itemName] || 0) + item.quantity;
+            }
+        });
+    }
     const bomSummaryArray = Object.entries(aggregatedBomSummary).map(([itemName, quantity]) => ({
         itemName,
         quantity
     }));
 
-    // 6. Assemble Final Payload
     return {
         projectName: project.name,
         customerName: project.customerName,
@@ -214,7 +226,11 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
             cpeRedundancy: st.defaults?.redundancy?.cpe || "N/A",
             circuitRedundancy: st.defaults?.redundancy?.circuit || "N/A",
             requiredServices: st.defaults?.requiredServices || [],
-            constraints: st.constraints?.map(c => ({ description: c.description, type: c.type })) || []
+            constraints: st.constraints?.map(c => ({ description: c.description, type: c.type })) || [],
+            bomItems: Object.entries(equipmentBySiteType[st.id] || {}).map(([itemName, quantity]) => ({
+                itemName,
+                quantity
+            }))
         })),
         servicesIncluded,
         features: features.map(f => ({
