@@ -216,11 +216,13 @@ export function getEquipmentPerformanceValue(equip: Equipment, throughputBasis?:
     return 0;
 }
 
+import { BOMLineItem } from "./types";
+
 /**
  * Exports detailed BOM items to a CSV file and triggers a browser download.
  * Maps SKU, Item Name, Type, Quantity, Site, Service, and Reasoning.
  */
-export function exportBomToCsv(bomData: any[], projectName: string) {
+export function exportBomToCsv(bomData: BOMLineItem[], projectName: string) {
     if (!bomData || bomData.length === 0) {
         console.warn("[bom-utils] No BOM data available to export.");
         return;
@@ -231,7 +233,7 @@ export function exportBomToCsv(bomData: any[], projectName: string) {
 
     // Map data to rows, ensuring we handle quotes and commas for clean CSV
     const rows = bomData.map(item => [
-        `"${item.sku || ''}"`,
+        `"${item.itemId || ''}"`,
         `"${item.itemName || ''}"`,
         `"${item.itemType || ''}"`,
         item.quantity,
