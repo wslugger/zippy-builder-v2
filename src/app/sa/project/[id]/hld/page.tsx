@@ -280,7 +280,7 @@ ${document.appendixB}
                                                 {st.description}
                                             </p>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                                            <div className="grid grid-cols-1 gap-8 mb-6">
                                                 <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-200/60">
                                                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Service Profile Traits</h4>
                                                     <ul className="space-y-2">
@@ -298,16 +298,7 @@ ${document.appendixB}
                                                         </li>
                                                     </ul>
                                                 </div>
-                                                <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-200/60">
-                                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Logic Profile</h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {(st.requiredServices?.length || 0) > 0 ? st.requiredServices.map((rs, ri) => (
-                                                            <span key={ri} className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-600">
-                                                                {rs}
-                                                            </span>
-                                                        )) : <span className="text-sm text-slate-400 italic">No specific service mandates</span>}
-                                                    </div>
-                                                </div>
+
                                             </div>
 
                                             {(st.bomItems?.length || 0) > 0 && (
