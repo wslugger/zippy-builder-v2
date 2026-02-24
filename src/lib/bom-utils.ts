@@ -215,3 +215,45 @@ export function getEquipmentPerformanceValue(equip: Equipment, throughputBasis?:
     }
     return 0;
 }
+
+/**
+ * Exports detailed BOM items to a CSV file and triggers a browser download.
+ * Maps SKU, Item Name, Type, Quantity, Site, Service, and Reasoning.
+ */
+export function exportBomToCsv(bomData: any[], projectName: string) {
+    if (!bomData || bomData.length === 0) {
+        console.warn("[bom-utils] No BOM data available to export.");
+        return;
+    }
+
+    // Define CSV headers
+    const headers = ["SKU", "Item Name", "Type", "Quantity", "Site Name", "Service", "Reasoning"];
+
+    // Map data to rows, ensuring we handle quotes and commas for clean CSV
+    const rows = bomData.map(item => [
+        `"${item.sku || ''}"`,
+        `"${item.itemName || ''}"`,
+        `"${item.itemType || ''}"`,
+        item.quantity,
+        `"${item.siteName || ''}"`,
+        `"${item.serviceId || ''}"`,
+        `"${(item.reasoning || '').replace(/"/g, '""')}"`
+    ]);
+
+    // Construct CSV content
+    const csvContent = [
+        headers.join(","),
+        ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    // Trigger download in browser
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${projectName.replace(/\s+/g, '_')}_detailed_bom.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}

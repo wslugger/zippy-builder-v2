@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProjectService } from "@/src/lib/firebase";
 import { SiteImportReviewModal } from "@/src/components/sa/SiteImportReviewModal";
+import { exportBomToCsv } from "@/src/lib/bom-utils";
 import { useBOMBuilder } from "./useBOMBuilder";
 import { SiteSidebar } from "./SiteSidebar";
 import { SpecsModal } from "./SpecsModal";
@@ -110,13 +111,21 @@ function BOMBuilderContent() {
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         Online
                                     </span>
-                                    <button
-                                        onClick={handleNext}
-                                        disabled={isSaving}
-                                        className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50"
-                                    >
-                                        {isSaving ? "Saving..." : "Next: HLD \u2192"}
-                                    </button>
+                                    <div className="flex gap-4 items-center">
+                                        <button
+                                            onClick={() => exportBomToCsv(bom?.items || [], project.name)}
+                                            className="text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1"
+                                        >
+                                            Download BOM (.csv)
+                                        </button>
+                                        <button
+                                            onClick={handleNext}
+                                            disabled={isSaving}
+                                            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50"
+                                        >
+                                            {isSaving ? "Saving..." : "Next: HLD \u2192"}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -193,7 +202,13 @@ function BOMBuilderContent() {
                 ) : (
                     <div className="flex-1 flex flex-col relative">
                         <ProjectSummaryDashboard sites={sites} setSiteFilter={setSiteFilter} />
-                        <div className="absolute top-8 right-8">
+                        <div className="absolute top-8 right-8 flex gap-3">
+                            <button
+                                onClick={() => exportBomToCsv(bom?.items || [], project.name)}
+                                className="bg-white text-slate-700 px-6 py-2 rounded-full font-bold shadow-md border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-2"
+                            >
+                                📥 Download Detailed BOM (.csv)
+                            </button>
                             <button
                                 onClick={handleNext}
                                 disabled={isSaving}

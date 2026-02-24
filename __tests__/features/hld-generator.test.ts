@@ -71,13 +71,17 @@ describe("HLD Generator", () => {
             id: "svc1",
             name: "Service 1",
             short_description: "Desc 1",
+            caveats: ["Svc Cav 1"],
+            assumptions: ["Svc Assump 1"],
             service_options: [
                 {
                     id: "opt1",
                     name: "Option 1",
                     short_description: "Opt Desc 1",
+                    caveats: ["Opt Cav 1"],
+                    assumptions: ["Opt Assump 1"],
                     design_options: [
-                        { id: "dopt1", name: "Design Opt 1", short_description: "Design Desc 1" }
+                        { id: "dopt1", name: "Design Opt 1", short_description: "Design Desc 1", caveats: ["Dopt Cav 1"], assumptions: ["Dopt Assump 1"] }
                     ]
                 }
             ]
@@ -125,8 +129,11 @@ describe("HLD Generator", () => {
         expect(payload.servicesIncluded).toHaveLength(1);
         const svc = payload.servicesIncluded[0];
         expect(svc.name).toBe("Service 1");
+        expect(svc.caveats).toBe("Svc Cav 1");
         expect(svc.serviceOptions[0].name).toBe("Option 1");
+        expect(svc.serviceOptions[0].caveats).toBe("Opt Cav 1");
         expect(svc.designOptions[0].name).toBe("Design Opt 1");
+        expect(svc.designOptions[0].caveats).toBe("Dopt Cav 1");
 
         // Check features mapping
         expect(payload.features).toHaveLength(1);

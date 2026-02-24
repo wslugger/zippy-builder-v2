@@ -98,10 +98,13 @@ export const AIService = {
      */
     generateHLDDocument: async (payload: HLDPayload): Promise<string> => {
         try {
+            // Strip detailedBom to save tokens as requested
+            const { detailedBom: _, ...aiPayload } = payload;
+
             const response = await fetch('/api/sa/generate-hld', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ payload })
+                body: JSON.stringify({ payload: aiPayload })
             });
 
             if (!response.ok) {

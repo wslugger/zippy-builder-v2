@@ -37,8 +37,10 @@ export interface HLDPayload {
     servicesIncluded: Array<{
         name: string;
         description: string;
-        serviceOptions: Array<{ name: string; description: string }>;
-        designOptions: Array<{ name: string; description: string }>;
+        assumptions: string;
+        caveats: string;
+        serviceOptions: Array<{ name: string; description: string; assumptions: string; caveats: string }>;
+        designOptions: Array<{ name: string; description: string; assumptions: string; caveats: string }>;
     }>;
     features: Array<{
         name: string;
@@ -46,12 +48,11 @@ export interface HLDPayload {
         assumptions: string;
         caveats: string;
     }>;
-    // We now send a pre-aggregated summary to the LLM to make it easy to write Section 3
     bomSummary: Array<{
         itemName: string;
         quantity: number;
     }>;
-    detailedBom: BOMLineItem[];
+    detailedBom?: BOMLineItem[];
 }
 
 export async function generateHLDPayload(projectId: string): Promise<HLDPayload> {
@@ -132,17 +133,29 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         // Find selected options in catalog
         const serviceOptions = service.service_options?.filter(opt =>
             serviceItems.some(i => i.service_option_id === opt.id)
-        ).map(opt => ({ name: opt.name, description: opt.short_description })) || [];
+        ).map(opt => ({
+            name: opt.name,
+            description: opt.short_description,
+            assumptions: (opt.assumptions || []).join(" "),
+            caveats: (opt.caveats || []).join(" ")
+        })) || [];
 
         const designOptions = service.service_options?.flatMap(opt =>
             opt.design_options?.filter(dOpt =>
                 serviceItems.some(i => i.design_option_id === dOpt.id)
-            ).map(dOpt => ({ name: dOpt.name, description: dOpt.short_description })) || []
+            ).map(dOpt => ({
+                name: dOpt.name,
+                description: dOpt.short_description,
+                assumptions: (dOpt.assumptions || []).join(" "),
+                caveats: (dOpt.caveats || []).join(" ")
+            })) || []
         ) || [];
 
         return {
             name: service.name,
             description: service.short_description,
+            assumptions: (service.assumptions || []).join(" "),
+            caveats: (service.caveats || []).join(" "),
             serviceOptions,
             designOptions
         };
