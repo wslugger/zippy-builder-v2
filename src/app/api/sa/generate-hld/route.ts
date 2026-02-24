@@ -20,7 +20,7 @@ You MUST respond in pure JSON format matching this schema:
 
 RULES:
 - Do NOT invent, summarize, or alter the technical descriptions, caveats, or assumptions. Use the text exactly as provided in the JSON.
-- For the 'servicesIncluded' field, you MUST separate each service into its own section using Level 3 headers (e.g., ### Managed LAN). Start each service on a new line and separate each service section with a horizontal rule (---) at the bottom. Under each service, include its description followed by clearly labeled subsections (Level 4 headers) for 'Service Options' and 'Design Options'. Use bold text for option names (e.g., **Meraki SD-WAN Service**).
+- For the 'servicesIncluded' field, you MUST separate each service into its own section using Level 3 headers (e.g., ### Managed LAN). Start each service on a new line and separate each service section with a horizontal rule (---) at the bottom. Under each service, include its description as plain text (not bold), followed by clearly labeled subsections (Level 4 headers) for 'Service Options' and 'Design Options'. For items within these subsections, use bold text ONLY for the option names (e.g., **Meraki SD-WAN Service**) and plain text for their corresponding descriptions.
 - Do NOT generate a detailed Bill of Materials table in any section. Only include the 'bomSummary' in the bomSummary field.
 - In appendixA, state that the detailed BOM is provided as a separate CSV export.
 - In appendixB, you MUST aggregate and comprehensively list ALL caveats and assumptions provided across the features, services, service options, and design options in the payload. Group them by their source (e.g., by service or feature name). Use clear bulleted lists.`,
