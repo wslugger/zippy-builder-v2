@@ -46,7 +46,11 @@ export interface HLDPayload {
         assumptions: string;
         caveats: string;
     }>;
-    bomSummary: BOM["summary"] | null;
+    // We now send a pre-aggregated summary to the LLM to make it easy to write Section 3
+    bomSummary: Array<{
+        itemName: string;
+        quantity: number;
+    }>;
     detailedBom: BOMLineItem[];
 }
 
@@ -74,8 +78,27 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
 
     items.forEach(item => {
         serviceIds.add(item.service_id);
-        item.enabled_features.forEach(f => featureIds.add(f.feature_id));
+        item.enabled_features?.forEach(f => featureIds.add(f.feature_id));
     });
+
+    // Also include features defined directly on the package
+    if (project.selectedPackageId) {
+        try {
+            const pkg = await PackageService.getPackageById(project.selectedPackageId);
+            pkg?.items?.forEach(item => {
+                // A PackageFeature object has a feature_id property
+                item.enabled_features?.forEach(f => {
+                    if (typeof f === "string") {
+                        featureIds.add(f); // Support legacy string arrays if they exist
+                    } else if (f && f.feature_id) {
+                        featureIds.add(f.feature_id); // The standard PackageFeature interface
+                    }
+                });
+            });
+        } catch (e) {
+            console.warn("Failed to fetch package for feature extraction", e);
+        }
+    }
 
     // 3. Concurrently fetch all dependencies from catalog
     const [
@@ -125,8 +148,9 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         };
     });
 
-    // 5. Build BOM
     let bom: BOM | null = null;
+    const aggregatedBomSummary: Record<string, number> = {};
+
     if (selectedPackage && sites.length > 0 && services.length > 0 && siteTypesCatalog.length > 0) {
         const input: BOMEngineInput = {
             projectId,
@@ -140,7 +164,21 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
             globalParameters
         };
         bom = calculateBOM(input);
+
+        // Aggregate hardware totals
+        if (bom && bom.items) {
+            bom.items.forEach(item => {
+                if (item.itemType === 'equipment') {
+                    aggregatedBomSummary[item.itemName] = (aggregatedBomSummary[item.itemName] || 0) + item.quantity;
+                }
+            });
+        }
     }
+
+    const bomSummaryArray = Object.entries(aggregatedBomSummary).map(([itemName, quantity]) => ({
+        itemName,
+        quantity
+    }));
 
     // 6. Assemble Final Payload
     return {
@@ -158,10 +196,10 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         features: features.map(f => ({
             name: f.name,
             description: f.description,
-            assumptions: f.assumptions?.join(" ") || "",
-            caveats: f.caveats?.join(" ") || ""
+            assumptions: (f.assumptions || []).join(" "),
+            caveats: (f.caveats || []).join(" ")
         })),
-        bomSummary: bom?.summary || null,
+        bomSummary: bomSummaryArray,
         detailedBom: bom?.items || []
     };
 }

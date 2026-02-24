@@ -29,7 +29,10 @@ jest.mock("@/src/lib/firebase/settings", () => ({
 
 jest.mock("@/src/lib/bom-engine", () => ({
     calculateBOM: jest.fn().mockReturnValue({
-        items: [],
+        items: [
+            { itemType: "equipment", itemName: "Switch A", quantity: 2 },
+            { itemType: "equipment", itemName: "Router B", quantity: 1 }
+        ],
         summary: { totalOneTimeCost: 100, totalMonthlyCost: 50, siteCount: 1 }
     }),
 }));
@@ -131,6 +134,8 @@ describe("HLD Generator", () => {
 
         // Check BOM summary
         expect(payload.bomSummary).toBeDefined();
-        expect(payload.bomSummary?.totalOneTimeCost).toBe(100);
+        expect(payload.bomSummary).toHaveLength(2);
+        expect(payload.bomSummary[0].itemName).toBe("Switch A");
+        expect(payload.bomSummary[0].quantity).toBe(2);
     });
 });
