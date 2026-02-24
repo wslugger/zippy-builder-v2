@@ -1,6 +1,7 @@
-import { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Project } from "@/src/lib/types";
+import { Site } from "@/src/lib/bom-types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, storage, PROJECTS_COLLECTION } from "./config";
 import { validateDoc, ProjectSchema } from "./validation";
@@ -75,6 +76,25 @@ export const ProjectService = {
             return snapshot.docs.map(d => validateDoc(ProjectSchema, d.data(), d.id));
         } catch (error) {
             console.error("[ProjectService] Failed to fetch all projects:", error);
+            throw error;
+        }
+    },
+
+    saveSites: async (projectId: string, sites: Site[]): Promise<void> => {
+        try {
+            const batch = writeBatch(db);
+            const sitesRef = collection(db, PROJECTS_COLLECTION, projectId, "sites");
+
+            // Note: In a full app, you might want to delete obsolete sites, but for now we just overwrite/update
+            sites.forEach((site) => {
+                const docRef = site.id ? doc(sitesRef, site.id) : doc(sitesRef);
+                const data = cleanObject({ ...site, id: docRef.id });
+                batch.set(docRef, data);
+            });
+
+            await batch.commit();
+        } catch (error) {
+            console.error("[ProjectService] Failed to save sites:", error);
             throw error;
         }
     }

@@ -1,6 +1,8 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ProjectService } from "@/src/lib/firebase";
 import { SiteImportReviewModal } from "@/src/components/sa/SiteImportReviewModal";
 import { useBOMBuilder } from "./useBOMBuilder";
 import { SiteSidebar } from "./SiteSidebar";
@@ -24,6 +26,9 @@ const AlertIcon = () => (
 // Main content (needs useSearchParams → Suspense wrapper below)
 // ─────────────────────────────────────────────
 function BOMBuilderContent() {
+    const router = useRouter();
+    const [isSaving, setIsSaving] = useState(false);
+
     const state = useBOMBuilder();
     const {
         project, pkg, allPackages, siteTypes, catalog,
@@ -41,6 +46,19 @@ function BOMBuilderContent() {
     } = state;
 
     if (!project) return <div className="p-8">Loading Project...</div>;
+
+    const handleNext = async () => {
+        if (!project || isSaving) return;
+        setIsSaving(true);
+        try {
+            await ProjectService.saveSites(projectId, sites);
+            router.push(`/sa/project/${projectId}/hld`);
+        } catch (error) {
+            console.error("Failed to save sites:", error);
+            alert("Failed to save sites. Please try again.");
+            setIsSaving(false);
+        }
+    };
 
     return (
         <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
@@ -92,12 +110,13 @@ function BOMBuilderContent() {
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         Online
                                     </span>
-                                    <Link
-                                        href={`/sa/project/${projectId}/hld`}
-                                        className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                    <button
+                                        onClick={handleNext}
+                                        disabled={isSaving}
+                                        className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50"
                                     >
-                                        Next: HLD &rarr;
-                                    </Link>
+                                        {isSaving ? "Saving..." : "Next: HLD \u2192"}
+                                    </button>
                                 </div>
                             </div>
 
@@ -175,12 +194,20 @@ function BOMBuilderContent() {
                     <div className="flex-1 flex flex-col relative">
                         <ProjectSummaryDashboard sites={sites} setSiteFilter={setSiteFilter} />
                         <div className="absolute top-8 right-8">
-                            <Link
-                                href={`/sa/project/${projectId}/hld`}
-                                className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+                            <button
+                                onClick={handleNext}
+                                disabled={isSaving}
+                                className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
                             >
-                                Continue to HLD &rarr;
-                            </Link>
+                                {isSaving ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-white rounded-full animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    "Continue to HLD \u2192"
+                                )}
+                            </button>
                         </div>
                     </div>
                 )}
