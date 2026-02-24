@@ -36,7 +36,7 @@ describe('ConsultantChat Feature', () => {
             />
         );
 
-        expect(screen.getByText('Consultant Chat')).toBeInTheDocument();
+        expect(screen.getByText('Package Chat')).toBeInTheDocument();
         expect(screen.getByPlaceholderText(/Ask about package recommendations/i)).toBeInTheDocument();
     });
 });

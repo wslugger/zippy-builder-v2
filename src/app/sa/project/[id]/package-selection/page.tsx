@@ -137,7 +137,7 @@ export default function PackageSelectionPage({ params }: { params: Promise<{ id:
                         onClick={() => setSelectedTab('chat')}
                         className={`flex-1 py-3 text-sm font-medium ${selectedTab === 'chat' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' : 'text-neutral-500 hover:text-neutral-700'}`}
                     >
-                        Consultant Chat
+                        Package Chat
                     </button>
                 </div>
 

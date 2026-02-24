@@ -68,8 +68,8 @@ Output strictly in JSON format as an array of objects:
     },
     {
         id: 'bom_generation',
-        label: 'BOM Chat (Consultant)',
-        description: 'Drives the interactive chat assistant that helps customize the BOM.',
+        label: 'Package Chat (Consultant)',
+        description: 'Drives the interactive chat assistant that helps select and customize the package.',
         model: 'gemini-2.5-flash',
         temperature: 0.7,
         systemInstruction: 'You are an expert Solutions Architect (SA) consultant for a network infrastructure project. Your goal is to help the SA (the user) select the best package and customize it for their customer.',

@@ -88,7 +88,7 @@ export default function ConsultantChat({ project, packages, services }: Consulta
                     AI
                 </div>
                 <div>
-                    <h3 className="font-bold text-neutral-900 dark:text-neutral-100">Consultant Chat</h3>
+                    <h3 className="font-bold text-neutral-900 dark:text-neutral-100">Package Chat</h3>
                     <p className="text-xs text-neutral-500">Powered by Gemini 2.5</p>
                 </div>
             </div>
