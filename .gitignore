@@ -42,3 +42,5 @@ next-env.d.ts
 
 # Service Account Keys
 zippy-builder-v2-*.json
+mcp_config.json
+firebase-debug.log
