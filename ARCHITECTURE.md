@@ -24,6 +24,7 @@ graph TB
         EquipmentService[Equipment Service]
         BOMLogicService[BOM Logic Service]
         MetricsService[Metrics Service]
+        CopilotService[Copilot Service]
     end
     
     Browser --> UI
@@ -49,6 +50,7 @@ erDiagram
     PACKAGE_ITEMS }o--|| TECHNICAL_FEATURES : enables
     CATALOG_METADATA ||--o{ EQUIPMENT : "defines options for"
     USERS ||--o{ ROLES : has
+    BOM_RULES ||--|{ BOM_PARAMETERS : uses
 
     PACKAGES {
         string id
@@ -68,10 +70,16 @@ erDiagram
         string email
         string role
     }
-    BOM_CONFIGURATION {
+    BOM_RULES {
         string id
-        map utilization_thresholds
-        map power_requirements
+        string service
+        string condition
+        array actions
+    }
+    BOM_PARAMETERS {
+        string id
+        string default_value
+        string description
     }
     CATALOG_METADATA {
         string id
@@ -112,6 +120,21 @@ sequenceDiagram
     API->>Firestore: Save to pending_features
 ```
 
+### 3. AI Copilot Suggestions
+```mermaid
+sequenceDiagram
+    participant User
+    participant InlineCopilotTrigger
+    participant API
+    participant GeminiService
+    
+    User->>InlineCopilotTrigger: Click "Sparkle" icon or Ctrl+Space
+    InlineCopilotTrigger->>API: POST /api/copilot-suggest (Context + Prompt)
+    API->>GeminiService: Process request using context
+    GeminiService-->>InlineCopilotTrigger: Stream text suggestion
+    User->>InlineCopilotTrigger: Accept / Reject
+```
+
 ## 🧱 Key Patterns
 - **Server Actions**: Use for form submissions and mutations.
 - **Client Components**: access Firebase via Hooks or passed-down data.
@@ -144,8 +167,9 @@ sequenceDiagram
 - **Pattern**: When "Finalizing" a design, clone the equipment/service data *into* the design document. This protects the project from future catalog changes (e.g., a device being discontinued) while keeping the original historical record accurate for engineering/procurement.
 
 ### 5. Logic as Data (BOM Configuration)
-- **Lesson**: Hardcoding domain logic thresholds (e.g., bandwidth utilization limits or power requirements) creates technical debt and limits adaptability.
-- **Pattern**: Move these values into a centralized `BomConfiguration` stored in Firestore. Refactor services (like `BOMLogicService`) to be **stateful and config-aware**, enabling non-technical administrators to tune the platform's behavior without code changes.
+- **Lesson**: Hardcoding domain logic thresholds (e.g., bandwidth limits, switch sizing logic) creates technical debt and limits adaptability.
+- **Pattern**: Move these thresholds into a **Global Parameter Registry** and extract logic into **BOMLogicRules** stored in Firestore.
+    - **Implementation**: The engine maps these modular rules for parameter assignments or logic updates, while the **Visual Rule Editor** allows administrators to manage conditions and actions securely without engineering deployments.
 
 ### 6. Unified Service Catalog (Stable ID Sync)
 - **Lesson**: Data drift between hardcoded seed data and a dynamic "Unified Catalog" is a common source of bugs.
@@ -165,3 +189,7 @@ sequenceDiagram
 - **Pattern**: Implement **Playwright E2E Tests** focusing on the "Critical Path."
     - **Implementation**: Instead of hitting live backend services (which causes test flakiness, slows down execution, and costs money for AI APIs), use `page.route()` to **mock network responses**.
     - **Benefit**: This guarantees deterministic tests, allowing the CI/CD pipeline to safely and quickly validate that the Next.js UI components correctly process and flow data through the entire complex asynchronous user journey.
+
+### 9. Workflow Metrics & Telemetry
+- **Lesson**: Visibility into long-running, multi-step processes across systems is critical.
+- **Pattern**: Implement a dynamic Metrics Dashboard pulling discrete step progress (e.g., Solution Architecture flow metrics). Rather than hardcoding metric values, flow events update centralized tracking allowing dashboards to reflect accurate real-time states and spot bottlenecks.

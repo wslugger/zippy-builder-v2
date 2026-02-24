@@ -14,5 +14,5 @@ description: create a bugfix branch and fix an issue
 // turbo
 7. Verify the test now passes: `npm run test`
 // turbo
-8. Run comprehensive checks: `npm run lint && npm run build`
+8. Run comprehensive checks: `npm run lint && npm run build && npm run test:e2e`
 9. Suggest the user to use `/mergepush` when done

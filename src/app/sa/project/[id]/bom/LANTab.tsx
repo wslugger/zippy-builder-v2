@@ -71,13 +71,13 @@ export function LANTab({
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">LAN Infrastructure Preferences</h3>
+            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-4">LAN Infrastructure Preferences</h3>
                 <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-slate-50 p-4 rounded-md border border-slate-200 col-span-2">
-                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1">LAN Site Profile</label>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-md border border-slate-200 dark:border-slate-700 col-span-2">
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">LAN Site Profile</label>
                         <select
-                            className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            className="block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             value={selectedSite.lanSiteTypeId || ""}
                             onChange={(e) => handleSiteUpdate({ lanSiteTypeId: e.target.value })}
                         >
@@ -89,7 +89,7 @@ export function LANTab({
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1 flex items-center">
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center">
                             Total LAN Ports Required
                             <InlineCopilotTrigger
                                 onClick={handleAskLanPortsCopilot}
@@ -107,7 +107,7 @@ export function LANTab({
                         >
                             <input
                                 type="number"
-                                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                className="block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                 value={selectedSite.lanPorts || ""}
                                 onChange={(e) => {
                                     handleSiteUpdate({ lanPorts: parseInt(e.target.value) || 0 });
@@ -118,10 +118,10 @@ export function LANTab({
                         </CopilotSuggestion>
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1">PoE Ports Required</label>
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">PoE Ports Required</label>
                         <input
                             type="number"
-                            className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            className="block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             value={selectedSite.requiredPoePorts ?? selectedSite.poePorts ?? ""}
                             onChange={(e) => handleSiteUpdate({ requiredPoePorts: parseInt(e.target.value) || 0 })}
                             placeholder="e.g. 24"
@@ -129,9 +129,9 @@ export function LANTab({
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1">Access Port Speed</label>
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Access Port Speed</label>
                         <select
-                            className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            className="block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             value={selectedSite.accessPortSpeed || ""}
                             onChange={(e) => handleSiteUpdate({ accessPortSpeed: e.target.value as Site["accessPortSpeed"] })}
                         >
@@ -144,9 +144,9 @@ export function LANTab({
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1">PoE Standard</label>
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">PoE Standard</label>
                         <select
-                            className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            className="block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             value={selectedSite.poeStandard || ""}
                             onChange={(e) => handleSiteUpdate({ poeStandard: e.target.value as Site["poeStandard"] })}
                         >
@@ -159,9 +159,9 @@ export function LANTab({
 
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-500 uppercase mb-1">Uplink Type</label>
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Uplink Type</label>
                         <select
-                            className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            className="block w-full rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                             value={selectedSite.uplinkPortType || ""}
                             onChange={(e) => handleSiteUpdate({ uplinkPortType: e.target.value as Site["uplinkPortType"] })}
                         >
@@ -176,16 +176,16 @@ export function LANTab({
                         </select>
                     </div>
                 </div>
-                <div className="mt-6 p-4 border border-slate-100 rounded bg-slate-50 flex items-center justify-between">
+                <div className="mt-6 p-4 border border-slate-100 dark:border-slate-800 rounded bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
                     <div>
-                        <div className="text-xs text-slate-500 uppercase">Estimated Quantity for 48-port Switches</div>
-                        <div className="text-2xl font-bold text-slate-800">
-                            {Math.ceil((selectedSite.lanPorts || 48) / 48)} <span className="text-sm font-normal text-slate-500 text-[10px] ml-1">based on ports</span>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">Estimated Quantity for 48-port Switches</div>
+                        <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                            {Math.ceil((selectedSite.lanPorts || 48) / 48)} <span className="text-sm font-normal text-slate-500 dark:text-slate-400 text-[10px] ml-1">based on ports</span>
                         </div>
                     </div>
                     <div className="text-right">
-                        <div className="text-xs text-slate-500 uppercase">Estimated Capacity Needed</div>
-                        <div className="text-lg font-bold text-slate-700">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">Estimated Capacity Needed</div>
+                        <div className="text-lg font-bold text-slate-700 dark:text-slate-200">
                             {((selectedSite.lanPorts || 0) * (selectedSite.accessPortSpeed === "10G-Copper" || selectedSite.accessPortSpeed === "10G-Fiber" ? 10 : selectedSite.accessPortSpeed === "mGig-Copper" ? 2.5 : 1))} Gbps
                         </div>
                     </div>
@@ -193,19 +193,19 @@ export function LANTab({
             </div>
 
             {/* Generated BOM for LAN */}
-            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Recommended Switch Hardware</h3>
+            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-4">Recommended Switch Hardware</h3>
                 {lanItem ? (
                     <div className="flex flex-col space-y-4">
-                        <div className="flex items-center justify-between p-4 border border-blue-100 bg-blue-50/50 rounded-lg">
+                        <div className="flex items-center justify-between p-4 border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg">
                             <div className="flex items-center space-x-4">
-                                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">🔌</div>
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg">🔌</div>
                                 <div>
-                                    <div className="font-bold text-slate-900 flex items-center">
+                                    <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center">
                                         {lanItem.itemName}
                                         <TraceabilityPopover matchedRules={lanItem.matchedRules} reasoning={lanItem.reasoning} />
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-0.5">{lanItem.reasoning}</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{lanItem.reasoning}</div>
                                     <button
                                         onClick={() => {
                                             const eq = catalog.find(e => e.id === lanItem.itemId);
@@ -228,10 +228,10 @@ export function LANTab({
 
                         {/* Alternative Switch Selection */}
                         {lanItem.alternatives && lanItem.alternatives.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-slate-100">
-                                <label className="block text-xs font-semibold text-slate-600 uppercase mb-2">Select Alternative Switch</label>
+                            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-2">Select Alternative Switch</label>
                                 <select
-                                    className="block w-full max-w-md rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    className="block w-full max-w-md rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                     value={manualSelections[`${selectedSite.name}:managed_lan`] || ""}
                                     onChange={(e) => handleAlternativeChange(e.target.value)}
                                 >

@@ -2,7 +2,7 @@ import { Site, SiteSchema } from "./bom-types";
 
 /**
  * Parses a CSV string into a list of Site objects.
- * Expects headers matching the Sampledocs/sample_site_list.csv format.
+ * Expects headers matching the sampledocs/sample_site_list.csv format.
  */
 export function parseSiteListCSV(csvContent: string): Site[] {
     const lines = csvContent.trim().split('\n');

@@ -41,7 +41,7 @@ export default function ProjectLayout({
         <div className="flex flex-col h-full min-h-[calc(100vh-64px)]">
             {/* Progress Bar Container */}
             <div className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-6 py-4">
+                <div className="max-w-7xl mx-auto px-6 pt-4 pb-10">
                     <div className="flex justify-between items-center mb-2">
                         <h2 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider">
                             Project Workflow
@@ -71,22 +71,22 @@ export default function ProjectLayout({
                                 const isCompleted = index < currentStepIndex;
 
                                 return (
-                                    <div key={step.id} className="flex flex-col items-center group">
+                                    <div key={step.id} className="flex flex-col items-center group relative">
                                         <div
                                             className={`
                                                 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-300 z-10
                                                 ${isActive ? 'bg-blue-600 border-blue-600 text-white scale-110 shadow-lg shadow-blue-500/30' :
                                                     isCompleted ? 'bg-blue-600 border-blue-600 text-white' :
-                                                        'bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-neutral-400'}
+                                                        'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500'}
                                             `}
                                         >
                                             {isCompleted ? '✓' : index + 1}
                                         </div>
                                         <span className={`
-                                            absolute mt-10 text-xs font-medium transition-colors duration-300
+                                            absolute mt-10 text-xs font-medium transition-colors duration-300 whitespace-nowrap
                                             ${isActive ? 'text-blue-600 dark:text-blue-400' :
                                                 isCompleted ? 'text-neutral-900 dark:text-neutral-100' :
-                                                    'text-neutral-400'}
+                                                    'text-neutral-400 dark:text-neutral-500'}
                                         `}>
                                             {step.label}
                                         </span>

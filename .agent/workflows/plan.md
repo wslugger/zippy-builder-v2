@@ -8,5 +8,5 @@ description: Start new features by creating a PLAN.md
    - Feature summary
    - Impacted files
    - Step-by-step implementation plan
-   - Verification steps
+   - Verification steps (unit and e2e)
 4. Ask the user for feedback or approval before starting.

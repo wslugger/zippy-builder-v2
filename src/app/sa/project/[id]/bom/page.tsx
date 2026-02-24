@@ -42,7 +42,7 @@ function BOMBuilderContent() {
     if (!project) return <div className="p-8">Loading Project...</div>;
 
     return (
-        <div className="flex h-screen bg-slate-50 overflow-hidden">
+        <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
             {/* ── Sidebar ── */}
             <SiteSidebar
                 sites={sites}
@@ -66,11 +66,11 @@ function BOMBuilderContent() {
                 {selectedSite ? (
                     <>
                         {/* Header */}
-                        <div className="bg-white border-b border-slate-200 p-6">
+                        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h1 className="text-2xl font-bold text-slate-900">{selectedSite.name}</h1>
-                                    <div className="text-sm text-slate-500 flex items-center space-x-4 mt-1">
+                                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{selectedSite.name}</h1>
+                                    <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center space-x-4 mt-1">
                                         <span>{selectedSite.address}</span>
                                         <span>•</span>
                                         <span>{selectedSite.userCount} Users</span>
@@ -105,15 +105,15 @@ function BOMBuilderContent() {
                         </div>
 
                         {/* Tabs */}
-                        <div className="bg-white border-b border-slate-200 px-6">
+                        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6">
                             <nav className="-mb-px flex space-x-8">
                                 {availableTabs.map((tab) => (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
-                                            ? "border-blue-500 text-blue-600"
-                                            : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"}`}
+                                            ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                                            : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600"}`}
                                     >
                                         <span className="mr-2">{tab.icon}</span>{tab.label}
                                     </button>

@@ -11,7 +11,7 @@ description: create a new feature branch and start development
 5. Update `ARCHITECTURE.md` if the feature introduces new patterns
 6. Implement the feature logic in `src/`
 // turbo
-7. Run all checks: `npm run lint && npm run test`
+7. Run all checks: `npm run lint && npm run test && npm run test:e2e`
 // turbo
 8. Run `npm run build` to verify no regressions
 9. Suggest the user to use `/mergepush` when done

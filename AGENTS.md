@@ -18,6 +18,7 @@ You are **Antigravity**, an advanced AI software engineer working on **ZippyDesi
 - **ALWAYS** "Think First": Analyze `ARCHITECTURE.md` before suggesting major changes.
 - **ALWAYS** Use `npx -y` for new project creation commands.
 - **ALWAYS** Prioritize aesthetics: "Simple" is failing. Use smooth gradients, glassmorphism, and micro-interactions.
+- **ALWAYS** Ensure Playwright E2E tests are updated for complex user flows.
 - **NEVER** Use generic placeholder text (e.g., "Lorem Ipsum"). Use realistic data or `generate_image`.
 - **NEVER** break the `src/` directory structure. Keep components collocated or in `src/components`.
 
@@ -33,3 +34,11 @@ For the AI to assist with setup, ensure these are in `.env.local`:
 2.  **Verify UI with `/audit`**: Checks a component against `.agent/rules/UI_STANDARDS.md`.
 3.  **Code with `/tdd`**: Writes a failing test first conformant to `.agent/rules/TESTING_SUITE.md`.
 4.  **Context Loading**: The AI reads `.agent/rules/` files when relevant keywords (UI, Backend, Test) appear in the prompt.
+
+## 🔌 MCP Integration
+To maximize my capabilities, please enable the **GitHub** and **Firebase** MCP (Model Context Protocol) servers in your AI IDE (Cline, Cursor, Claude Desktop, etc.).
+
+1. **GitHub MCP**: Allows me to manage Pull Requests, issues, and read CI/CD statuses directly.
+2. **Firebase MCP**: Allows me to directly query Firestore and manage configurations without you having to check the Firebase Console.
+
+You can copy the configuration from `mcp_config.json` in the root directory into your IDE's MCP settings file (e.g., `cline_mcp_settings.json` or `.cursor/mcp.json`) and replace the template tokens with your actual access tokens.

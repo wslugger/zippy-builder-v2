@@ -1,6 +1,6 @@
 import { SiteType } from "./site-types";
 
-// Extracted from Sampledocs/SD-WAN Site Type Framework.md
+// Extracted from sampledocs/SD-WAN Site Type Framework.md
 export const SDWAN_SITE_TYPES: SiteType[] = [
     // --- 1. Infrastructure & Core Sites ---
     {
@@ -145,7 +145,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
     }
 ];
 
-// Extracted from Sampledocs/LAN Site Type Framework.md
+// Extracted from sampledocs/LAN Site Type Framework.md
 export const LAN_SITE_TYPES: SiteType[] = [
     // --- 1. Enterprise Campus Tiers ---
     {

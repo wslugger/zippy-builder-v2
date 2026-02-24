@@ -36,6 +36,11 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - **Layout Options**: Choose between High Density, Comfortable, or Card-based layouts for the equipment catalog.
 - **Dark Mode**: Fully supported system-wide dark mode.
 
+### 📊 Dynamic BOM Engine & Admin Hub
+- **Visual Rule Editor**: Allows admins to modify BOM selection logic visually without coding.
+- **Global Parameters Registry**: Centralized manage for BOM constants in Firestore.
+- **Admin Hub**: Reorganized navigation and metrics dashboard for better scalability.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
