@@ -1,6 +1,7 @@
 import { Project, AIAnalysisResult, Package, Service } from "@/src/lib/types";
 import { Site } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
+import { HLDPayload } from "./hld-generator";
 
 export const AIService = {
     /**
@@ -88,6 +89,30 @@ export const AIService = {
             return await response.json();
         } catch (error) {
             console.error("AI Site Classification Failed:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Sends the HLD Payload to the LLM to generate a Markdown document.
+     */
+    generateHLDDocument: async (payload: HLDPayload): Promise<string> => {
+        try {
+            const response = await fetch('/api/sa/generate-hld', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payload })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.details || errorData.error || "HLD Generation failed");
+            }
+
+            const data = await response.json();
+            return data.markdown;
+        } catch (error) {
+            console.error("HLD Document Generation Failed:", error);
             throw error;
         }
     }
