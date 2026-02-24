@@ -31,8 +31,13 @@ export interface HLDPayload {
     };
     siteTypes: Array<{
         name: string;
+        category: "SD-WAN" | "LAN" | "WLAN";
         description: string;
-        slaTier?: string;
+        slaTier: string;
+        cpeRedundancy: string;
+        circuitRedundancy: string;
+        requiredServices: string[];
+        constraints: Array<{ description: string; type: string }>;
     }>;
     servicesIncluded: Array<{
         name: string;
@@ -141,20 +146,20 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         })) || [];
 
         const designOptions = service.service_options?.flatMap(opt =>
-            opt.design_options?.filter(dOpt =>
+            (opt.design_options || []).filter(dOpt =>
                 serviceItems.some(i => i.design_option_id === dOpt.id)
             ).map(dOpt => ({
                 name: dOpt.name,
-                description: dOpt.detailed_description || dOpt.short_description,
+                description: dOpt.detailed_description || dOpt.short_description || "",
                 assumptions: (dOpt.assumptions || []).join(" "),
                 caveats: (dOpt.caveats || []).join(" "),
-                category: dOpt.category
-            })) || []
+                category: dOpt.category || "General"
+            }))
         ) || [];
 
         return {
             name: service.name,
-            description: service.detailed_description || service.short_description,
+            description: service.detailed_description || service.short_description || "",
             assumptions: (service.assumptions || []).join(" "),
             caveats: (service.caveats || []).join(" "),
             serviceOptions,
@@ -203,8 +208,13 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         },
         siteTypes: siteTypesCatalog.map(st => ({
             name: st.name,
+            category: st.category,
             description: st.description,
-            slaTier: st.defaults?.slo?.toString()
+            slaTier: st.defaults?.slo ? `${st.defaults.slo}%` : "N/A",
+            cpeRedundancy: st.defaults?.redundancy?.cpe || "N/A",
+            circuitRedundancy: st.defaults?.redundancy?.circuit || "N/A",
+            requiredServices: st.defaults?.requiredServices || [],
+            constraints: st.constraints?.map(c => ({ description: c.description, type: c.type })) || []
         })),
         servicesIncluded,
         features: features.map(f => ({

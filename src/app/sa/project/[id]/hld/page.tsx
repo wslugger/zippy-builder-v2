@@ -203,38 +203,49 @@ ${document.appendixB}
                                     });
 
                                     return (
-                                        <div key={si} className="border-b border-slate-100 pb-8">
-                                            <h3 className="text-xl font-bold text-blue-900 border-l-4 border-blue-500 pl-3 mb-3">{service.name}</h3>
-                                            <p className="text-slate-700 mb-4">{service.description}</p>
+                                        <div key={si} className="border-b border-slate-200 pb-10 last:border-0">
+                                            <h3 className="text-2xl font-bold text-blue-900 border-l-4 border-blue-600 pl-4 mb-4">{service.name}</h3>
+                                            <p className="text-slate-700 mb-6 leading-relaxed italic">{service.description}</p>
 
                                             {service.serviceOptions.length > 0 && (
-                                                <div className="mb-4">
-                                                    <h4 className="text-base font-semibold text-slate-600 uppercase tracking-wide mb-2">Service Options</h4>
-                                                    <ul className="space-y-2 pl-2">
+                                                <div className="mb-8 ml-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                                    <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                        <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                                        Service Options
+                                                    </h4>
+                                                    <div className="space-y-4">
                                                         {service.serviceOptions.map((opt, oi) => (
-                                                            <li key={oi} className="text-slate-700">
-                                                                <span className="font-semibold">{opt.name}</span>: {opt.description}
-                                                            </li>
+                                                            <div key={oi} className="text-slate-800">
+                                                                <span className="font-bold text-blue-800">{opt.name}</span>: {opt.description}
+                                                            </div>
                                                         ))}
-                                                    </ul>
+                                                    </div>
                                                 </div>
                                             )}
 
                                             {service.designOptions.length > 0 && (
-                                                <div>
-                                                    <h4 className="text-base font-semibold text-slate-600 uppercase tracking-wide mb-3">Design Options</h4>
-                                                    {Object.entries(dOptsByCategory).map(([category, opts]) => (
-                                                        <div key={category} className="mb-4">
-                                                            <p className="font-bold text-slate-800 mb-2">{category}</p>
-                                                            <ul className="space-y-3 pl-2">
-                                                                {opts.map((dOpt, di) => (
-                                                                    <li key={di} className="text-slate-700">
-                                                                        <span className="font-semibold">{dOpt.name}</span>: {dOpt.description}
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    ))}
+                                                <div className="ml-4">
+                                                    <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                                        <span className="w-2 h-2 bg-indigo-400 rounded-full"></span>
+                                                        Design Options
+                                                    </h4>
+                                                    <div className="space-y-8">
+                                                        {Object.entries(dOptsByCategory).sort(([a], [b]) => a.localeCompare(b)).map(([category, opts]) => (
+                                                            <div key={category} className="mb-6">
+                                                                <h5 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-3 pb-1 border-b border-indigo-50 w-fit">
+                                                                    {category}
+                                                                </h5>
+                                                                <ul className="space-y-4 pl-1">
+                                                                    {opts.map((dOpt, di) => (
+                                                                        <li key={di} className="text-slate-800 flex flex-col">
+                                                                            <span className="font-bold text-slate-900">{dOpt.name}</span>
+                                                                            <span className="text-slate-700 leading-relaxed mt-1">{dOpt.description}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -244,14 +255,75 @@ ${document.appendixB}
                         </section>
 
                         <section className="mb-12">
-                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">3. BOM Summary</h2>
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-6">3. Site Profiles</h2>
+                            <div className="space-y-12">
+                                {(() => {
+                                    // Order categories: SD-WAN -> LAN -> WLAN
+                                    const categoryOrder = ["SD-WAN", "LAN", "WLAN"];
+                                    const sortedSiteTypes = [...(payload?.siteTypes || [])].sort((a, b) => {
+                                        return categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category);
+                                    });
+
+                                    return sortedSiteTypes.map((st, i) => (
+                                        <div key={i} className="border-b border-slate-100 pb-10 last:border-0 last:pb-0">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-xl font-bold text-slate-900">{st.name}</h3>
+                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${st.category === 'SD-WAN' ? 'bg-blue-100 text-blue-700' :
+                                                        st.category === 'LAN' ? 'bg-emerald-100 text-emerald-700' :
+                                                            'bg-amber-100 text-amber-700'
+                                                    }`}>
+                                                    {st.category}
+                                                </span>
+                                            </div>
+
+                                            <p className="text-slate-600 mb-6 leading-relaxed italic border-l-2 border-slate-200 pl-4">
+                                                {st.description}
+                                            </p>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-xl border border-slate-200/60">
+                                                <div>
+                                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Service Profile Traits</h4>
+                                                    <ul className="space-y-2">
+                                                        <li className="text-sm flex justify-between">
+                                                            <span className="text-slate-500">SLA Tier:</span>
+                                                            <span className="font-bold text-slate-900">{st.slaTier}</span>
+                                                        </li>
+                                                        <li className="text-sm flex justify-between">
+                                                            <span className="text-slate-500">CPE Redundancy:</span>
+                                                            <span className="font-bold text-slate-900">{st.cpeRedundancy}</span>
+                                                        </li>
+                                                        <li className="text-sm flex justify-between">
+                                                            <span className="text-slate-500">Circuit Redundancy:</span>
+                                                            <span className="font-bold text-slate-900">{st.circuitRedundancy}</span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Logic Profile</h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {st.requiredServices.length > 0 ? st.requiredServices.map((rs, ri) => (
+                                                            <span key={ri} className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-600">
+                                                                {rs}
+                                                            </span>
+                                                        )) : <span className="text-sm text-slate-400 italic">No specific service mandates</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        </section>
+
+                        <section className="mb-12">
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">4. BOM Summary</h2>
                             <div className="bg-white">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.bomSummary}</ReactMarkdown>
                             </div>
                         </section>
 
                         <section className="mb-12">
-                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">4. Conclusion</h2>
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">5. Conclusion</h2>
                             <textarea
                                 className="w-full min-h-[150px] p-4 bg-slate-50 border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none print:hidden"
                                 value={document.conclusion}
@@ -268,9 +340,29 @@ ${document.appendixB}
                         </section>
 
                         <section className="mb-12">
-                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">Appendix B: Assumptions and Caveats</h2>
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">Appendix B: Assumptions, Caveats and Technical Constraints</h2>
                             <div className="bg-white">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.appendixB}</ReactMarkdown>
+
+                                {payload?.siteTypes.some(st => st.constraints.length > 0) && (
+                                    <div className="mt-8 pt-8 border-t border-slate-100">
+                                        <h3 className="text-lg font-bold text-slate-800 mb-4">Site Technical Constraints</h3>
+                                        <div className="space-y-6">
+                                            {payload.siteTypes.filter(st => st.constraints.length > 0).map((st, i) => (
+                                                <div key={i}>
+                                                    <h4 className="text-sm font-bold text-blue-800 mb-2 uppercase tracking-tight">{st.name} Constraints</h4>
+                                                    <ul className="list-disc pl-5 space-y-1">
+                                                        {st.constraints.map((c, ci) => (
+                                                            <li key={ci} className="text-sm text-slate-700">
+                                                                <span className="font-semibold text-slate-800">[{c.type}]:</span> {c.description}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </section>
                     </article>

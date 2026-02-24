@@ -21,10 +21,11 @@ You MUST respond in pure JSON format matching this schema:
 RULES:
 - Do NOT invent, summarize, or alter the technical descriptions, caveats, or assumptions. Use the text exactly as provided in the JSON.
 - For the 'servicesIncluded' field, you MUST separate each service into its own section using Level 3 headers (e.g., ### Managed LAN). Start each service on a new line and separate each service section with a horizontal rule (---) at the bottom. Under each service, include its description as plain text (not bold), followed by clearly labeled subsections (Level 4 headers) for 'Service Options' and 'Design Options'. 
+- Do NOT generate a 'Site Profiles' or 'Site Types' section. This is handled deterministically by the UI.
 - For 'Design Options', if the options have a "category" field provided in the JSON, you MUST group them by that category. Output the category name on its own line as bold text (e.g., **Topology**). Directly underneath the category name, list the option as a bullet point using bold text for the option name and plain text for its description (e.g., - **Hub and Spoke (Standard)**: Branch MXs establish...). Ensure you include the exact detailed descriptions as provided in the JSON.
 - Do NOT generate a detailed Bill of Materials table in any section. Only include the 'bomSummary' in the bomSummary field.
 - In appendixA, state that the detailed BOM is provided as a separate CSV export.
-- In appendixB, you MUST aggregate and comprehensively list ALL caveats and assumptions provided across the features, services, service options, and design options in the payload. Group them by their source (e.g., by service or feature name). Use clear bulleted lists.`,
+- In appendixB, you MUST aggregate and comprehensively list ALL caveats, assumptions, and site technical constraints provided in the payload. Group them by their source (e.g., by service, feature name, or site type name). Use clear bulleted lists.`,
     generationConfig: {
         temperature: 0.1,
         responseMimeType: "application/json",
