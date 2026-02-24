@@ -192,8 +192,54 @@ ${document.appendixB}
 
                         <section className="mb-12">
                             <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">2. Services Included</h2>
-                            <div className="bg-white">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.servicesIncluded}</ReactMarkdown>
+                            <div className="space-y-10">
+                                {payload?.servicesIncluded.map((service, si) => {
+                                    // Group design options by category
+                                    const dOptsByCategory: Record<string, typeof service.designOptions> = {};
+                                    service.designOptions.forEach(dOpt => {
+                                        const cat = dOpt.category || 'General';
+                                        if (!dOptsByCategory[cat]) dOptsByCategory[cat] = [];
+                                        dOptsByCategory[cat].push(dOpt);
+                                    });
+
+                                    return (
+                                        <div key={si} className="border-b border-slate-100 pb-8">
+                                            <h3 className="text-xl font-bold text-blue-900 border-l-4 border-blue-500 pl-3 mb-3">{service.name}</h3>
+                                            <p className="text-slate-700 mb-4">{service.description}</p>
+
+                                            {service.serviceOptions.length > 0 && (
+                                                <div className="mb-4">
+                                                    <h4 className="text-base font-semibold text-slate-600 uppercase tracking-wide mb-2">Service Options</h4>
+                                                    <ul className="space-y-2 pl-2">
+                                                        {service.serviceOptions.map((opt, oi) => (
+                                                            <li key={oi} className="text-slate-700">
+                                                                <span className="font-semibold">{opt.name}</span>: {opt.description}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+
+                                            {service.designOptions.length > 0 && (
+                                                <div>
+                                                    <h4 className="text-base font-semibold text-slate-600 uppercase tracking-wide mb-3">Design Options</h4>
+                                                    {Object.entries(dOptsByCategory).map(([category, opts]) => (
+                                                        <div key={category} className="mb-4">
+                                                            <p className="font-bold text-slate-800 mb-2">{category}</p>
+                                                            <ul className="space-y-3 pl-2">
+                                                                {opts.map((dOpt, di) => (
+                                                                    <li key={di} className="text-slate-700">
+                                                                        <span className="font-semibold">{dOpt.name}</span>: {dOpt.description}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </section>
 

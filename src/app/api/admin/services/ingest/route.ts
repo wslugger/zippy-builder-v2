@@ -47,9 +47,10 @@ export async function POST(req: NextRequest) {
                 "assumptions": [],
                 "design_options": [
                     {
-                        "name": "Selectable Configuration (e.g. Static IP, Managed Router)",
+                        "name": "Selectable Configuration (e.g. Hub and Spoke, Local Breakout)",
                         "short_description": "Brief summary",
-                        "detailed_description": "Technical details",
+                        "detailed_description": "Full technical details explaining how this option works in depth",
+                        "category": "The category this design option belongs to. Must be one of: Topology, East-West Security, Internet Breakout. Choose the best match.",
                         "decision_driver": "Why would a customer choose this specific option?",
                         "pros": ["benefit of this specific choice"],
                         "cons": ["drawback of this specific choice"],
