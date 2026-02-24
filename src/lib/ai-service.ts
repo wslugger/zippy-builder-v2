@@ -115,5 +115,28 @@ export const AIService = {
             console.error("HLD Document Generation Failed:", error);
             throw error;
         }
+    },
+
+    /**
+     * Audits an edited HLD document against the original payload.
+     */
+    auditHLDDocument: async (originalPayload: HLDPayload, editedMarkdown: string): Promise<{ isAligned: boolean; discrepancies: string[] }> => {
+        try {
+            const response = await fetch('/api/sa/audit-hld', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ originalPayload, editedMarkdown })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.details || errorData.error || "HLD Audit failed");
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error("HLD Document Audit Failed:", error);
+            throw error;
+        }
     }
 };
