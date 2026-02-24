@@ -207,7 +207,7 @@ ${document.appendixB}
                                             <h3 className="text-2xl font-bold text-blue-900 border-l-4 border-blue-600 pl-4 mb-4">{service.name}</h3>
                                             <p className="text-slate-700 mb-6 leading-relaxed italic">{service.description}</p>
 
-                                            {service.serviceOptions.length > 0 && (
+                                            {(service.serviceOptions?.length || 0) > 0 && (
                                                 <div className="mb-8 ml-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
                                                     <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                                         <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
@@ -223,7 +223,7 @@ ${document.appendixB}
                                                 </div>
                                             )}
 
-                                            {service.designOptions.length > 0 && (
+                                            {(service.designOptions?.length || 0) > 0 && (
                                                 <div className="ml-4">
                                                     <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
                                                         <span className="w-2 h-2 bg-indigo-400 rounded-full"></span>
@@ -301,7 +301,7 @@ ${document.appendixB}
                                                 <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-200/60">
                                                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Logic Profile</h4>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {st.requiredServices.length > 0 ? st.requiredServices.map((rs, ri) => (
+                                                        {(st.requiredServices?.length || 0) > 0 ? st.requiredServices.map((rs, ri) => (
                                                             <span key={ri} className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-600">
                                                                 {rs}
                                                             </span>
@@ -310,7 +310,7 @@ ${document.appendixB}
                                                 </div>
                                             </div>
 
-                                            {st.bomItems.length > 0 && (
+                                            {(st.bomItems?.length || 0) > 0 && (
                                                 <div className="ml-2">
                                                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
@@ -364,11 +364,11 @@ ${document.appendixB}
                             <div className="bg-white">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.appendixB}</ReactMarkdown>
 
-                                {payload?.siteTypes.some(st => st.constraints.length > 0) && (
+                                {payload?.siteTypes.some(st => (st.constraints?.length || 0) > 0) && (
                                     <div className="mt-8 pt-8 border-t border-slate-100">
                                         <h3 className="text-lg font-bold text-slate-800 mb-4">Site Technical Constraints</h3>
                                         <div className="space-y-6">
-                                            {payload.siteTypes.filter(st => st.constraints.length > 0).map((st, i) => (
+                                            {payload.siteTypes.filter(st => (st.constraints?.length || 0) > 0).map((st, i) => (
                                                 <div key={i}>
                                                     <h4 className="text-sm font-bold text-blue-800 mb-2 uppercase tracking-tight">{st.name} Constraints</h4>
                                                     <ul className="list-disc pl-5 space-y-1">
