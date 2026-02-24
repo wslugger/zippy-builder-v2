@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EQUIPMENT_STATUSES } from "@/src/lib/types";
 
 /**
  * Validates Firestore document data against a Zod schema.
@@ -39,7 +40,7 @@ export const TechnicalFeatureSchema = z.object({
     id: z.string(),
     name: z.string(),
     category: z.string(),
-    status: z.enum(["Supported", "In development", "Not supported"]).optional(),
+    status: z.enum(EQUIPMENT_STATUSES).optional(),
     description: z.string(),
     caveats: z.array(z.string()).optional(),
     assumptions: z.array(z.string()).optional(),

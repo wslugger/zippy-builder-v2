@@ -31,7 +31,7 @@ export const VENDOR_LABELS: Record<typeof VENDOR_IDS[number], string> = {
 export const EQUIPMENT_PURPOSES = ["SDWAN", "LAN", "WLAN", "Security"] as const;
 export const CELLULAR_TYPES = ["LTE", "5G", "LTE/5G"] as const;
 export const WIFI_STANDARDS = ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"] as const;
-export const EQUIPMENT_STATUSES = ["Supported", "In development", "Not supported"] as const;
+export const EQUIPMENT_STATUSES = ["Supported", "In development", "Not supported", "eos"] as const;
 
 export const EQUIPMENT_ROLES = ["WAN", "LAN", "WLAN", "SECURITY"] as const;
 export type EquipmentRole = typeof EQUIPMENT_ROLES[number];
@@ -96,6 +96,9 @@ const BaseEquipmentSchema = z.object({
   end_of_life: z.string().optional().describe("ISO Date string or 'Not Announced'"),
   formFactor: z.string().optional(),
   price: z.number().optional(),
+  listPrice: z.number().optional().describe("Vendor list price from pricing CSV ingest"),
+  pricingEffectiveDate: z.string().optional().describe("ISO date when this price became effective"),
+  eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
   images: z.array(z.string()).optional(),
   createdAt: z.string().optional(),
@@ -488,6 +491,13 @@ export interface BOMLineItem {
   reasoning?: string; // Which rule triggered this?
   alternatives?: { itemId: string; itemName: string; reasoning?: string; specSummary?: string }[];
   matchedRules?: { ruleId: string; ruleName: string; description?: string }[];
+  /** Pricing snapshot captured at BOM generation time. Protects historical BOMs from future price changes. */
+  pricing?: {
+    listPrice: number;
+    discountPercent: number;
+    netPrice: number;
+    effectiveDate?: string;
+  };
 }
 
 export interface BOM {

@@ -29,6 +29,22 @@ jsonLogic.add_operation("includes", (array, value) => {
     return array.includes(value);
 });
 
+/**
+ * Build a pricing snapshot from catalog equipment data.
+ * Defaults discountPercent to 0 so netPrice equals listPrice.
+ */
+function makePricingSnapshot(equip: Equipment): BOMLineItem['pricing'] {
+    const eq = equip as unknown as Record<string, unknown>;
+    const listPrice = typeof eq.listPrice === 'number' ? eq.listPrice : undefined;
+    if (listPrice === undefined) return undefined;
+    return {
+        listPrice,
+        discountPercent: 0,
+        netPrice: listPrice,
+        effectiveDate: typeof eq.pricingEffectiveDate === 'string' ? eq.pricingEffectiveDate : undefined,
+    };
+}
+
 export function calculateBOM(input: BOMEngineInput): BOM {
     const { projectId, sites, selectedPackage, services, siteTypes, equipmentCatalog, manualSelections = {}, globalParameters = {} } = input;
 
@@ -122,7 +138,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         itemType: "equipment",
                         quantity: quantity,
                         reasoning: `Manual Selection`,
-                        matchedRules: [{ ruleId: 'manual', ruleName: 'Manual Override', description: 'User manually selected this equipment' }]
+                        matchedRules: [{ ruleId: 'manual', ruleName: 'Manual Override', description: 'User manually selected this equipment' }],
+                        pricing: makePricingSnapshot(equip),
                     });
                     continue;
                 }
@@ -180,7 +197,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                             ruleId: r.id,
                             ruleName: r.name,
                             description: `Condition: ${JSON.stringify(r.condition)}`
-                        }))
+                        })),
+                        pricing: makePricingSnapshot(equip),
                     });
                     continue;
                 } else {
@@ -411,7 +429,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                             description: `Selected based on Vendor (${vendorId}) and Throughput (${deviceThroughput} Mbps >= ${Math.round(requiredThroughput)} Mbps required).`
                         }
                     ],
-                    alternatives: alternatives.length > 0 ? alternatives : undefined
+                    alternatives: alternatives.length > 0 ? alternatives : undefined,
+                    pricing: makePricingSnapshot(bestFit),
                 });
             }
         }

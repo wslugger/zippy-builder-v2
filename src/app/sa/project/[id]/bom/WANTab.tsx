@@ -98,6 +98,7 @@ export function WANTab({
                             options={catalog
                                 .filter((e) => {
                                     if (getEquipmentRole(e) !== "WAN") return false;
+                                    if ((e as unknown as Record<string, unknown>).status === 'eos') return false;
                                     return e.vendor_id === getVendorForService("managed_sdwan");
                                 })
                                 .map((e) => ({ value: e.id, label: e.model }))}
@@ -120,6 +121,11 @@ export function WANTab({
                                     {currentSDWANEquipment.model}
                                     <TraceabilityPopover matchedRules={currentSDWANItem?.matchedRules} reasoning={currentSDWANItem?.reasoning} />
                                 </h4>
+                                {currentSDWANItem?.pricing?.netPrice !== undefined && (
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 text-right tabular-nums">
+                                        List: ${currentSDWANItem.pricing.netPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })} /unit
+                                    </p>
+                                )}
                                 <button onClick={() => setSelectedSpecsItem(currentSDWANEquipment)} className="text-sm text-blue-600 hover:underline">
                                     View Specs
                                 </button>

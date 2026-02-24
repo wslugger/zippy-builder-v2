@@ -223,6 +223,11 @@ export function LANTab({
                             <div className="text-right">
                                 <div className="text-xs text-slate-500 uppercase">Quantity</div>
                                 <div className="text-2xl font-black text-blue-600">{lanItem.quantity}</div>
+                                {lanItem.pricing?.netPrice !== undefined && (
+                                    <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 tabular-nums">
+                                        ${lanItem.pricing.netPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })} /unit
+                                    </div>
+                                )}
                             </div>
                         </div>
 
