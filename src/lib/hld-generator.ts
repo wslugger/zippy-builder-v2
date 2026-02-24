@@ -40,7 +40,7 @@ export interface HLDPayload {
         assumptions: string;
         caveats: string;
         serviceOptions: Array<{ name: string; description: string; assumptions: string; caveats: string }>;
-        designOptions: Array<{ name: string; description: string; assumptions: string; caveats: string }>;
+        designOptions: Array<{ name: string; description: string; assumptions: string; caveats: string; category?: string }>;
     }>;
     features: Array<{
         name: string;
@@ -147,7 +147,8 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
                 name: dOpt.name,
                 description: dOpt.detailed_description || dOpt.short_description,
                 assumptions: (dOpt.assumptions || []).join(" "),
-                caveats: (dOpt.caveats || []).join(" ")
+                caveats: (dOpt.caveats || []).join(" "),
+                category: dOpt.category
             })) || []
         ) || [];
 
