@@ -93,7 +93,8 @@ export default function AdminNav() {
     const isSettingsActive = [
         '/admin/ingest',
         '/admin/settings',
-        '/admin/bom-logic'
+        '/admin/bom-logic',
+        '/admin/ai-prompts'
     ].some(path => pathname.startsWith(path));
 
     return (
@@ -128,6 +129,7 @@ export default function AdminNav() {
                                     { href: '/admin/ingest', label: 'Ingestion' },
                                     { href: '/admin/settings', label: 'Settings Hub' },
                                     { href: '/admin/bom-logic', label: 'BOM Logic' },
+                                    { href: '/admin/ai-prompts', label: 'AI Prompts' },
                                 ]}
                             />
                         </div>

@@ -1,37 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+import { AIPromptsService } from "@/src/lib/firebase/ai-prompts-service";
+
 // Server-side Gemini initialization
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    systemInstruction: `You are an expert Technical Document Compiler for an enterprise software architecture firm. 
-Your sole responsibility is to take the provided JSON payload and format it into a professional High-Level Design (HLD) document.
-
-You MUST respond in pure JSON format matching this schema:
-{
-  "executiveSummary": "markdown text",
-  "servicesIncluded": "markdown text",
-  "bomSummary": "markdown text",
-  "conclusion": "markdown text",
-  "appendixA": "markdown text",
-  "appendixB": "markdown text"
-}
-
-RULES:
-- Do NOT invent, summarize, or alter the technical descriptions, caveats, or assumptions. Use the text exactly as provided in the JSON.
-- For the 'servicesIncluded' field, you MUST separate each service into its own section using Level 3 headers (e.g., ### Managed LAN). Start each service on a new line and separate each service section with a horizontal rule (---) at the bottom. Under each service, include its description as plain text (not bold), followed by clearly labeled subsections (Level 4 headers) for 'Service Options' and 'Design Options'. 
-- Do NOT generate a 'Site Profiles', 'Site Types', or 'BOM Summary' section. These are handled deterministically by the UI.
-- For 'Design Options', if the options have a "category" field provided in the JSON, you MUST group them by that category. Output the category name on its own line as bold text (e.g., **Topology**). Directly underneath the category name, list the option as a bullet point using bold text for the option name and plain text for its description (e.g., - **Hub and Spoke (Standard)**: Branch MXs establish...). Ensure you include the exact detailed descriptions as provided in the JSON.
-- For the 'executiveSummary' field, include a single concluding sentence that summarizes the total equipment scope (e.g., "The solution encompasses a total of X devices across Y sites...").
-- In the 'bomSummary' field of the JSON response, provide a brief, high-level narrative of the equipment strategy (e.g., why certain models were chosen). This will be used in the Background context.
-- In appendixA, state that the detailed BOM is provided as a separate CSV export.
-- In appendixB, you MUST aggregate and comprehensively list ALL caveats, assumptions, and site technical constraints provided in the payload. Group them by their source (e.g., by service, feature name, or site type name). Use clear bulleted lists.`,
-    generationConfig: {
-        temperature: 0.1,
-        responseMimeType: "application/json",
-    }
-});
 
 export async function POST(req: NextRequest) {
     try {
@@ -41,9 +14,19 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Gemini API Key missing on server" }, { status: 500 });
         }
 
-        const userPrompt = `Please generate the HLD Markdown document based on the following JSON payload:\n\n${JSON.stringify(payload, null, 2)}`;
+        const config = await AIPromptsService.getPromptConfig('hld_generation');
+        const customModel = genAI.getGenerativeModel({
+            model: config.model || "gemini-2.5-flash",
+            systemInstruction: config.systemInstruction,
+            generationConfig: {
+                temperature: config.temperature,
+                responseMimeType: "application/json",
+            }
+        });
 
-        const result = await model.generateContent(userPrompt);
+        const userPrompt = config.userPromptTemplate.replace('{payloadJSON}', JSON.stringify(payload, null, 2));
+
+        const result = await customModel.generateContent(userPrompt);
         const response = await result.response;
         const text = response.text();
 

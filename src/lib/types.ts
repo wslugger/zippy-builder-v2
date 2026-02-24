@@ -323,6 +323,30 @@ export interface AIAnalysisResult {
 }
 
 // ============================================================
+// AI Prompt Admin Types
+// ============================================================
+
+export const PROMPT_IDS = [
+  'package_selection',
+  'recommended_design',
+  'bom_generation',
+  'hld_generation',
+] as const;
+
+export type PromptId = typeof PROMPT_IDS[number];
+
+export interface AIPromptConfig {
+  id: PromptId;
+  label: string;
+  description: string;
+  model: string;           // e.g. "gemini-2.5-flash"
+  temperature: number;     // 0.0 – 1.0
+  systemInstruction?: string;
+  userPromptTemplate: string;
+  updatedAt?: string;
+}
+
+// ============================================================
 // Site Types (formerly site-types.ts)
 // ============================================================
 

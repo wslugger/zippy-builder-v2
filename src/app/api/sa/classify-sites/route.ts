@@ -3,8 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Site } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 
+import { AIPromptsService } from "@/src/lib/firebase/ai-prompts-service";
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 export async function POST(req: NextRequest) {
     console.log("classify-sites: POST request received");
@@ -14,24 +15,19 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Gemini API Key missing on server" }, { status: 500 });
         }
 
-        let body;
-        try {
-            body = await req.json();
-        } catch (_e) {
-            return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-        }
-
+        const body = await req.json();
         const { sites, availableSiteTypes } = body;
 
-        console.log(`Classifying ${sites?.length || 0} sites against ${availableSiteTypes?.length || 0} types`);
-
-        if (!sites || !Array.isArray(sites)) {
-            return NextResponse.json({ error: "No sites provided or sites is not an array" }, { status: 400 });
+        if (!sites || !Array.isArray(sites) || !availableSiteTypes || !Array.isArray(availableSiteTypes)) {
+            return NextResponse.json({ error: "Invalid input: sites and availableSiteTypes must be arrays" }, { status: 400 });
         }
 
-        if (!availableSiteTypes || !Array.isArray(availableSiteTypes)) {
-            return NextResponse.json({ error: "No site types provided or site types is not an array" }, { status: 400 });
-        }
+        const config = await AIPromptsService.getPromptConfig('recommended_design');
+        const customModel = genAI.getGenerativeModel({
+            model: config.model || "gemini-2.5-flash",
+            generationConfig: { temperature: config.temperature },
+            systemInstruction: config.systemInstruction
+        });
 
         const siteTypesContext = (availableSiteTypes as SiteType[]).map(t => {
             const constraintsText = t.constraints?.length > 0
@@ -62,45 +58,11 @@ ${defaultsText}`;
             Notes: ${s.notes || "N/A"}`
         ).join("\n\n---\n\n");
 
-        const prompt = `
-            You are a Network Solutions Architect expert specializing in SD-WAN, LAN, and WLAN deployments.
-            
-            Your task is to classify a list of imported sites into the most appropriate "Site Type" (Deployment Profile) from our catalog.
-            Specifically, you must provide TWO classifications for each site:
-            1. An SD-WAN or Branch profile (siteTypeId)
-            2. A LAN profile (lanSiteTypeId)
-            
-            CRITICAL REQUIREMENT:
-            Base your classification PRIMARILY on the "Matching Rules/Constraints" and "Description" provided for each Site Type below. 
-            If a site definition specifies a user count range or a redundancy model, prioritize that over general assumptions.
+        const prompt = config.userPromptTemplate
+            .replace('{siteTypesContext}', siteTypesContext)
+            .replace('{sitesToClassify}', sitesToClassify);
 
-            AVAILABLE SITE TYPES IN CATALOG:
-            ${siteTypesContext}
-            
-            SITES TO CLASSIFY:
-            ${sitesToClassify}
-            
-            GUIDELINES:
-            1. **Strict Constraint Matching**: If a Site Type has a rule like "userCount min 100", do not assign sites with 20 users to that type.
-            2. **Redundancy Priority**: If a site's data says "Dual CPE", favor Site Types that default to "Dual CPE" redundancy.
-            3. **Description Context**: Use the "Description" field to understand the business intent of the profile (e.g., "Critical Data Center hub").
-            4. **Dual Category Selection**: You MUST pick one SD-WAN/Branch profile AND one LAN profile for each site, looking at the "Category" of the Site Types.
-            5. **Reasoning**: In your JSON output, explain which specific rule or description lead to your choice.
-            
-            Output strictly in JSON format as an array of objects:
-            [
-              {
-                "siteIndex": number,
-                "siteTypeId": "string (must match one of the available IDs for a non-LAN site)",
-                "lanSiteTypeId": "string (must match one of the available IDs for a LAN site)",
-                "confidence": number (0-100),
-                "reasoning": "string (e.g. 'Site has 120 users which matches the Large Office min 100 constraint, and is assigned 3-Tier Campus for LAN')"
-              },
-              ...
-            ]
-        `;
-
-        const result = await model.generateContent(prompt);
+        const result = await customModel.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 

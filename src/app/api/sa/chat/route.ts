@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Package, Project, Service } from '@/src/lib/types';
 
+import { AIPromptsService } from "@/src/lib/firebase/ai-prompts-service";
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 export async function POST(req: NextRequest) {
     try {
@@ -18,37 +19,28 @@ export async function POST(req: NextRequest) {
         const availablePackages = packages as Package[];
         const availableServices = services as Service[];
 
+        const config = await AIPromptsService.getPromptConfig('bom_generation');
+        const customModel = genAI.getGenerativeModel({
+            model: config.model || "gemini-2.5-flash",
+            systemInstruction: config.systemInstruction,
+            generationConfig: { temperature: config.temperature }
+        });
+
         // Construct System Prompt
-        const systemPrompt = `
-You are an expert Solutions Architect (SA) consultant for a network infrastructure project.
-Your goal is to help the SA (the user) select the best package and customize it for their customer: ${project.customerName}.
+        const packageList = availablePackages.map(p => `- ${p.name}: ${p.short_description}`).join('\n');
+        const serviceList = availableServices.map(s => `- ${s.name}`).join('\n');
+        const conversationHistory = history.map((h: { role: string; content: string }) => `${h.role === 'user' ? 'User' : 'Consultant'}: ${h.content}`).join('\n');
 
-Current Project Context:
-- Customer: ${project.customerName}
-- Status: ${project.status}
-- Requirements Summary: ${project.requirementsText || "No requirements uploaded yet."}
+        const prompt = config.userPromptTemplate
+            .replace('{customerName}', project.customerName)
+            .replace('{status}', project.status)
+            .replace('{requirementsSummary}', project.requirementsText || "No requirements uploaded yet.")
+            .replace('{packageList}', packageList)
+            .replace('{serviceList}', serviceList)
+            .replace('{history}', conversationHistory)
+            .replace('{message}', message);
 
-Available Packages:
-${availablePackages.map(p => `- ${p.name}: ${p.short_description}`).join('\n')}
-
-Available Services:
-${availableServices.map(s => `- ${s.name}`).join('\n')}
-
-Rules:
-1. Be helpful, professional, and concise.
-2. Guide the user towards a standard package if possible, but explain trade-offs.
-3. If the user asks about specific features (e.g., "Does Meraki support BGP?"), answer based on general knowledge but reference the catalog if needed.
-4. If recommending a package, mention WHY it fits the requirements.
-5. Do not hallucinate features that don't exist in standard networking equipment.
-
-Current Conversation History:
-${history.map((h: { role: string; content: string }) => `${h.role === 'user' ? 'User' : 'Consultant'}: ${h.content}`).join('\n')}
-
-User: ${message}
-Consultant:
-`;
-
-        const result = await model.generateContent(systemPrompt);
+        const result = await customModel.generateContent(prompt);
         const response = result.response.text();
 
         return NextResponse.json({ response });

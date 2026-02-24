@@ -4,9 +4,17 @@ import { Project } from '@/src/lib/types';
 import { ProjectService } from '@/src/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { DEFAULT_WORKFLOW_STEPS } from '@/src/lib/workflow-defaults';
 
 // Using a placeholder User ID for now since we don't have Auth context yet
 const MOCK_USER_ID = "user_123";
+
+/** Map a project's currentStep (2-based) to the correct workflow path. */
+function getResumePathForStep(currentStep: number): string {
+    const index = currentStep - 2; // currentStep 2 = index 0 (package-selection)
+    const step = DEFAULT_WORKFLOW_STEPS[index];
+    return step?.path ?? 'package-selection';
+}
 
 export default function SADashboard() {
     const router = useRouter();
@@ -93,7 +101,7 @@ export default function SADashboard() {
                     {projects.map(project => (
                         <div
                             key={project.id}
-                            onClick={() => router.push(`/sa/project/${project.id}/package-selection`)}
+                            onClick={() => router.push(`/sa/project/${project.id}/${getResumePathForStep(project.currentStep)}`)}
                             className="group relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 hover:shadow-lg transition-all cursor-pointer hover:border-blue-500/50"
                         >
                             <div className="flex justify-between items-start mb-4">
@@ -101,8 +109,8 @@ export default function SADashboard() {
                                     {project.customerName.charAt(0).toUpperCase()}
                                 </div>
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${project.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                        project.status === 'customizing' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                                            'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                    project.status === 'customizing' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                                     }`}>
                                     {project.status.replace('_', ' ')}
                                 </span>

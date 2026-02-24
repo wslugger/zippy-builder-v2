@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Package } from "@/src/lib/types";
+import { AIPromptsService } from "@/src/lib/firebase/ai-prompts-service";
 
 // Server-side Gemini initialization
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 export async function POST(req: NextRequest) {
     try {
@@ -14,31 +14,27 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Gemini API Key missing on server" }, { status: 500 });
         }
 
+        const config = await AIPromptsService.getPromptConfig('package_selection');
+        const customModel = genAI.getGenerativeModel({
+            model: config.model || "gemini-2.5-flash",
+            generationConfig: { temperature: config.temperature }
+        });
+
         const packageSummaries = (availablePackages as Package[]).map(p =>
             `- ID: ${p.id}\n  Name: ${p.name}\n  Description: ${p.short_description}`
         ).join("\n\n");
 
-        const prompt = `
-            You are a Solutions Architect expert.
-            
-            Analyze the following Customer Requirements and recommend the BEST fitting package from the available options.
-            
-            AVAILABLE PACKAGES:
-            ${packageSummaries}
-            
-            ${requirementsText ? `CUSTOMER REQUIREMENTS:\n"${requirementsText}"` : 'Analyze the attached document containing Customer Requirements.'}
-            
-            Output strictly in JSON format:
-            {
-              "packageId": "string (must match one of the available IDs)",
-              "confidence": number (0-100),
-              "reasoning": "string (concise explanation)"
-            }
-        `;
+        const requirementsTextSection = requirementsText
+            ? `CUSTOMER REQUIREMENTS:\n"${requirementsText}"`
+            : 'Analyze the attached document containing Customer Requirements.';
+
+        const prompt = config.userPromptTemplate
+            .replace('{packageSummaries}', packageSummaries)
+            .replace('{requirementsTextSection}', requirementsTextSection);
 
         let result;
         if (fileBase64 && mimeType) {
-            result = await model.generateContent([
+            result = await customModel.generateContent([
                 prompt,
                 {
                     inlineData: {
@@ -48,7 +44,7 @@ export async function POST(req: NextRequest) {
                 }
             ]);
         } else {
-            result = await model.generateContent(prompt);
+            result = await customModel.generateContent(prompt);
         }
 
         const response = await result.response;
