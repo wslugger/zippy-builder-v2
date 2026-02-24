@@ -1,4 +1,4 @@
-import { Project, AIAnalysisResult, Package, Service } from "@/src/lib/types";
+import { Project, AIAnalysisResult, Package, Service, GeneratedHLD } from "@/src/lib/types";
 import { Site } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { HLDPayload } from "./hld-generator";
@@ -94,9 +94,9 @@ export const AIService = {
     },
 
     /**
-     * Sends the HLD Payload to the LLM to generate a Markdown document.
+     * Sends the HLD Payload to the LLM to generate a structured JSON document.
      */
-    generateHLDDocument: async (payload: HLDPayload): Promise<string> => {
+    generateHLDDocument: async (payload: HLDPayload): Promise<GeneratedHLD> => {
         try {
             // Strip detailedBom to save tokens as requested
             const { detailedBom: _, ...aiPayload } = payload;
@@ -114,7 +114,11 @@ export const AIService = {
             }
 
             const data = await response.json();
-            return data.markdown;
+            // The API now returns { markdown: { executiveSummary: "...", ... } }
+            // Wait, actually I should check the API implementation again.
+            // In generate-hld/route.ts, it returns NextResponse.json({ markdown: text });
+            // Since I set responseMimeType: "application/json", 'text' is the JSON string.
+            return JSON.parse(data.markdown);
         } catch (error) {
             console.error("HLD Document Generation Failed:", error);
             throw error;

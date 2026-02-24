@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { Project, Package } from '@/src/lib/types';
+import { Project, Package, GeneratedHLD } from '@/src/lib/types';
 import { ProjectService, PackageService } from '@/src/lib/firebase';
 import { AIService } from '@/src/lib/ai-service';
 import { generateHLDPayload, HLDPayload } from '@/src/lib/hld-generator';
 import { exportBomToCsv } from '@/src/lib/bom-utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
 
 export default function HLDPage({ params }: { params: Promise<{ id: string }> }) {
@@ -14,7 +16,7 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
     const [project, setProject] = useState<Project | null>(null);
     const [pkg, setPkg] = useState<Package | null>(null);
     const [loading, setLoading] = useState(true);
-    const [markdown, setMarkdown] = useState<string>('');
+    const [document, setDocument] = useState<GeneratedHLD | null>(null);
     const [payload, setPayload] = useState<HLDPayload | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isAuditing, setIsAuditing] = useState(false);
@@ -52,8 +54,8 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
         if (!payload) return;
         setIsGenerating(true);
         try {
-            const doc = await AIService.generateHLDDocument(payload);
-            setMarkdown(doc);
+            const hld = await AIService.generateHLDDocument(payload);
+            setDocument(hld);
             setIsEditing(true);
             setError(null);
         } catch (error: unknown) {
@@ -65,10 +67,30 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
     };
 
     const handleAudit = async () => {
-        if (!payload || !markdown) return;
+        if (!payload || !document) return;
         setIsAuditing(true);
         try {
-            const result = await AIService.auditHLDDocument(payload, markdown);
+            // Reconstitute document for audit
+            const fullText = `
+# Executive Summary
+${document.executiveSummary}
+
+# Services Included
+${document.servicesIncluded}
+
+# BOM Summary
+${document.bomSummary}
+
+# Conclusion
+${document.conclusion}
+
+# Appendix A
+${document.appendixA}
+
+# Appendix B
+${document.appendixB}
+            `;
+            const result = await AIService.auditHLDDocument(payload, fullText);
             setAuditResult(result);
         } catch (error) {
             console.error("Audit failed:", error);
@@ -82,13 +104,16 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
         setAuditResult(null);
     };
 
+    const updateDoc = (field: keyof GeneratedHLD, value: string) => {
+        if (!document) return;
+        setDocument({ ...document, [field]: value });
+    };
+
     if (loading || !project || !pkg) return <div className="p-10 text-center">Loading Project Data...</div>;
     if (isGenerating) return <div className="p-10 text-center flex flex-col items-center justify-center min-h-[400px]">
         <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-4" />
         <p className="text-xl font-medium text-slate-700">AI is compiling your High-Level Design...</p>
     </div>;
-
-    // const createdDate = new Date(project.createdAt).toLocaleDateString();
 
     return (
         <div className="max-w-4xl mx-auto p-8 mb-20">
@@ -136,15 +161,15 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
                 </div>
             )}
 
-            <div className="bg-white dark:bg-white text-black shadow-2xl rounded-sm min-h-screen p-12 print:shadow-none print:m-0">
-                {!isEditing ? (
+            <div className="bg-white dark:bg-white text-black shadow-2xl rounded-sm min-h-screen p-12 print:shadow-none print:p-0">
+                {!isEditing || !document ? (
                     <div className="flex flex-col items-center justify-center min-h-[400px] text-center print:hidden">
                         <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-3xl mb-6">
                             📝
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Generate HLD Markdown</h2>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Generate HLD Document</h2>
                         <p className="text-slate-500 max-w-md mb-8">
-                            Click below to have the AI compile your technical configurations into a professional Markdown document ready for export.
+                            Click below to have the AI compile your technical configurations into a professional report.
                         </p>
                         <button
                             onClick={handleGenerate}
@@ -154,32 +179,55 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
                         </button>
                     </div>
                 ) : (
-                    <div className="h-full flex flex-col">
-                        <div className="flex justify-between items-center mb-4 pb-2 border-b border-neutral-200 print:hidden">
-                            <h2 className="text-2xl font-bold text-blue-900">Edit High-Level Design</h2>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => window.print()}
-                                    className="text-slate-500 hover:text-slate-800 text-sm font-medium"
-                                >
-                                    🖨️ PDF Preview
-                                </button>
+                    <article className="prose prose-slate max-w-none">
+                        <section className="mb-12">
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">1. Executive Summary</h2>
+                            <textarea
+                                className="w-full min-h-[150px] p-4 bg-slate-50 border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none print:hidden"
+                                value={document.executiveSummary}
+                                onChange={(e) => updateDoc('executiveSummary', e.target.value)}
+                            />
+                            <div className="hidden print:block whitespace-pre-wrap">{document.executiveSummary}</div>
+                        </section>
+
+                        <section className="mb-12">
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">2. Services Included</h2>
+                            <div className="bg-white">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.servicesIncluded}</ReactMarkdown>
                             </div>
-                        </div>
+                        </section>
 
-                        {/* Print View: Rendered Text */}
-                        <div className="hidden print:block whitespace-pre-wrap font-sans text-black bg-white">
-                            {markdown}
-                        </div>
+                        <section className="mb-12">
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">3. BOM Summary</h2>
+                            <div className="bg-white">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.bomSummary}</ReactMarkdown>
+                            </div>
+                        </section>
 
-                        {/* Edit View: Textarea */}
-                        <textarea
-                            className="flex-1 w-full min-h-[650px] p-6 font-mono text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-neutral-50 shadow-inner print:hidden"
-                            value={markdown}
-                            onChange={(e) => setMarkdown(e.target.value)}
-                            placeholder="Markdown content will appear here..."
-                        />
-                    </div>
+                        <section className="mb-12">
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">4. Conclusion</h2>
+                            <textarea
+                                className="w-full min-h-[150px] p-4 bg-slate-50 border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none print:hidden"
+                                value={document.conclusion}
+                                onChange={(e) => updateDoc('conclusion', e.target.value)}
+                            />
+                            <div className="hidden print:block whitespace-pre-wrap">{document.conclusion}</div>
+                        </section>
+
+                        <section className="page-break-before mb-12">
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">Appendix A: Detailed BOM</h2>
+                            <div className="bg-white">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.appendixA}</ReactMarkdown>
+                            </div>
+                        </section>
+
+                        <section className="mb-12">
+                            <h2 className="text-2xl font-bold text-blue-900 border-b-2 border-blue-100 pb-2 mb-4">Appendix B: Assumptions and Caveats</h2>
+                            <div className="bg-white">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.appendixB}</ReactMarkdown>
+                            </div>
+                        </section>
+                    </article>
                 )}
             </div>
 
@@ -221,7 +269,7 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
                                         Auditing...
                                     </>
                                 ) : (
-                                    <>🔍 Run Technical Audit</>
+                                    <>🔍 Technical Audit</>
                                 )}
                             </button>
 

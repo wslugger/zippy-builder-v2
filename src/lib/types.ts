@@ -304,6 +304,15 @@ export interface Project {
   customizedItems?: PackageItem[];
 }
 
+export interface GeneratedHLD {
+  executiveSummary: string;
+  servicesIncluded: string;
+  bomSummary: string;
+  conclusion: string;
+  appendixA: string;
+  appendixB: string;
+}
+
 export interface AIAnalysisResult {
   packageId: string;
   confidence: number;
