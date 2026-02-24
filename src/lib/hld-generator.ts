@@ -135,7 +135,7 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
             serviceItems.some(i => i.service_option_id === opt.id)
         ).map(opt => ({
             name: opt.name,
-            description: opt.short_description,
+            description: opt.detailed_description || opt.short_description,
             assumptions: (opt.assumptions || []).join(" "),
             caveats: (opt.caveats || []).join(" ")
         })) || [];
@@ -145,7 +145,7 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
                 serviceItems.some(i => i.design_option_id === dOpt.id)
             ).map(dOpt => ({
                 name: dOpt.name,
-                description: dOpt.short_description,
+                description: dOpt.detailed_description || dOpt.short_description,
                 assumptions: (dOpt.assumptions || []).join(" "),
                 caveats: (dOpt.caveats || []).join(" ")
             })) || []
@@ -153,7 +153,7 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
 
         return {
             name: service.name,
-            description: service.short_description,
+            description: service.detailed_description || service.short_description,
             assumptions: (service.assumptions || []).join(" "),
             caveats: (service.caveats || []).join(" "),
             serviceOptions,
@@ -198,7 +198,7 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         projectName: project.name,
         customerName: project.customerName,
         executiveSummaryBasis: {
-            packageDescription: selectedPackage?.short_description || "Custom configuration",
+            packageDescription: selectedPackage?.detailed_description || selectedPackage?.short_description || "Custom configuration",
         },
         siteTypes: siteTypesCatalog.map(st => ({
             name: st.name,
