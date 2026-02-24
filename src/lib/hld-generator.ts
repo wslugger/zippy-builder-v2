@@ -38,7 +38,7 @@ export interface HLDPayload {
         circuitRedundancy: string;
         requiredServices: string[];
         constraints: Array<{ description: string; type: string }>;
-        bomItems: Array<{ itemName: string; quantity: number }>;
+        bomItems: Array<{ itemName: string; quantity: number; category: string }>;
     }>;
     servicesIncluded: Array<{
         name: string;
@@ -196,14 +196,26 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
     }
 
     const siteIdLookup = new Map(sites.map(s => [s.name, s.siteTypeId || "generic"]));
-    const equipmentBySiteType: Record<string, Record<string, number>> = {};
+    const equipmentBySiteType: Record<string, Record<string, { quantity: number; category: string }>> = {};
 
     if (bom && bom.items) {
         bom.items.forEach(item => {
             if (item.itemType === 'equipment') {
                 const stId = siteIdLookup.get(item.siteName) || "generic";
                 if (!equipmentBySiteType[stId]) equipmentBySiteType[stId] = {};
-                equipmentBySiteType[stId][item.itemName] = (equipmentBySiteType[stId][item.itemName] || 0) + item.quantity;
+
+                if (!equipmentBySiteType[stId][item.itemName]) {
+                    const equip = equipmentCatalog.find(e => e.id === item.itemId);
+                    let category = "WAN"; // Default
+                    if (equip) {
+                        const purpose = equip.primary_purpose;
+                        if (purpose === "SDWAN" || purpose === "Security") category = "WAN";
+                        else if (purpose === "LAN") category = "LAN";
+                        else if (purpose === "WLAN") category = "WLAN";
+                    }
+                    equipmentBySiteType[stId][item.itemName] = { quantity: 0, category };
+                }
+                equipmentBySiteType[stId][item.itemName].quantity += item.quantity;
             }
         });
     }
@@ -227,9 +239,10 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
             circuitRedundancy: st.defaults?.redundancy?.circuit || "N/A",
             requiredServices: st.defaults?.requiredServices || [],
             constraints: st.constraints?.map(c => ({ description: c.description, type: c.type })) || [],
-            bomItems: Object.entries(equipmentBySiteType[st.id] || {}).map(([itemName, quantity]) => ({
+            bomItems: Object.entries(equipmentBySiteType[st.id] || {}).map(([itemName, data]) => ({
                 itemName,
-                quantity
+                quantity: data.quantity,
+                category: data.category
             }))
         })),
         servicesIncluded,

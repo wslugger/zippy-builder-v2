@@ -316,23 +316,36 @@ ${document.appendixB}
                                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                                                         Equipment Assignments
                                                     </h4>
-                                                    <div className="overflow-hidden rounded-lg border border-slate-100">
-                                                        <table className="min-w-full divide-y divide-slate-100">
-                                                            <thead className="bg-slate-50/50">
-                                                                <tr>
-                                                                    <th scope="col" className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
-                                                                    <th scope="col" className="px-4 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Device / Model</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-slate-50 bg-white">
-                                                                {st.bomItems.map((item, ii) => (
-                                                                    <tr key={ii}>
-                                                                        <td className="whitespace-nowrap px-4 py-2 text-sm font-bold text-blue-600">{item.quantity}</td>
-                                                                        <td className="px-4 py-2 text-sm text-slate-700 font-medium">{item.itemName}</td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
+
+                                                    <div className="space-y-6">
+                                                        {["WAN", "LAN", "WLAN"].map(cat => {
+                                                            const items = st.bomItems.filter(item => item.category === cat);
+                                                            if (items.length === 0) return null;
+
+                                                            return (
+                                                                <div key={cat} className="overflow-hidden rounded-lg border border-slate-100 shadow-sm transition-all hover:shadow-md">
+                                                                    <div className="bg-slate-50/80 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                                                                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
+                                                                            {cat === 'WAN' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                                                                            {cat === 'LAN' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                                                                            {cat === 'WLAN' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
+                                                                            {cat} Infrastructure
+                                                                        </span>
+                                                                        <span className="text-[10px] font-bold text-slate-400">{items.reduce((sum, i) => sum + i.quantity, 0)} Total Units</span>
+                                                                    </div>
+                                                                    <table className="min-w-full divide-y divide-slate-100">
+                                                                        <tbody className="divide-y divide-slate-50 bg-white">
+                                                                            {items.map((item, ii) => (
+                                                                                <tr key={ii} className="hover:bg-slate-50/50 transition-colors">
+                                                                                    <td className="whitespace-nowrap px-4 py-2.5 text-sm font-bold text-blue-600 w-16 text-center">{item.quantity}</td>
+                                                                                    <td className="px-4 py-2.5 text-sm text-slate-700 font-medium">{item.itemName}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             )}
