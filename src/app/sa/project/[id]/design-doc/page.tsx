@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, use } from 'react';
 import { Project, Package, Service } from '@/src/lib/types';
 import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
