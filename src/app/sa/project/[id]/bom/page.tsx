@@ -9,6 +9,7 @@ import { WANTab } from "./WANTab";
 import { LANTab } from "./LANTab";
 import { WLANTab } from "./WLANTab";
 import { ProjectSummaryDashboard } from "./ProjectSummaryDashboard";
+import Link from "next/link";
 
 // ─────────────────────────────────────────────
 // Small local icons (trivial, kept in page file)
@@ -87,10 +88,16 @@ function BOMBuilderContent() {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex flex-col items-end gap-2">
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         Online
                                     </span>
+                                    <Link
+                                        href={`/sa/project/${projectId}/hld`}
+                                        className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                    >
+                                        Next: HLD &rarr;
+                                    </Link>
                                 </div>
                             </div>
 
@@ -165,7 +172,17 @@ function BOMBuilderContent() {
                         </div>
                     </>
                 ) : (
-                    <ProjectSummaryDashboard sites={sites} setSiteFilter={setSiteFilter} />
+                    <div className="flex-1 flex flex-col relative">
+                        <ProjectSummaryDashboard sites={sites} setSiteFilter={setSiteFilter} />
+                        <div className="absolute top-8 right-8">
+                            <Link
+                                href={`/sa/project/${projectId}/hld`}
+                                className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+                            >
+                                Continue to HLD &rarr;
+                            </Link>
+                        </div>
+                    </div>
                 )}
 
                 {/* ── Modals ── */}
