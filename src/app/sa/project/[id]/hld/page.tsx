@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { Project, Package, Service } from '@/src/lib/types';
-import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
+import { Project, Package } from '@/src/lib/types';
+import { ProjectService, PackageService } from '@/src/lib/firebase';
 import { AIService } from '@/src/lib/ai-service';
 import { generateHLDPayload, HLDPayload } from '@/src/lib/hld-generator';
 import Link from 'next/link';
@@ -19,6 +19,7 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
     const [isAuditing, setIsAuditing] = useState(false);
     const [auditResult, setAuditResult] = useState<{ isAligned: boolean; discrepancies: string[] } | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -53,8 +54,10 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
             const doc = await AIService.generateHLDDocument(payload);
             setMarkdown(doc);
             setIsEditing(true);
-        } catch (error) {
+            setError(null);
+        } catch (error: unknown) {
             console.error("Generation failed:", error);
+            setError(error instanceof Error ? error.message : "HLD Generation failed. Please try again.");
         } finally {
             setIsGenerating(false);
         }
@@ -84,7 +87,7 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
         <p className="text-xl font-medium text-slate-700">AI is compiling your High-Level Design...</p>
     </div>;
 
-    const createdDate = new Date(project.createdAt).toLocaleDateString();
+    // const createdDate = new Date(project.createdAt).toLocaleDateString();
 
     return (
         <div className="max-w-4xl mx-auto p-8 mb-20">
@@ -94,6 +97,22 @@ export default function HLDPage({ params }: { params: Promise<{ id: string }> })
                     <p className="text-slate-500 mt-1">Review, refine, and audit the AI-generated design document.</p>
                 </div>
             </div>
+
+            {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-3">
+                    <span className="text-xl">❌</span>
+                    <div>
+                        <p className="font-bold">Generation Error</p>
+                        <p className="text-sm">{error}</p>
+                    </div>
+                    <button
+                        onClick={() => setError(null)}
+                        className="ml-auto text-red-400 hover:text-red-600"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             {auditResult && (
                 <div className={`mb-6 p-6 rounded-lg border flex flex-col gap-4 ${auditResult.isAligned

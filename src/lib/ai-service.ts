@@ -106,7 +106,8 @@ export const AIService = {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.details || errorData.error || "HLD Generation failed");
+                const message = errorData.details ? `${errorData.error}: ${errorData.details}` : (errorData.error || "HLD Generation failed");
+                throw new Error(message);
             }
 
             const data = await response.json();
@@ -130,7 +131,8 @@ export const AIService = {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.details || errorData.error || "HLD Audit failed");
+                const message = errorData.details ? `${errorData.error}: ${errorData.details}` : (errorData.error || "HLD Audit failed");
+                throw new Error(message);
             }
 
             return await response.json();
