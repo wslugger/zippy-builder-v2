@@ -6,7 +6,7 @@ describe("Equipment Polymorphic Schema", () => {
             id: "cisco_c8300_1n1s_4t2x",
             model: "C8300-1N1S-4T2X",
             vendor_id: "cisco_catalyst",
-            primary_purpose: "SDWAN", additional_purposes: [],
+            primary_purpose: "WAN", additional_purposes: [],
             role: "WAN",
             specs: {
                 rawFirewallThroughputMbps: 2000,
@@ -77,7 +77,7 @@ describe("Equipment Polymorphic Schema", () => {
             id: "legacy_router",
             model: "Legacy Router",
             vendor_id: "cisco_catalyst",
-            primary_purpose: "SDWAN", additional_purposes: [],
+            primary_purpose: "WAN", additional_purposes: [],
             specs: {
                 rawFirewallThroughputMbps: 1000,
                 sdwanCryptoThroughputMbps: 0,

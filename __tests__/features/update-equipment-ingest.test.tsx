@@ -14,7 +14,7 @@ jest.mock('@google/generative-ai', () => ({
                             {
                                 model: 'MX85',
                                 description: 'Meraki MX85 Security Appliance',
-                                primary_purpose: 'SDWAN',
+                                primary_purpose: 'WAN',
                                 additional_purposes: ['Security'],
                                 family: 'Meraki MX',
                                 specs: {
@@ -40,7 +40,7 @@ jest.mock('@/src/lib/firebase', () => ({
     MetadataService: {
         getCatalogMetadata: jest.fn().mockResolvedValue({
             fields: {
-                purposes: { values: ['SDWAN', 'LAN', 'WLAN', 'Security'] }
+                purposes: { values: ['WAN', 'LAN', 'WLAN', 'Security'] }
             }
         })
     }
@@ -54,7 +54,7 @@ describe('Equipment Ingest Logic', () => {
                 {
                     model: 'MX85',
                     description: 'Meraki MX85 Security Appliance',
-                    primary_purpose: 'SDWAN',
+                    primary_purpose: 'WAN',
                     additional_purposes: ['Security'],
                     family: 'Meraki MX',
                     specs: {
@@ -71,7 +71,7 @@ describe('Equipment Ingest Logic', () => {
         };
 
         const vendorId = 'meraki';
-        const userSelectedPurposes = ['SDWAN'];
+        const userSelectedPurposes = ['WAN'];
 
         // Extraction logic from route.ts (re-implemented here for testing since the API file won't load in Jest)
         const finalItems = geminiExtraction.items.map((item: any) => {
@@ -94,7 +94,7 @@ describe('Equipment Ingest Logic', () => {
 
         const item = finalItems[0];
         expect(item.model).toBe('MX85');
-        expect(item.primary_purpose).toBe('SDWAN');
+        expect(item.primary_purpose).toBe('WAN');
         expect(item.additional_purposes).toContain('Security');
         expect(item.id).toBe('meraki_mx85');
 
