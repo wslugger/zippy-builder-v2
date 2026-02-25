@@ -64,12 +64,20 @@
 - **Key Insight**: Never trust that the database contains valid configuration IDs for external APIs. Logic should always include a mapping or validation layer that re-maps known invalid/stale values (e.g., `gemini-3.0-flash` → `gemini-2.5-flash`) before reaching the API client.
 - **Result**: This strategy prevents breaking the UI for existing projects when backend models are deprecated or misconfigured.
 
-## 12. Preserving Sort Order in UI Derived States
-**Issue**: Using `Array.from(new Set(...))` to extract unique values (like Service IDs from a package) destroys the explicit sort order defined in the admin catalog. This led to services appearing in a random or ID-based order on the project summary page.
+## 12. Preserving Sort Order in UI and Document Payloads
+**Issue**: Using `Array.from(new Set(...))` to extract unique values or fetching referenced items individually (e.g., via `getServiceById` in a loop) destroys the explicit sort order defined in the admin catalog. This caused services to appear in a random or ID-based order on the project summary page and within the generated High-Level Design (HLD) document sections.
 **Solution**:
-- **Iterative Filtering**: Instead of deriving a unique set from the child items, iterate over the canonical, pre-sorted "master" list (e.g., all services) and filter them based on presence in the package.
-- **Key Insight**: When order matters, the source of truth for the iteration should be the list that *owns* the order property, not the list that merely *consumes* or *references* the items.
-- **Pattern**: `services.filter(s => pkgItems.some(i => i.id === s.id)).map(...)` is safer than `[...new Set(pkgItems.map(i => i.id))].map(...)`.
+- **Iterative Filtering from Master List**: Instead of building a list from the referenced IDs, fetch the canonical, pre-sorted "master" list (e.g., `ServiceService.getAllServices()`) and filter it based on presence in the project.
+- **Key Insight**: When order matters, the source of truth for the iteration must be the list that *owns* the order property. This applies to both UI rendering and backend-generated payloads (like the HLD generator).
+- **Pattern**: 
+  ```typescript
+  // BAD: order is lost
+  const services = await Promise.all(serviceIds.map(id => getServiceById(id)));
+  
+  // GOOD: order is preserved from the database/service layer
+  const allServices = await ServiceService.getAllServices();
+  const services = allServices.filter(s => serviceIds.has(s.id));
+  ```
 73: 
 74: ## 13. UI Hierarchy Alignment
 75: **Issue**: Navigation menus and central landing pages (Hubs) often drift apart in organization as new features are added. This leads to friction where the top-nav expects a certain categorization (e.g., "Settings & Data") while the page central view uses a hybrid (e.g., "Data & Ingestion").
