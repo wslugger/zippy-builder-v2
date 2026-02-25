@@ -63,3 +63,10 @@
 - **Application-Level Sanitization**: Implemented a `sanitizeModelName` layer in the data service.
 - **Key Insight**: Never trust that the database contains valid configuration IDs for external APIs. Logic should always include a mapping or validation layer that re-maps known invalid/stale values (e.g., `gemini-3.0-flash` → `gemini-2.5-flash`) before reaching the API client.
 - **Result**: This strategy prevents breaking the UI for existing projects when backend models are deprecated or misconfigured.
+
+## 12. Preserving Sort Order in UI Derived States
+**Issue**: Using `Array.from(new Set(...))` to extract unique values (like Service IDs from a package) destroys the explicit sort order defined in the admin catalog. This led to services appearing in a random or ID-based order on the project summary page.
+**Solution**:
+- **Iterative Filtering**: Instead of deriving a unique set from the child items, iterate over the canonical, pre-sorted "master" list (e.g., all services) and filter them based on presence in the package.
+- **Key Insight**: When order matters, the source of truth for the iteration should be the list that *owns* the order property, not the list that merely *consumes* or *references* the items.
+- **Pattern**: `services.filter(s => pkgItems.some(i => i.id === s.id)).map(...)` is safer than `[...new Set(pkgItems.map(i => i.id))].map(...)`.

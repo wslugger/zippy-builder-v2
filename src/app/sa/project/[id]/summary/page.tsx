@@ -97,30 +97,32 @@ export default function PackageSummaryPage({ params }: { params: Promise<{ id: s
                             </h2>
                             <div className="bg-neutral-50 dark:bg-neutral-950 rounded-xl p-6 border border-neutral-100 dark:border-neutral-800">
                                 <ul className="space-y-3">
-                                    {/* Group and display services uniquely by ID for higher level summary */}
-                                    {Array.from(new Set(selectedPackage.items.map(i => i.service_id))).map((serviceId) => {
-                                        const serviceDoc = services.find(s => s.id === serviceId);
-                                        const serviceName = serviceDoc?.name || serviceId;
-                                        const items = selectedPackage.items.filter(i => i.service_id === serviceId);
-                                        const mainInclusion = items.find(i => i.inclusion_type === 'required') ? 'required' : items[0].inclusion_type;
+                                    {/* Iterate over sorted services, filtering to those in the package */}
+                                    {services
+                                        .filter(s => selectedPackage.items.some(i => i.service_id === s.id))
+                                        .map((serviceDoc) => {
+                                            const serviceId = serviceDoc.id;
+                                            const serviceName = serviceDoc.name || serviceId;
+                                            const items = selectedPackage.items.filter(i => i.service_id === serviceId);
+                                            const mainInclusion = items.find(i => i.inclusion_type === 'required') ? 'required' : items[0].inclusion_type;
 
-                                        return (
-                                            <li key={serviceId} className="flex items-start gap-4 p-3 hover:bg-white dark:hover:bg-neutral-900 rounded-lg transition-colors border border-transparent hover:border-neutral-100">
-                                                <div className={`mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0 ${mainInclusion === 'required' ? 'bg-blue-600' : 'bg-green-500'}`} />
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-neutral-900 dark:text-neutral-100">{serviceName}</span>
-                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter ${mainInclusion === 'required' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                                                            {mainInclusion}
-                                                        </span>
+                                            return (
+                                                <li key={serviceId} className="flex items-start gap-4 p-3 hover:bg-white dark:hover:bg-neutral-900 rounded-lg transition-colors border border-transparent hover:border-neutral-100">
+                                                    <div className={`mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0 ${mainInclusion === 'required' ? 'bg-blue-600' : 'bg-green-500'}`} />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-neutral-900 dark:text-neutral-100">{serviceName}</span>
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter ${mainInclusion === 'required' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                                                {mainInclusion}
+                                                            </span>
+                                                        </div>
+                                                        {serviceDoc?.short_description && (
+                                                            <p className="text-sm text-neutral-500 mt-0.5">{serviceDoc.short_description}</p>
+                                                        )}
                                                     </div>
-                                                    {serviceDoc?.short_description && (
-                                                        <p className="text-sm text-neutral-500 mt-0.5">{serviceDoc.short_description}</p>
-                                                    )}
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
+                                                </li>
+                                            );
+                                        })}
                                 </ul>
                             </div>
                         </div>

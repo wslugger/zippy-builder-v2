@@ -246,6 +246,7 @@ export interface ServiceOption extends ServiceItem {
 export interface Service extends ServiceItem, Timestamps {
   service_options: ServiceOption[];
   active: boolean;
+  sortOrder?: number;
   metadata?: {
     category?: string;
     [key: string]: unknown;

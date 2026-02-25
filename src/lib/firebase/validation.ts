@@ -72,6 +72,7 @@ const ServiceOptionSchema = ServiceItemBaseSchema.extend({
 export const ServiceSchema = ServiceItemBaseSchema.extend({
     service_options: z.array(ServiceOptionSchema).default([]),
     active: z.boolean().default(true),
+    sortOrder: z.number().optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
