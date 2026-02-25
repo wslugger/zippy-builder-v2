@@ -1,0 +1,29 @@
+name: Automated Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy on Local Ubuntu Server
+    runs-on: self-hosted # <--- The critical routing tag
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+        
+      - name: Build Production Payload
+        run: npm run build
+        
+      - name: Restart Application Service
+        run: pm2 restart zippy-builder || pm2 start npm --name "zippy-builder" -- start
