@@ -89,4 +89,26 @@ describe("AIPromptsService", () => {
         expect(rendered).toContain("PKG-A, PKG-B");
         expect(rendered).toContain("Needs Fast Wi-Fi");
     });
+
+    it("should include bom_logic_rules in DEFAULT_AI_PROMPTS", () => {
+        const bomLogicEntry = DEFAULT_AI_PROMPTS.find(p => p.id === 'bom_logic_rules');
+        expect(bomLogicEntry).toBeDefined();
+        expect(bomLogicEntry!.label).toBe('BOM Logic Rules');
+        expect(bomLogicEntry!.model).toBe('gemini-2.5-flash');
+        expect(bomLogicEntry!.temperature).toBe(0.1);
+        expect(bomLogicEntry!.systemInstruction).toContain('rules engine');
+        expect(bomLogicEntry!.userPromptTemplate).toContain('{serviceCategory}');
+        expect(bomLogicEntry!.userPromptTemplate).toContain('{instruction}');
+    });
+
+    it("should return bom_logic_rules defaults when Firestore doc does not exist", async () => {
+        (getDoc as jest.Mock).mockResolvedValue({
+            exists: () => false
+        });
+
+        const config = await AIPromptsService.getPromptConfig('bom_logic_rules');
+        expect(config.id).toBe('bom_logic_rules');
+        expect(config.label).toBe('BOM Logic Rules');
+        expect(config.systemInstruction).toContain('JSON Logic');
+    });
 });

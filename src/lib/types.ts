@@ -332,6 +332,7 @@ export const PROMPT_IDS = [
   'recommended_design',
   'bom_generation',
   'hld_generation',
+  'bom_logic_rules',
 ] as const;
 
 export type PromptId = typeof PROMPT_IDS[number];
