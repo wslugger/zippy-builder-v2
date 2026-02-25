@@ -70,3 +70,10 @@
 - **Iterative Filtering**: Instead of deriving a unique set from the child items, iterate over the canonical, pre-sorted "master" list (e.g., all services) and filter them based on presence in the package.
 - **Key Insight**: When order matters, the source of truth for the iteration should be the list that *owns* the order property, not the list that merely *consumes* or *references* the items.
 - **Pattern**: `services.filter(s => pkgItems.some(i => i.id === s.id)).map(...)` is safer than `[...new Set(pkgItems.map(i => i.id))].map(...)`.
+73: 
+74: ## 13. UI Hierarchy Alignment
+75: **Issue**: Navigation menus and central landing pages (Hubs) often drift apart in organization as new features are added. This leads to friction where the top-nav expects a certain categorization (e.g., "Settings & Data") while the page central view uses a hybrid (e.g., "Data & Ingestion").
+76: **Solution**:
+77: - **Consistency by Design**: Refactored the Admin Hub layout to strictly mirror the Top Navigation dropdown categories. 
+78: - **Rule**: Hub pages should serve as an "expanded" version of the navigation menu, providing better descriptions but maintaining the same logical grouping and hierarchy.
+79: - **Verification**: Added automated tests to ensure critical entry points (like the Start Page "Admin" link) point to the consolidated Hub rather than individual sub-pages, centralizing the user's mental model.

@@ -12,7 +12,7 @@ export default function Home() {
 
         <div className="mt-12 flex flex-wrap justify-center gap-6">
           <a
-            href="/admin/catalog"
+            href="/admin"
             className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-zinc-300 hover:bg-zinc-100 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-left w-64 shadow-sm"
           >
             <h2 className="mb-3 text-2xl font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
