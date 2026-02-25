@@ -45,10 +45,16 @@ export default function AIPromptEditor({ config, onSave, onReset }: AIPromptEdit
                             onChange={(e) => setDraft({ ...draft, model: e.target.value })}
                             className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         >
-                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                            <option value="gemini-3.0-flash">Gemini 3.0 Flash</option>
-                            <option value="gemini-2.5-flash-live">Gemini 2.5 Flash (Live)</option>
-                            <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
+                            <optgroup label="Stable Models">
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</option>
+                                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            </optgroup>
+                            <optgroup label="Preview & Experimental">
+                                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Preview)</option>
+                                <option value="gemini-3-pro-preview">Gemini 3 Pro (Preview)</option>
+                                <option value="gemini-3-flash-preview">Gemini 3 Flash (Preview)</option>
+                            </optgroup>
                         </select>
                         <p className="mt-2 text-[11px] text-zinc-400">Select the Gemini model to power this step.</p>
                     </div>

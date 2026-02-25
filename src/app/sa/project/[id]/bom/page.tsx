@@ -11,8 +11,8 @@ import { SpecsModal } from "./SpecsModal";
 import { WANTab } from "./WANTab";
 import { LANTab } from "./LANTab";
 import { WLANTab } from "./WLANTab";
+import { PricingTab } from "./PricingTab";
 import { ProjectSummaryDashboard } from "./ProjectSummaryDashboard";
-import Link from "next/link";
 
 // ─────────────────────────────────────────────
 // Small local icons (trivial, kept in page file)
@@ -108,6 +108,14 @@ function BOMBuilderContent() {
                                     </div>
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-2">
+                                    {activeTab === "Pricing" && (
+                                        <button
+                                            onClick={() => setSelectedSiteIndex(null)}
+                                            className="text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest flex items-center gap-1"
+                                        >
+                                            ← Back to Dashboard
+                                        </button>
+                                    )}
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         Online
                                     </span>
@@ -197,11 +205,40 @@ function BOMBuilderContent() {
                                     selectedSite={selectedSite}
                                 />
                             )}
+
+                            {/* ── Pricing Tab ── */}
+                            {activeTab === "Pricing" && (
+                                <PricingTab state={state} />
+                            )}
+                        </div>
+                    </>
+                ) : activeTab === "Pricing" ? (
+                    <>
+                        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Project Pricing Analysis</h1>
+                                    <p className="text-sm text-slate-500 mt-1">Simulate discounts and hardware swaps across all {sites.length} sites.</p>
+                                </div>
+                                <button
+                                    onClick={() => { setActiveTab("WAN"); setSelectedSiteIndex(0); }}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-700 transition-all"
+                                >
+                                    Review Site Configurations
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-6">
+                            <PricingTab state={state} />
                         </div>
                     </>
                 ) : (
                     <div className="flex-1 flex flex-col relative">
-                        <ProjectSummaryDashboard sites={sites} setSiteFilter={setSiteFilter} />
+                        <ProjectSummaryDashboard
+                            sites={sites}
+                            setSiteFilter={setSiteFilter}
+                            onViewPricing={() => setActiveTab("Pricing")}
+                        />
                         <div className="absolute top-8 right-8 flex gap-3">
                             <button
                                 onClick={() => exportBomToCsv(bom?.items || [], project.name)}

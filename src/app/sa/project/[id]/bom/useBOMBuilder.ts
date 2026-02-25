@@ -8,6 +8,7 @@ import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { calculateBOM, calculateUtilization, validatePOE } from "@/src/lib/bom-engine";
+import { normalizeServiceId } from "@/src/lib/bom-utils";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
 import { AIService } from "@/src/lib/ai-service";
@@ -98,6 +99,24 @@ export interface BOMBuilderState {
     /** Call to update any properties on the currently selected site */
     handleSiteUpdate: (updates: Partial<Site>) => void;
     projectId: string;
+
+    // Pricing & Simulation
+    globalDiscount: number;
+    setGlobalDiscount: (d: number) => void;
+    swapSimulation: { fromItemId: string; toItemId: string } | null;
+    setSwapSimulation: (s: { fromItemId: string; toItemId: string } | null) => void;
+    pricingSummary: {
+        totalListPrice: number;
+        totalNetPrice: number;
+        totalSavings: number;
+        siteSummaries: Record<string, { list: number; net: number }>;
+    };
+    simulatedPricingSummary: {
+        totalListPrice: number;
+        totalNetPrice: number;
+        totalSavings: number;
+        delta: number;
+    } | null;
 }
 
 export function useBOMBuilder(): BOMBuilderState {
@@ -130,6 +149,10 @@ export function useBOMBuilder(): BOMBuilderState {
     // ---- AI state ----
     const [isClassifying, setIsClassifying] = useState(false);
     const [previewSites, setPreviewSites] = useState<PreviewSite[] | null>(null);
+
+    // ---- Pricing & Simulation state ----
+    const [globalDiscount, setGlobalDiscount] = useState<number>(0);
+    const [swapSimulation, setSwapSimulation] = useState<{ fromItemId: string; toItemId: string } | null>(null);
 
     // -------------------------------------------------------
     // Data loading
@@ -202,6 +225,7 @@ export function useBOMBuilder(): BOMBuilderState {
         }
 
         loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectId]);
 
     // Engine instantiation removed in favor of pure functions
@@ -215,6 +239,7 @@ export function useBOMBuilder(): BOMBuilderState {
                 { id: "WAN", label: "WAN", serviceIds: ["managed_sdwan"], primaryServiceId: "managed_sdwan", icon: "🌐" },
                 { id: "LAN", label: "LAN", serviceIds: ["managed_lan"], primaryServiceId: "managed_lan", icon: "🔌" },
                 { id: "WLAN", label: "WLAN", serviceIds: ["managed_wifi"], primaryServiceId: "managed_wifi", icon: "📶" },
+                { id: "Pricing", label: "Pricing", serviceIds: [], primaryServiceId: "", icon: "💰" },
             ];
         }
 
@@ -226,9 +251,11 @@ export function useBOMBuilder(): BOMBuilderState {
         };
 
         pkg.items.forEach((pItem) => {
-            const serviceId = pItem.service_id;
-            const service = services.find((s) => s.id === serviceId);
+            const rawServiceId = pItem.service_id;
+            const service = services.find((s) => s.id === rawServiceId);
             if (!service) return;
+            // Use canonical (normalized) ID so it matches what the BOM engine emits
+            const serviceId = normalizeServiceId(rawServiceId);
             const name = service.name.toLowerCase();
             const category = (service.metadata?.category || "").toLowerCase();
             if (name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || category.includes("wan")) {
@@ -242,7 +269,7 @@ export function useBOMBuilder(): BOMBuilderState {
             }
         });
 
-        return Object.entries(buckets)
+        const tabs = Object.entries(buckets)
             .filter(([, data]) => data.services.length > 0)
             .map(([key, data]) => ({
                 id: key,
@@ -251,6 +278,11 @@ export function useBOMBuilder(): BOMBuilderState {
                 primaryServiceId: data.services[0],
                 icon: data.icon,
             }));
+
+        // Always add Pricing tab
+        tabs.push({ id: "Pricing", label: "Pricing", serviceIds: [], primaryServiceId: "", icon: "💰" });
+
+        return tabs;
     }, [pkg, services]);
 
     // Sync activeTab when available tabs change
@@ -279,6 +311,83 @@ export function useBOMBuilder(): BOMBuilderState {
         }
         return null;
     }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections, globalParameters]);
+
+    // -------------------------------------------------------
+    // Pricing Analysis
+    // -------------------------------------------------------
+    const pricingSummary = useMemo(() => {
+        const summary = {
+            totalListPrice: 0,
+            totalNetPrice: 0,
+            totalSavings: 0,
+            siteSummaries: {} as Record<string, { list: number; net: number }>
+        };
+
+        if (!bom) return summary;
+
+        // Only count items from the canonical managed services that the site tabs render.
+        // WAN tab: managed_sdwan, LAN tab: managed_lan
+        // TODO: Add "managed_wifi" here once WLAN features are built out.
+        const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan"]);
+        bom.items
+            .filter(item => SITE_TAB_SERVICE_IDS.has(item.serviceId))
+            .forEach(item => {
+                const listPrice = item.pricing?.listPrice || 0;
+                const qty = item.quantity || 0;
+                const itemTotalList = listPrice * qty;
+
+                // Global discount REPLACES any existing discount per requirement
+                const itemTotalNet = itemTotalList * (1 - globalDiscount / 100);
+
+                summary.totalListPrice += itemTotalList;
+                summary.totalNetPrice += itemTotalNet;
+
+                if (!summary.siteSummaries[item.siteName]) {
+                    summary.siteSummaries[item.siteName] = { list: 0, net: 0 };
+                }
+                summary.siteSummaries[item.siteName].list += itemTotalList;
+                summary.siteSummaries[item.siteName].net += itemTotalNet;
+            });
+
+        summary.totalSavings = summary.totalListPrice - summary.totalNetPrice;
+        return summary;
+    }, [bom, globalDiscount]);
+
+    const simulatedPricingSummary = useMemo(() => {
+        if (!bom || !swapSimulation) return null;
+
+        const fromEquip = catalog.find(e => e.id === swapSimulation.fromItemId);
+        const toEquip = catalog.find(e => e.id === swapSimulation.toItemId);
+        if (!fromEquip || !toEquip) return null;
+
+        const summary = {
+            totalListPrice: 0,
+            totalNetPrice: 0,
+            totalSavings: 0,
+            delta: 0
+        };
+
+        bom.items.forEach(item => {
+            let listPrice = item.pricing?.listPrice || 0;
+            const qty = item.quantity || 0;
+
+            // If this item is the one we are swapping FROM
+            if (item.itemId === swapSimulation.fromItemId) {
+                listPrice = toEquip.listPrice || 0;
+            }
+
+            const itemTotalList = listPrice * qty;
+            const itemTotalNet = itemTotalList * (1 - globalDiscount / 100);
+
+            summary.totalListPrice += itemTotalList;
+            summary.totalNetPrice += itemTotalNet;
+        });
+
+        summary.totalSavings = summary.totalListPrice - summary.totalNetPrice;
+        summary.delta = summary.totalNetPrice - pricingSummary.totalNetPrice;
+
+        return summary;
+    }, [bom, swapSimulation, catalog, globalDiscount, pricingSummary.totalNetPrice]);
 
     const selectedSite = selectedSiteIndex !== null ? sites[selectedSiteIndex] : undefined;
     const siteBOMItems = bom?.items.filter((i) => i.siteName === selectedSite?.name) ?? [];
@@ -415,5 +524,11 @@ export function useBOMBuilder(): BOMBuilderState {
         handleSiteTypeChange,
         handleSiteUpdate,
         projectId,
+        globalDiscount,
+        setGlobalDiscount,
+        swapSimulation,
+        setSwapSimulation,
+        pricingSummary,
+        simulatedPricingSummary,
     };
 }

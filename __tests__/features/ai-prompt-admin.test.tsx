@@ -40,7 +40,7 @@ describe("AIPromptsService", () => {
 
     it("should merge Firestore values with defaults", async () => {
         const mockData = {
-            model: "gemini-3.0-flash",
+            model: "gemini-2.5-pro",
             temperature: 0.5
         };
 
@@ -53,11 +53,27 @@ describe("AIPromptsService", () => {
         const defaultVal = DEFAULT_AI_PROMPTS.find(p => p.id === 'package_selection')!;
 
         expect(config.id).toBe('package_selection');
-        expect(config.model).toBe('gemini-3.0-flash');
+        expect(config.model).toBe('gemini-2.5-pro');
         expect(config.temperature).toBe(0.5);
         // Should keep default instruction/template if not in Firestore
         expect(config.systemInstruction).toBe(defaultVal.systemInstruction);
         expect(config.userPromptTemplate).toBe(defaultVal.userPromptTemplate);
+    });
+
+    it("should sanitize hallucinated model names from Firestore", async () => {
+        const mockData = {
+            model: "gemini-3.0-flash", // Hallucinated ID
+            temperature: 0.5
+        };
+
+        (getDoc as jest.Mock).mockResolvedValue({
+            exists: () => true,
+            data: () => mockData
+        });
+
+        const config = await AIPromptsService.getPromptConfig('package_selection');
+        // gemini-3.0-flash should be re-mapped to gemini-2.5-flash
+        expect(config.model).toBe('gemini-2.5-flash');
     });
 
     it("should correctly template prompts (Logic verification in service usage)", () => {

@@ -88,13 +88,35 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
         });
 
+        const processedServices = new Set<string>();
         for (const pkgItem of sortedPackageItems) {
             const service = services.find(s => s.id === pkgItem.service_id);
             if (!service) continue;
 
             const canonicalServiceId = normalizeServiceId(service.id);
+            if (processedServices.has(canonicalServiceId)) {
+                console.log(`[BOMEngine] Skipping duplicate service ${canonicalServiceId} in package for site ${site.name}`);
+                continue;
+            }
+            processedServices.add(canonicalServiceId);
+
             const selectionKey = `${site.name}:${canonicalServiceId}`;
             const manualOverrideId = manualSelections[selectionKey];
+
+            // TODO: Remove this guard once WLAN features and equipment catalog are built out.
+            // Currently managed_wifi service exists in packages but WLAN equipment/logic is incomplete.
+            if (canonicalServiceId === "managed_wifi") {
+                continue;
+            }
+
+            // Guard: Skip LAN if site has no users, no APs, and no LAN ports
+            if (canonicalServiceId === "managed_lan") {
+                const totalEndpoints = (Number(site.userCount) || 0) + (Number(site.indoorAPs) || 0) + (Number(site.outdoorAPs) || 0) + (Number(site.lanPorts) || 0);
+                if (totalEndpoints === 0 && !manualOverrideId) {
+                    console.log(`[BOMEngine] Skipping managed_lan for ${site.name}: no endpoints configured`);
+                    continue;
+                }
+            }
 
             // A. Evaluate Rules Engine for this service context
             const matchingRules = rules.filter(rule => {
@@ -411,7 +433,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 bomItems.push({
                     id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
                     siteName: site.name,
-                    serviceId: service.id,
+                    serviceId: canonicalServiceId,
                     serviceName: service.name,
                     itemId: bestFit.id,
                     itemName: `${VENDOR_LABELS[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,

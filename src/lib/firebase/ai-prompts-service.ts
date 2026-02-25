@@ -130,6 +130,28 @@ RULES:
     }
 ];
 
+const MODEL_REMAPS: Record<string, string> = {
+    'gemini-3.0-flash': 'gemini-2.5-flash',
+    'gemini-3.1-pro': 'gemini-3.1-pro-preview',
+    'gemini-3-pro': 'gemini-3-pro-preview',
+    'gemini-3-flash': 'gemini-3-flash-preview',
+    'gemini-2.5-flash-live': 'gemini-2.5-flash',
+};
+
+function sanitizeModelName(model: string | undefined): string | undefined {
+    if (!model) return undefined;
+    if (MODEL_REMAPS[model]) return MODEL_REMAPS[model];
+    // If it starts with gemini- but isn't in our stable/preview list, default to stable flash
+    const validModels = [
+        'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro',
+        'gemini-3.1-pro-preview', 'gemini-3-pro-preview', 'gemini-3-flash-preview'
+    ];
+    if (model.startsWith('gemini-') && !validModels.includes(model)) {
+        return 'gemini-2.5-flash';
+    }
+    return model;
+}
+
 export const AIPromptsService = {
     getPromptConfig: async (id: PromptId): Promise<AIPromptConfig> => {
         const docRef = doc(db, AI_PROMPTS_COLLECTION, id);
@@ -138,9 +160,11 @@ export const AIPromptsService = {
         const defaultValue = DEFAULT_AI_PROMPTS.find(p => p.id === id)!;
 
         if (snapshot.exists()) {
+            const data = snapshot.data() as Partial<AIPromptConfig>;
+            if (data.model) data.model = sanitizeModelName(data.model);
             return {
                 ...defaultValue,
-                ...(snapshot.data() as Partial<AIPromptConfig>),
+                ...data,
             };
         }
 
@@ -153,7 +177,9 @@ export const AIPromptsService = {
 
         const firestoreConfigs: Record<string, AIPromptConfig> = {};
         snapshot.forEach(doc => {
-            firestoreConfigs[doc.id] = doc.data() as AIPromptConfig;
+            const data = doc.data() as AIPromptConfig;
+            if (data.model) data.model = sanitizeModelName(data.model) || data.model;
+            firestoreConfigs[doc.id] = data;
         });
 
         return DEFAULT_AI_PROMPTS.map(def => ({

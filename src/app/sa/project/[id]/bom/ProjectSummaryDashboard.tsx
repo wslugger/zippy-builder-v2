@@ -4,11 +4,10 @@ import { Site } from "@/src/lib/bom-types";
 interface ProjectSummaryDashboardProps {
     sites: Site[];
     setSiteFilter: (filter: "all" | "flagged") => void;
-    // We can compute roughly what is "flagged" purely by missing siteTypeId for now,
-    // or we can just say "Flagged" is any site without a siteTypeId.
+    onViewPricing?: () => void;
 }
 
-export function ProjectSummaryDashboard({ sites, setSiteFilter }: ProjectSummaryDashboardProps) {
+export function ProjectSummaryDashboard({ sites, setSiteFilter, onViewPricing }: ProjectSummaryDashboardProps) {
     const totalSites = sites.length;
 
     // A simple heuristic for "flagged" until we have more complex rules in state:
@@ -87,6 +86,36 @@ export function ProjectSummaryDashboard({ sites, setSiteFilter }: ProjectSummary
                         )}
                     </div>
                 </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+                <button
+                    onClick={onViewPricing}
+                    className="bg-blue-600 dark:bg-blue-700 rounded-xl p-8 shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all text-left text-white group"
+                >
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white">
+                            <span className="text-2xl">💰</span>
+                        </div>
+                        <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded tracking-widest uppercase">New Feature</span>
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-bold mb-2">Simulate Pricing & Swaps</h3>
+                        <p className="text-blue-50/80 text-sm max-w-sm">Adjust project-wide discounts and see the impact of hardware changes across all locations instantly.</p>
+                        <div className="mt-6 flex items-center gap-2 font-bold text-sm">
+                            Open Pricing Analysis <span>→</span>
+                        </div>
+                    </div>
+                </button>
+
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Detailed BOM Export</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Need the full line-item breakdown for procurement? Export the current configuration to CSV.</p>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex items-center justify-between">
+                        <span className="text-xs font-mono text-slate-400">bom_export_{new Date().toISOString().split('T')[0]}.csv</span>
+                        <div className="text-xs font-bold text-blue-600">Ready</div>
+                    </div>
+                </div>
             </div>
 
             {/* Quick Actions / Getting Started info could go here */}

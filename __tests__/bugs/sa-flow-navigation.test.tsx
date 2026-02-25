@@ -16,15 +16,23 @@ jest.mock('next/link', () => {
     return MockLink;
 });
 
+// Mock Firebase services
+jest.mock('@/src/lib/firebase', () => ({
+    SystemDefaultsService: {
+        getWorkflowSteps: jest.fn().mockResolvedValue(null), // Fallback to defaults
+    },
+}));
+
 describe('SA Flow Navigation', () => {
-    it('shows BOM Builder and HDL steps in the project layout', () => {
+    it('shows BOM Builder and HLD steps in the project layout', async () => {
         render(
             <ProjectLayout>
                 <div>Content</div>
             </ProjectLayout>
         );
 
-        // These should fail currently
+        // Verify steps are present in the sidebar/progress bar
+        expect(screen.getByText(/1\. Package Selection/i)).toBeInTheDocument();
         expect(screen.getByText(/5\. BOM Builder/i)).toBeInTheDocument();
         expect(screen.getByText(/6\. HLD/i)).toBeInTheDocument();
     });
