@@ -80,6 +80,7 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         if (site.lanSiteTypeId) siteTypeIds.add(site.lanSiteTypeId);
     });
 
+    // Collect referenced service IDs (for filtering after sorted fetch)
     const serviceIds = new Set<string>();
     const featureIds = new Set<string>();
 
@@ -118,7 +119,9 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         globalParameters
     ] = await Promise.all([
         packageId ? PackageService.getPackageById(packageId) : Promise.resolve(null),
-        Promise.all(Array.from(serviceIds).map(id => ServiceService.getServiceById(id))),
+        // Fetch ALL services (pre-sorted by sortOrder in service layer), then filter below.
+        // Do NOT fetch per-ID via getServiceById — that loses the admin-defined sort order.
+        ServiceService.getAllServices(),
         Promise.all(Array.from(siteTypeIds).map(id => SiteDefinitionService.getSiteDefinitionById(id))),
         Promise.all(Array.from(featureIds).map(id => FeatureService.getFeatureById(id))),
         EquipmentService.getAllEquipment().catch(() => []),
@@ -126,8 +129,9 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         getGlobalParameters().catch(() => ({}))
     ]);
 
-    // Clean arrays from nulls in case any lookups failed
-    const services = servicesSnap.filter(Boolean) as Service[];
+    // Filter the sorted services list to only those referenced by the project.
+    // Filtering from the pre-sorted array (rather than fetching per-ID) preserves sortOrder.
+    const services = (servicesSnap as Service[]).filter(s => serviceIds.has(s.id));
     const siteTypesCatalog = siteTypesSnap.filter(Boolean) as SiteType[];
     const features = featuresSnap.filter(Boolean) as TechnicalFeature[];
 

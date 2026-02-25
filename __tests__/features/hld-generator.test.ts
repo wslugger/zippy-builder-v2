@@ -16,7 +16,7 @@ jest.mock("@/src/lib/firebase/config", () => ({
 jest.mock("@/src/lib/firebase", () => ({
     ProjectService: { getProject: jest.fn() },
     PackageService: { getPackageById: jest.fn(), getAllPackages: jest.fn(), savePackage: jest.fn(), deletePackage: jest.fn(), uploadCollateral: jest.fn(), deleteCollateral: jest.fn() },
-    ServiceService: { getServiceById: jest.fn() },
+    ServiceService: { getAllServices: jest.fn(), getServiceById: jest.fn(), saveService: jest.fn(), deleteService: jest.fn(), updateServiceSortOrders: jest.fn() },
     SiteDefinitionService: { getSiteDefinitionById: jest.fn() },
     FeatureService: { getFeatureById: jest.fn() },
     EquipmentService: { getAllEquipment: jest.fn() },
@@ -106,7 +106,7 @@ describe("HLD Generator", () => {
         });
 
         (PackageService.getPackageById as jest.Mock).mockResolvedValue(mockPackage);
-        (ServiceService.getServiceById as jest.Mock).mockResolvedValue(mockService);
+        (ServiceService.getAllServices as jest.Mock).mockResolvedValue([mockService]);
         (SiteDefinitionService.getSiteDefinitionById as jest.Mock).mockImplementation(async (id) =>
             mockSiteTypes.find(st => st.id === id)
         );
