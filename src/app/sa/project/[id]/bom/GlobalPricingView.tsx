@@ -21,7 +21,7 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
     const [importTab, setImportTab] = useState<"api" | "csv">("api");
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan"]);
+    const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan", "managed_circuit"]);
 
     if (!bom) return <div className="p-8 text-slate-500">No BOM data available to price.</div>;
 
@@ -181,9 +181,8 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
                                                 </td>
                                             </tr>
                                             {siteItems.map(item => {
-                                                const listPrice = item.pricing?.listPrice || 0;
-                                                const netPrice = listPrice * (1 - globalDiscount / 100);
-                                                const totalNet = netPrice * item.quantity;
+                                                const unitList = (item.unitOTC || 0) + (item.unitMRC || 0);
+                                                const totalNet = (item.totalOTC || 0) + (item.totalMRC || 0);
 
                                                 return (
                                                     <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
@@ -193,7 +192,7 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
                                                         </td>
                                                         <td className="px-6 py-4 text-right font-medium">{item.quantity}</td>
                                                         <td className="px-6 py-4 text-right text-slate-500">
-                                                            {listPrice > 0 ? formatCurrency(listPrice) : <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded italic">No Price</span>}
+                                                            {unitList > 0 ? formatCurrency(unitList) : <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded italic">No Price</span>}
                                                         </td>
                                                         <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-100">
                                                             {formatCurrency(totalNet)}

@@ -334,7 +334,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                             itemType: 'managed_service',
                             quantity: item.quantity,
                             pricing: {
-                                listPrice: 0,
+                                listPrice: mrcPrice,
                                 discountPercent: 0,
                                 netPrice: mrcPrice
                             },
@@ -421,7 +421,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         // Only count items from the canonical managed services that the site tabs render.
         // WAN tab: managed_sdwan, LAN tab: managed_lan
         // TODO: Add "managed_wifi" here once WLAN features are built out.
-        const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan"]);
+        const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan", "managed_circuit"]);
         bom.items
             .filter(item => SITE_TAB_SERVICE_IDS.has(item.serviceId))
             .forEach(item => {

@@ -76,9 +76,8 @@ export function PricingTab({ state, selectedSite }: { state: BOMBuilderState, se
                                     return (
                                         <React.Fragment key={siteName}>
                                             {siteItems.map(item => {
-                                                const listPrice = item.pricing?.listPrice || 0;
-                                                const netPrice = listPrice * (1 - globalDiscount / 100);
-                                                const totalNet = netPrice * item.quantity;
+                                                const unitList = (item.unitOTC || 0) + (item.unitMRC || 0);
+                                                const totalNet = (item.totalOTC || 0) + (item.totalMRC || 0);
 
                                                 return (
                                                     <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
@@ -88,7 +87,7 @@ export function PricingTab({ state, selectedSite }: { state: BOMBuilderState, se
                                                         </td>
                                                         <td className="px-6 py-4 text-right font-medium">{item.quantity}</td>
                                                         <td className="px-6 py-4 text-right text-slate-500">
-                                                            {listPrice > 0 ? formatCurrency(listPrice) : <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded italic">No Price</span>}
+                                                            {unitList > 0 ? formatCurrency(unitList) : <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded italic">No Price</span>}
                                                         </td>
                                                         <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-100">
                                                             {formatCurrency(totalNet)}
@@ -104,7 +103,7 @@ export function PricingTab({ state, selectedSite }: { state: BOMBuilderState, se
                             <tr>
                                 <td colSpan={3} className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 text-right">Site Total (Net)</td>
                                 <td className="px-6 py-4 text-right font-black text-lg text-blue-600 dark:text-blue-400">
-                                    {formatCurrency(pricingSummary.siteSummaries[selectedSite.name]?.totalNet || 0)}
+                                    {formatCurrency(pricingSummary.siteSummaries[selectedSite.name]?.net || 0)}
                                 </td>
                             </tr>
                         </tfoot>
