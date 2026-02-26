@@ -34,9 +34,8 @@ jsonLogic.add_operation("includes", (array, value) => {
  * Defaults discountPercent to 0 so netPrice equals listPrice.
  */
 function makePricingSnapshot(equip: Equipment): BOMLineItem['pricing'] {
-    const eq = equip as unknown as Record<string, any>;
-    const purchase = eq.pricing?.purchasePrice ?? eq.listPrice ?? eq.price ?? 0;
-    const rental = eq.pricing?.rentalPrice ?? 0;
+    const purchase = equip.pricing?.purchasePrice ?? equip.listPrice ?? equip.price ?? 0;
+    const rental = equip.pricing?.rentalPrice ?? 0;
 
     return {
         listPrice: purchase, // Legacy fallback
@@ -44,7 +43,7 @@ function makePricingSnapshot(equip: Equipment): BOMLineItem['pricing'] {
         rentalPrice: rental,
         discountPercent: 0,
         netPrice: purchase,
-        effectiveDate: typeof eq.pricingEffectiveDate === 'string' ? eq.pricingEffectiveDate : undefined,
+        effectiveDate: equip.pricingEffectiveDate,
     };
 }
 

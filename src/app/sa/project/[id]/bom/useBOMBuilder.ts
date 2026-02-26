@@ -418,9 +418,8 @@ export function useBOMBuilder(): BOMBuilderState {
             // If this item is the one we are swapping FROM
             if (item.itemId === swapSimulation.fromItemId) {
                 // Determine new item prices based on acquisition model
-                const eq = toEquip as unknown as Record<string, any>;
-                const purchase = eq.pricing?.purchasePrice ?? eq.listPrice ?? eq.price ?? 0;
-                const rental = eq.pricing?.rentalPrice ?? 0;
+                const purchase = toEquip.pricing?.purchasePrice ?? toEquip.listPrice ?? toEquip.price ?? 0;
+                const rental = toEquip.pricing?.rentalPrice ?? 0;
 
                 if (acquisitionModel === 'purchase') {
                     unitOTCList = purchase;
