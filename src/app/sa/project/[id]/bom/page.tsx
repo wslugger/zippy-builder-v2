@@ -200,6 +200,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                     utilization={utilization}
                                     totalLoad={totalLoad}
                                     pkg={pkg}
+                                    handleSiteUpdate={state.handleSiteUpdate}
                                 />
                             )}
 

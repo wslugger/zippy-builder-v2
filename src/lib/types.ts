@@ -81,6 +81,7 @@ export const WLANSpecsSchema = z.object({
   uplinkType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper']).catch('1G-Copper'),
   environment: z.enum(['Indoor', 'Outdoor', 'Hazardous']).catch('Indoor'),
 }).passthrough();
+export const MANAGEMENT_SIZES = ['X-Small', 'Small', 'Medium', 'Large', 'X-Large', 'None'] as const;
 
 const BaseEquipmentSchema = z.object({
   id: z.string().describe("Unique ID: vendor_model_sku (e.g. meraki_mx85)"),
@@ -93,10 +94,15 @@ const BaseEquipmentSchema = z.object({
   additional_purposes: z.array(z.enum(EQUIPMENT_PURPOSES)).catch([]).default([]),
   family: z.string().optional().describe("Product family (e.g. MX, Catalyst 8000)"),
   description: z.string().optional(),
+  managementSize: z.enum(MANAGEMENT_SIZES).optional().describe("Size bracket for tiered management cost (Small, Medium, Large, X-Large, None)"),
   end_of_life: z.string().optional().describe("ISO Date string or 'Not Announced'"),
   formFactor: z.string().optional(),
-  price: z.number().optional(),
-  listPrice: z.number().optional().describe("Vendor list price from pricing CSV ingest"),
+  price: z.number().optional(), // Deprecated in favor of pricing object
+  listPrice: z.number().optional().describe("Vendor list price from pricing CSV ingest"), // Deprecated in favor of pricing object
+  pricing: z.object({
+    purchasePrice: z.number().optional(),
+    rentalPrice: z.number().optional(),
+  }).optional().describe("Detailed dual-axis pricing scheme"),
   pricingEffectiveDate: z.string().optional().describe("ISO date when this price became effective"),
   eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
@@ -265,6 +271,15 @@ export interface CatalogMetadata {
   fields: {
     [key: string]: CatalogField;
   };
+}
+
+export type ManagementPricingMatrix = Record<string, Record<string, Record<string, number>>>;
+
+export interface PricingSummary {
+  totalOTCNet: number;
+  totalOTCList: number;
+  totalMRCNet: number;
+  totalMRCList: number;
 }
 
 // ============================================================
@@ -440,7 +455,9 @@ export const SiteSchema = z.object({
   indoorAPs: z.number(),
   outdoorAPs: z.number(),
   primaryCircuit: z.string(), // "DIA", "Broadband"
+  primaryCircuitMRC: z.number().optional(),
   secondaryCircuit: z.string().optional(),
+  secondaryCircuitMRC: z.number().optional(),
   notes: z.string().optional(),
   accessPortSpeed: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']).optional(),
   uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).optional(),
@@ -510,16 +527,22 @@ export interface BOMLineItem {
   serviceName: string; // Snapshot
   itemId: string; // Equipment SKU or Feature ID
   itemName: string; // Snapshot
-  itemType: "equipment" | "feature" | "license" | "labor";
+  itemType: "equipment" | "feature" | "license" | "labor" | "service" | "managed_service";
   quantity: number;
   unitPrice?: number; // Placeholder
   totalPrice?: number; // Placeholder
   reasoning?: string; // Which rule triggered this?
   alternatives?: { itemId: string; itemName: string; reasoning?: string; specSummary?: string }[];
   matchedRules?: { ruleId: string; ruleName: string; description?: string }[];
+  unitOTC?: number;
+  unitMRC?: number;
+  totalOTC?: number;
+  totalMRC?: number;
   /** Pricing snapshot captured at BOM generation time. Protects historical BOMs from future price changes. */
   pricing?: {
-    listPrice: number;
+    listPrice: number; // Legacy
+    purchasePrice?: number;
+    rentalPrice?: number;
     discountPercent: number;
     netPrice: number;
     effectiveDate?: string;
@@ -536,6 +559,7 @@ export interface BOM {
     totalMonthlyCost?: number;
     siteCount: number;
   };
+  pricingSummary?: PricingSummary;
 }
 
 export interface BOMEngineInput {

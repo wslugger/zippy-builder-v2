@@ -253,6 +253,11 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                                         </span>
                                                     ));
                                                 })()}
+                                                {item.managementSize && item.managementSize !== 'None' && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800" title="Management Size">
+                                                        {item.managementSize} Mgt
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

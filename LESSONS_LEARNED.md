@@ -113,3 +113,10 @@
 - **Manual Circuit Pricing**: Moved to the WAN tab as inline $/mo inputs per circuit row, since it is inherently a per-site, per-circuit data entry concern — not a global pricing operation.
 - **Key Insight**: The place where data *lives* (site-level vs. project-level) should dictate the view where it is *entered and displayed*. Mixing contextual scope in a single view creates hidden cognitive tax for power users who iteratively review many sites.
 - **Pattern**: Use a sidebar navigation item to flip between micro and macro modes rather than cramming both into a single tab.
+
+## 17. Dual-Axis Pricing & Management Matrix
+**Issue**: Generating a BOM initially only accounted for one-time costs (Capex). Introducing Opex (MRC for Managed Services and Circuits) required dynamic item injection that wasn't present in the static hardware rules engine.
+**Solution**:
+- **Dynamic Item Injection**: Modified the `useBOMBuilder` hook to scan generated hardware and inject virtual "Managed Service" items based on a 3D pricing matrix (Purpose × Size × Level).
+- **Service-Site Binding**: Injected circuit costs directly from site metadata into the BOM array to ensure total project Opex is captured.
+- **Key Insight**: Complexity in "Managed" logic is best handled at the UI aggregation layer (after the core hardware engine runs) to keep the suggestion logic clean and focused on technical specs.

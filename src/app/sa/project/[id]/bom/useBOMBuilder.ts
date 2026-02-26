@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService } from "@/src/lib/firebase";
-import { Project, Package, Service, Equipment } from "@/src/lib/types";
+import { ManagementPricingService } from "@/src/lib/firebase/management-pricing-service";
+import { Project, Package, Service, Equipment, ManagementPricingMatrix } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
@@ -135,6 +136,10 @@ export interface BOMBuilderState {
         totalSavings: number;
         delta: number;
     } | null;
+    acquisitionModel: 'purchase' | 'rental';
+    setAcquisitionModel: (model: 'purchase' | 'rental') => void;
+    projectManagementLevel: string;
+    setProjectManagementLevel: (level: string) => void;
 }
 
 export function useBOMBuilder(projectId: string): BOMBuilderState {
@@ -181,6 +186,9 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     // ---- Pricing & Simulation state ----
     const [globalDiscount, setGlobalDiscount] = useState<number>(0);
     const [swapSimulation, setSwapSimulation] = useState<{ fromItemId: string; toItemId: string } | null>(null);
+    const [acquisitionModel, setAcquisitionModel] = useState<'purchase' | 'rental'>('purchase');
+    const [projectManagementLevel, setProjectManagementLevel] = useState<string>('Watch & Alert');
+    const [managementPricingMatrix, setManagementPricingMatrix] = useState<ManagementPricingMatrix | null>(null);
 
     // -------------------------------------------------------
     // Data loading (real Firestore — skipped for demo mode)
@@ -199,17 +207,19 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                     setPkg(pk);
                 }
 
-                const [allPkgs, svcs, eq, globalParams] = await Promise.all([
+                const [allPkgs, svcs, eq, globalParams, mgmtMatrix] = await Promise.all([
                     PackageService.getAllPackages().catch(() => []),
                     ServiceService.getAllServices().catch(() => []),
                     EquipmentService.getAllEquipment().catch(() => []),
                     getGlobalParameters().catch(() => ({})),
+                    ManagementPricingService.getManagementPricing().catch(() => null),
                 ]);
 
                 setAllPackages(allPkgs);
                 setServices(svcs);
                 if (eq.length > 0) setCatalog(eq);
                 setGlobalParameters(globalParams);
+                setManagementPricingMatrix(mgmtMatrix);
 
                 const st = await SiteDefinitionService.getAllSiteDefinitions().catch(() => []);
                 setSiteTypes(st.length > 0 ? st : ALL_SITE_TYPES);
@@ -292,7 +302,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     // -------------------------------------------------------
     const bom = useMemo<BOM | null>(() => {
         if (sites.length > 0 && pkg && services.length > 0 && siteTypes.length > 0) {
-            return calculateBOM({
+            const calculatedBom = calculateBOM({
                 projectId,
                 sites,
                 selectedPackage: pkg,
@@ -303,9 +313,93 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 manualSelections,
                 globalParameters
             });
+
+            // Inject dynamically created Managed Service Items for OPEX tracking
+            const enrichedItems: BOM["items"] = [];
+            calculatedBom.items.forEach(item => {
+                enrichedItems.push(item);
+
+                if (item.itemType === 'equipment') {
+                    const equipment = catalog.find(e => e.id === item.itemId);
+                    if (equipment?.managementSize && equipment.managementSize !== 'None') {
+                        const mrcPrice = managementPricingMatrix?.[equipment.primary_purpose || '']?.[equipment.managementSize]?.[projectManagementLevel] || 0;
+
+                        enrichedItems.push({
+                            id: `${item.id}-mgmt`,
+                            siteName: item.siteName,
+                            itemId: 'managed_service',
+                            serviceId: item.serviceId,
+                            serviceName: item.serviceName,
+                            itemName: `Managed ${equipment.primary_purpose || 'Equipment'} - ${equipment.managementSize} (${projectManagementLevel})`,
+                            itemType: 'managed_service',
+                            quantity: item.quantity,
+                            pricing: {
+                                listPrice: 0,
+                                discountPercent: 0,
+                                netPrice: mrcPrice
+                            },
+                            unitOTC: 0,
+                            unitMRC: mrcPrice,
+                            totalOTC: 0,
+                            totalMRC: mrcPrice * (item.quantity || 0)
+                        });
+                    }
+                }
+            });
+
+            // Inject circuit costs as service items
+            sites.forEach(site => {
+                const siteName = site.name;
+                if (site.primaryCircuit && site.primaryCircuitMRC) {
+                    enrichedItems.push({
+                        id: `${site.id || siteName}-circuit-primary`,
+                        siteName: siteName,
+                        itemId: 'primary_circuit',
+                        serviceId: 'managed_circuit',
+                        serviceName: 'Circuit Services',
+                        itemName: `${site.primaryCircuit} Circuit (${site.bandwidthDownMbps} Mbps)`,
+                        itemType: 'service',
+                        quantity: 1,
+                        pricing: {
+                            listPrice: site.primaryCircuitMRC,
+                            discountPercent: 0,
+                            netPrice: site.primaryCircuitMRC
+                        },
+                        unitOTC: 0,
+                        unitMRC: site.primaryCircuitMRC,
+                        totalOTC: 0,
+                        totalMRC: site.primaryCircuitMRC
+                    });
+                }
+                if (site.secondaryCircuit && site.secondaryCircuitMRC) {
+                    const secBandwidth = Math.round(site.bandwidthDownMbps * 0.1);
+                    enrichedItems.push({
+                        id: `${site.id || siteName}-circuit-secondary`,
+                        siteName: siteName,
+                        itemId: 'secondary_circuit',
+                        serviceId: 'managed_circuit',
+                        serviceName: 'Circuit Services',
+                        itemName: `${site.secondaryCircuit} Circuit (${secBandwidth} Mbps)`,
+                        itemType: 'service',
+                        quantity: 1,
+                        pricing: {
+                            listPrice: site.secondaryCircuitMRC,
+                            discountPercent: 0,
+                            netPrice: site.secondaryCircuitMRC
+                        },
+                        unitOTC: 0,
+                        unitMRC: site.secondaryCircuitMRC,
+                        totalOTC: 0,
+                        totalMRC: site.secondaryCircuitMRC
+                    });
+                }
+            });
+
+            calculatedBom.items = enrichedItems;
+            return calculatedBom;
         }
         return null;
-    }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections, globalParameters]);
+    }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections, globalParameters, managementPricingMatrix, projectManagementLevel]);
 
     // -------------------------------------------------------
     // Pricing Analysis
@@ -315,7 +409,11 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
             totalListPrice: 0,
             totalNetPrice: 0,
             totalSavings: 0,
-            siteSummaries: {} as Record<string, { list: number; net: number }>
+            totalOTCList: 0,
+            totalOTCNet: 0,
+            totalMRCList: 0,
+            totalMRCNet: 0,
+            siteSummaries: {} as Record<string, { list: number; net: number; otc: number; mrc: number }>
         };
 
         if (!bom) return summary;
@@ -327,26 +425,65 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         bom.items
             .filter(item => SITE_TAB_SERVICE_IDS.has(item.serviceId))
             .forEach(item => {
-                const listPrice = item.pricing?.listPrice || 0;
                 const qty = item.quantity || 0;
-                const itemTotalList = listPrice * qty;
+                let unitOTCList = 0;
+                let unitMRCList = 0;
+
+                if (item.itemType === 'equipment') {
+                    if (acquisitionModel === 'purchase') {
+                        unitOTCList = item.pricing?.purchasePrice ?? item.pricing?.listPrice ?? 0;
+                        unitMRCList = 0;
+                    } else {
+                        unitOTCList = 0;
+                        unitMRCList = item.pricing?.rentalPrice ?? 0;
+                    }
+                } else if (item.itemType === 'managed_service' || item.itemType === 'service') {
+                    // Pre-calculated from matrix logic above OR default 0
+                    unitOTCList = item.unitOTC || 0;
+                    unitMRCList = item.unitMRC || 0;
+                } else {
+                    // For specific Management/Circuits (TODO future features)
+                    unitOTCList = item.unitOTC || 0;
+                    unitMRCList = item.unitMRC || 0;
+                }
+
+                // Explicitly store resolved prices on the item (as requested by Step 1 & 3)
+                item.unitOTC = unitOTCList;
+                item.unitMRC = unitMRCList;
+
+                const itemTotalOTCList = unitOTCList * qty;
+                const itemTotalMRCList = unitMRCList * qty;
 
                 // Global discount REPLACES any existing discount per requirement
-                const itemTotalNet = itemTotalList * (1 - globalDiscount / 100);
+                const itemTotalOTCNet = itemTotalOTCList * (1 - globalDiscount / 100);
+                const itemTotalMRCNet = itemTotalMRCList * (1 - globalDiscount / 100);
+
+                item.totalOTC = itemTotalOTCNet;
+                item.totalMRC = itemTotalMRCNet;
+
+                summary.totalOTCList += itemTotalOTCList;
+                summary.totalMRCList += itemTotalMRCList;
+                summary.totalOTCNet += itemTotalOTCNet;
+                summary.totalMRCNet += itemTotalMRCNet;
+
+                const itemTotalList = itemTotalOTCList + itemTotalMRCList;
+                const itemTotalNet = itemTotalOTCNet + itemTotalMRCNet;
 
                 summary.totalListPrice += itemTotalList;
                 summary.totalNetPrice += itemTotalNet;
 
                 if (!summary.siteSummaries[item.siteName]) {
-                    summary.siteSummaries[item.siteName] = { list: 0, net: 0 };
+                    summary.siteSummaries[item.siteName] = { list: 0, net: 0, otc: 0, mrc: 0 };
                 }
                 summary.siteSummaries[item.siteName].list += itemTotalList;
                 summary.siteSummaries[item.siteName].net += itemTotalNet;
+                summary.siteSummaries[item.siteName].otc += itemTotalOTCList;
+                summary.siteSummaries[item.siteName].mrc += itemTotalMRCList;
             });
 
         summary.totalSavings = summary.totalListPrice - summary.totalNetPrice;
         return summary;
-    }, [bom, globalDiscount]);
+    }, [bom, globalDiscount, acquisitionModel]);
 
     const simulatedPricingSummary = useMemo(() => {
         if (!bom || !swapSimulation) return null;
@@ -363,15 +500,26 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         };
 
         bom.items.forEach(item => {
-            let listPrice = item.pricing?.listPrice || 0;
+            let unitOTCList = item.unitOTC || 0;
+            let unitMRCList = item.unitMRC || 0;
             const qty = item.quantity || 0;
 
             // If this item is the one we are swapping FROM
             if (item.itemId === swapSimulation.fromItemId) {
-                listPrice = toEquip.listPrice || 0;
+                // Determine new item prices based on acquisition model
+                const purchase = toEquip.pricing?.purchasePrice ?? toEquip.listPrice ?? toEquip.price ?? 0;
+                const rental = toEquip.pricing?.rentalPrice ?? 0;
+
+                if (acquisitionModel === 'purchase') {
+                    unitOTCList = purchase;
+                    unitMRCList = 0;
+                } else {
+                    unitOTCList = 0;
+                    unitMRCList = rental;
+                }
             }
 
-            const itemTotalList = listPrice * qty;
+            const itemTotalList = (unitOTCList + unitMRCList) * qty;
             const itemTotalNet = itemTotalList * (1 - globalDiscount / 100);
 
             summary.totalListPrice += itemTotalList;
@@ -382,7 +530,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         summary.delta = summary.totalNetPrice - pricingSummary.totalNetPrice;
 
         return summary;
-    }, [bom, swapSimulation, catalog, globalDiscount, pricingSummary.totalNetPrice]);
+    }, [bom, swapSimulation, catalog, globalDiscount, pricingSummary.totalNetPrice, acquisitionModel]);
 
     const selectedSite = selectedSiteIndex !== null ? sites[selectedSiteIndex] : undefined;
     const siteBOMItems = bom?.items.filter((i) => i.siteName === selectedSite?.name) ?? [];
@@ -528,5 +676,9 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         setSwapSimulation,
         pricingSummary,
         simulatedPricingSummary,
+        acquisitionModel,
+        setAcquisitionModel,
+        projectManagementLevel,
+        setProjectManagementLevel
     };
 }
