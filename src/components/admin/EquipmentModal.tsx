@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES as DEFAULT_PURPOSES, CELLULAR_TYPES as DEFAULT_CELLULAR_TYPES, WIFI_STANDARDS as DEFAULT_WIFI_STANDARDS, EQUIPMENT_STATUSES as DEFAULT_STATUSES, MANAGEMENT_SIZES } from "@/src/lib/types";
+import { Equipment, MANAGEMENT_SIZES } from "@/src/lib/types";
 import { useState } from "react";
 import { EquipmentService } from "@/src/lib/firebase";
 import { useSystemConfig } from "@/src/hooks/useSystemConfig";
+import { useCatalogMetadata } from "@/src/hooks";
 import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 import { getEquipmentRole } from "@/src/lib/bom-utils";
@@ -31,14 +32,9 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
     const [isSaving, setIsSaving] = useState(false);
 
     const { config, updateConfigAsync } = useSystemConfig();
+    const { metadata, isLoading: isMetadataLoading } = useCatalogMetadata();
     const specs = formData.specs as any;
     const taxonomy = (config?.taxonomy as Record<string, string[]>) || {};
-    const purposes = taxonomy.purposes || DEFAULT_PURPOSES;
-    const cellularTypes = taxonomy.cellular_types || DEFAULT_CELLULAR_TYPES;
-    const wifiStandards = taxonomy.wifi_standards || DEFAULT_WIFI_STANDARDS;
-    const statuses = taxonomy.statuses || DEFAULT_STATUSES;
-    const mountingOptions = taxonomy.mounting_options || [];
-    const recommendedUseCases = taxonomy.recommended_use_cases || [];
     const powerConnectorTypes = taxonomy.power_connector_types || [];
 
     const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
@@ -260,12 +256,19 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                             value={formData.vendor_id}
                                             onChange={(e) => handleChange("vendor_id", e.target.value as Equipment['vendor_id'])}
                                             className={inputClass}
+                                            disabled={isMetadataLoading}
                                         >
-                                            {VENDOR_IDS.map((v) => (
-                                                <option key={v} value={v}>
-                                                    {VENDOR_LABELS[v]}
-                                                </option>
-                                            ))}
+                                            {isMetadataLoading ? (
+                                                <option value="">Loading options...</option>
+                                            ) : (
+                                                <>
+                                                    {metadata.vendors.map((v) => (
+                                                        <option key={v} value={v}>
+                                                            {v}
+                                                        </option>
+                                                    ))}
+                                                </>
+                                            )}
                                         </select>
                                     </div>
                                     <div className="col-span-1">
@@ -274,12 +277,19 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                             value={formData.status || "Supported"}
                                             onChange={(e) => handleChange("status", e.target.value as Equipment['status'])}
                                             className={inputClass}
+                                            disabled={isMetadataLoading}
                                         >
-                                            {statuses.map((s) => (
-                                                <option key={s} value={s}>
-                                                    {s}
-                                                </option>
-                                            ))}
+                                            {isMetadataLoading ? (
+                                                <option value="">Loading options...</option>
+                                            ) : (
+                                                <>
+                                                    {metadata.statuses.map((s) => (
+                                                        <option key={s} value={s}>
+                                                            {s}
+                                                        </option>
+                                                    ))}
+                                                </>
+                                            )}
                                         </select>
                                     </div>
                                     <div className="col-span-1">
@@ -288,27 +298,38 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                             value={formData.primary_purpose || ""}
                                             onChange={(e) => handlePrimaryPurposeChange(e.target.value)}
                                             className={inputClass}
+                                            disabled={isMetadataLoading}
                                         >
-                                            <option value="">Select Purpose...</option>
-                                            {purposes.map((p) => (
-                                                <option key={p} value={p}>{p}</option>
-                                            ))}
+                                            {isMetadataLoading ? (
+                                                <option value="">Loading options...</option>
+                                            ) : (
+                                                <>
+                                                    <option value="">Select Purpose...</option>
+                                                    {metadata.purposes.map((p) => (
+                                                        <option key={p} value={p}>{p}</option>
+                                                    ))}
+                                                </>
+                                            )}
                                         </select>
                                     </div>
                                     <div className="col-span-1">
                                         <label className={labelClass}>Additional Purposes</label>
                                         <div className="flex flex-wrap gap-2">
-                                            {purposes.map((p) => p !== formData.primary_purpose && (
-                                                <label key={p} className="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={(formData.additional_purposes || []).includes(p as any)}
-                                                        onChange={() => handleAdditionalPurposeChange(p)}
-                                                        className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
-                                                    />
-                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{p}</span>
-                                                </label>
-                                            ))}
+                                            {isMetadataLoading ? (
+                                                <div className="text-sm text-zinc-500">Loading options...</div>
+                                            ) : (
+                                                metadata.purposes.map((p) => p !== formData.primary_purpose && (
+                                                    <label key={p} className="flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(formData.additional_purposes || []).includes(p as any)}
+                                                            onChange={() => handleAdditionalPurposeChange(p)}
+                                                            className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                                                        />
+                                                        <span className="text-[10px] font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{p}</span>
+                                                    </label>
+                                                ))
+                                            )}
                                         </div>
                                     </div>
                                     <div className="col-span-1">
@@ -471,13 +492,20 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                     value={specs.recommended_use_case || ""}
                                                     onChange={(e) => handleSpecChange("recommended_use_case", e.target.value)}
                                                     className={inputClass}
+                                                    disabled={isMetadataLoading}
                                                 >
-                                                    <option value="">Select Use Case...</option>
-                                                    {recommendedUseCases.map((uc: string) => (
-                                                        <option key={uc} value={uc}>{uc}</option>
-                                                    ))}
-                                                    {specs.recommended_use_case && !recommendedUseCases.includes(specs.recommended_use_case) && (
-                                                        <option value={specs.recommended_use_case}>{specs.recommended_use_case} (Custom)</option>
+                                                    {isMetadataLoading ? (
+                                                        <option value="">Loading options...</option>
+                                                    ) : (
+                                                        <>
+                                                            <option value="">Select Use Case...</option>
+                                                            {metadata.recommendedUseCases.map((uc: string) => (
+                                                                <option key={uc} value={uc}>{uc}</option>
+                                                            ))}
+                                                            {specs.recommended_use_case && !metadata.recommendedUseCases.includes(specs.recommended_use_case) && (
+                                                                <option value={specs.recommended_use_case}>{specs.recommended_use_case} (Custom)</option>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </select>
                                             </div>
@@ -552,13 +580,16 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                         value={specs.accessPortType || ""}
                                                         onChange={(e) => handleSpecChange('accessPortType', e.target.value)}
                                                         className={inputClass}
+                                                        disabled={isMetadataLoading}
                                                     >
-                                                        <option value="">Select Speed...</option>
-                                                        <option value="1G-Copper">1G-Copper</option>
-                                                        <option value="mGig-Copper">mGig-Copper</option>
-                                                        <option value="10G-Copper">10G-Copper</option>
-                                                        <option value="1G-Fiber">1G-Fiber</option>
-                                                        <option value="10G-Fiber">10G-Fiber</option>
+                                                        {isMetadataLoading ? (
+                                                            <option value="">Loading options...</option>
+                                                        ) : (
+                                                            <>
+                                                                <option value="">Select Speed...</option>
+                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                            </>
+                                                        )}
                                                     </select>
                                                 </div>
                                                 <div className="col-span-1">
@@ -567,15 +598,16 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                         value={specs.uplinkPortType || ""}
                                                         onChange={(e) => handleSpecChange('uplinkPortType', e.target.value)}
                                                         className={inputClass}
+                                                        disabled={isMetadataLoading}
                                                     >
-                                                        <option value="">Select Speed...</option>
-                                                        <option value="1G-Copper">1G-Copper</option>
-                                                        <option value="1G-Fiber">1G-Fiber</option>
-                                                        <option value="10G-Copper">10G-Copper</option>
-                                                        <option value="10G-Fiber">10G-Fiber</option>
-                                                        <option value="25G-Fiber">25G-Fiber</option>
-                                                        <option value="40G-Fiber">40G-Fiber</option>
-                                                        <option value="100G-Fiber">100G-Fiber</option>
+                                                        {isMetadataLoading ? (
+                                                            <option value="">Loading options...</option>
+                                                        ) : (
+                                                            <>
+                                                                <option value="">Select Speed...</option>
+                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                            </>
+                                                        )}
                                                     </select>
                                                 </div>
                                                 <div className="col-span-1">
@@ -614,11 +646,16 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                         value={specs.wifiStandard || ""}
                                                         onChange={(e) => handleSpecChange('wifiStandard', e.target.value)}
                                                         className={inputClass}
+                                                        disabled={isMetadataLoading}
                                                     >
-                                                        <option value="">Select Standard...</option>
-                                                        <option value="Wi-Fi 6">Wi-Fi 6</option>
-                                                        <option value="Wi-Fi 6E">Wi-Fi 6E</option>
-                                                        <option value="Wi-Fi 7">Wi-Fi 7</option>
+                                                        {isMetadataLoading ? (
+                                                            <option value="">Loading options...</option>
+                                                        ) : (
+                                                            <>
+                                                                <option value="">Select Standard...</option>
+                                                                {metadata.wifiStandards.map(s => <option key={s} value={s}>{s}</option>)}
+                                                            </>
+                                                        )}
                                                     </select>
                                                 </div>
                                                 <div className="col-span-1">
@@ -641,11 +678,16 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                         value={specs.uplinkType || ""}
                                                         onChange={(e) => handleSpecChange('uplinkType', e.target.value)}
                                                         className={inputClass}
+                                                        disabled={isMetadataLoading}
                                                     >
-                                                        <option value="">Select Type...</option>
-                                                        <option value="1G-Copper">1G-Copper</option>
-                                                        <option value="mGig-Copper">mGig-Copper</option>
-                                                        <option value="10G-Copper">10G-Copper</option>
+                                                        {isMetadataLoading ? (
+                                                            <option value="">Loading options...</option>
+                                                        ) : (
+                                                            <>
+                                                                <option value="">Select Type...</option>
+                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                            </>
+                                                        )}
                                                     </select>
                                                 </div>
                                                 <div className="col-span-1">
@@ -711,17 +753,21 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                     <div className="col-span-2">
                                         <label className={labelClass}>Mounting Options</label>
                                         <div className="flex flex-wrap gap-2.5">
-                                            {mountingOptions.map((option: string) => (
-                                                <label key={option} className="flex items-center gap-2.5 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={(specs.mounting_options as string[])?.includes(option) || false}
-                                                        onChange={() => handleMountingChange(option)}
-                                                        className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
-                                                    />
-                                                    <span className="text-xs font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{option}</span>
-                                                </label>
-                                            ))}
+                                            {isMetadataLoading ? (
+                                                <div className="text-sm text-zinc-500">Loading options...</div>
+                                            ) : (
+                                                metadata.mountingOptions.map((option: string) => (
+                                                    <label key={option} className="flex items-center gap-2.5 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(specs.mounting_options as string[])?.includes(option) || false}
+                                                            onChange={() => handleMountingChange(option)}
+                                                            className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{option}</span>
+                                                    </label>
+                                                ))
+                                            )}
                                         </div>
                                     </div>
                                     <div className="col-span-1">

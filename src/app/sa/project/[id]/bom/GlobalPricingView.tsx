@@ -266,7 +266,7 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
                                             return fromEquip && e.vendor_id === fromEquip.vendor_id && e.id !== fromEquip.id;
                                         })
                                         .map(item => (
-                                            <option key={item.id} value={item.id}>{VENDOR_LABELS[item.vendor_id] || item.vendor_id} {item.model}</option>
+                                            <option key={item.id} value={item.id}>{(VENDOR_LABELS as Record<string, string>)[item.vendor_id] || item.vendor_id} {item.model}</option>
                                         ))
                                     }
                                 </select>

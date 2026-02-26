@@ -58,28 +58,28 @@ export const WANSpecsSchema = z.object({
   poe_capabilities: z.string().nullish().catch(undefined),
   power_load_max_watts: z.number().nullish().catch(undefined),
   integrated_cellular: z.boolean().nullish().catch(undefined),
-  cellular_type: z.enum(CELLULAR_TYPES).nullish().catch(undefined),
+  cellular_type: z.string().nullish().catch(undefined),
   integrated_wifi: z.boolean().nullish().catch(undefined),
-  wifi_standard: z.enum(WIFI_STANDARDS).nullish().catch(undefined),
+  wifi_standard: z.string().nullish().catch(undefined),
   modular_cellular: z.boolean().nullish().catch(undefined),
 }).passthrough();
 
 export const LANSpecsSchema = z.object({
   accessPortCount: z.number().catch(24),
-  accessPortType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']).catch('1G-Copper'),
+  accessPortType: z.string().catch('1G-Copper'),
   poeBudgetWatts: z.number().catch(0),
-  poeStandard: z.enum(['None', 'PoE+', 'PoE++']).catch('None'),
+  poeStandard: z.string().catch('None'),
   uplinkPortCount: z.number().catch(4),
-  uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).catch('10G-Fiber'),
+  uplinkPortType: z.string().catch('10G-Fiber'),
   isStackable: z.boolean().catch(false),
 }).passthrough();
 
 export const WLANSpecsSchema = z.object({
-  wifiStandard: z.enum(['Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7']).catch('Wi-Fi 6'),
-  mimoBandwidth: z.enum(['2x2', '4x4']).catch('2x2'),
+  wifiStandard: z.string().catch('Wi-Fi 6'),
+  mimoBandwidth: z.string().catch('2x2'),
   powerDrawWatts: z.number().catch(15),
-  uplinkType: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper']).catch('1G-Copper'),
-  environment: z.enum(['Indoor', 'Outdoor', 'Hazardous']).catch('Indoor'),
+  uplinkType: z.string().catch('1G-Copper'),
+  environment: z.string().catch('Indoor'),
 }).passthrough();
 export const MANAGEMENT_SIZES = ['X-Small', 'Small', 'Medium', 'Large', 'X-Large', 'None'] as const;
 
@@ -88,13 +88,13 @@ const BaseEquipmentSchema = z.object({
   model: z.string(),
   make: z.string().optional().describe("Manufacturer/Make"),
   active: z.boolean().default(true),
-  status: z.enum(EQUIPMENT_STATUSES).default("Supported"),
-  vendor_id: z.enum(VENDOR_IDS),
-  primary_purpose: z.enum(EQUIPMENT_PURPOSES).default("LAN"),
-  additional_purposes: z.array(z.enum(EQUIPMENT_PURPOSES)).catch([]).default([]),
+  status: z.string().default("Supported"),
+  vendor_id: z.string().default("meraki"),
+  primary_purpose: z.string().default("LAN"),
+  additional_purposes: z.array(z.string()).catch([]).default([]),
   family: z.string().optional().describe("Product family (e.g. MX, Catalyst 8000)"),
   description: z.string().optional(),
-  managementSize: z.enum(MANAGEMENT_SIZES).optional().describe("Size bracket for tiered management cost (Small, Medium, Large, X-Large, None)"),
+  managementSize: z.string().optional().describe("Size bracket for tiered management cost (Small, Medium, Large, X-Large, None)"),
   end_of_life: z.string().optional().describe("ISO Date string or 'Not Announced'"),
   formFactor: z.string().optional(),
   price: z.number().optional(), // Deprecated in favor of pricing object
@@ -182,7 +182,7 @@ export interface TechnicalFeature extends Timestamps {
   id: string; // e.g. "bgp"
   name: string; // "BGP Routing"
   category: string; // "Routing", "Security", etc.
-  status?: typeof EQUIPMENT_STATUSES[number];
+  status?: string;
   description: string;
   caveats?: string[];
   assumptions?: string[];
@@ -241,12 +241,12 @@ export interface DesignOption extends ServiceItem {
   pros?: string[];
   cons?: string[];
   throughput_overhead_mbps?: number; // Additional bandwidth overhead (e.g. VPN)
-  vendor_id?: typeof VENDOR_IDS[number]; // Explicit vendor binding (preferred over string-matching fallback)
+  vendor_id?: string; // Explicit vendor binding (preferred over string-matching fallback)
 }
 
 export interface ServiceOption extends ServiceItem {
   design_options: DesignOption[];
-  vendor_id?: typeof VENDOR_IDS[number]; // Explicit vendor binding (preferred over string-matching fallback)
+  vendor_id?: string; // Explicit vendor binding (preferred over string-matching fallback)
 }
 
 export interface Service extends ServiceItem, Timestamps {
@@ -423,7 +423,7 @@ export const SiteTypeSchema = z.object({
 export interface EmbeddedEquipmentSnapshot {
   id: string; // The original Equipment document ID
   model: string;
-  vendor_id: typeof VENDOR_IDS[number];
+  vendor_id: string;
   specs_summary: {
     throughput?: number;
     ports?: number;
@@ -461,9 +461,9 @@ export const SiteSchema = z.object({
   secondaryCircuitMRC: z.number().optional(),
   secondaryCircuitOTC: z.number().optional(),
   notes: z.string().optional(),
-  accessPortSpeed: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']).optional(),
-  uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).optional(),
-  poeStandard: z.enum(['None', 'PoE+', 'PoE++']).optional(),
+  accessPortSpeed: z.string().optional(),
+  uplinkPortType: z.string().optional(),
+  poeStandard: z.string().optional(),
   requiredPoePorts: z.number().optional(),
   embeddedEquipment: z.array(z.any()).optional(), // typed as EmbeddedEquipmentSnapshot[] in usage
   embeddedServices: z.array(z.any()).optional(),  // typed as EmbeddedServiceSnapshot[] in usage

@@ -53,7 +53,7 @@ describe("BOM Parameters Feature", () => {
 
         const mockEquipment: Equipment[] = [
             {
-                id: "eq1", model: "SDWAN Small", vendor_id: "meraki", primary_purpose: "SDWAN", additional_purposes: [], active: true, status: "Supported",
+                id: "eq1", model: "SDWAN Small", vendor_id: "meraki", primary_purpose: "WAN", additional_purposes: [], active: true, status: "Supported",
                 role: "WAN",
                 specs: { sdwanCryptoThroughputMbps: 250, wanPortCount: 2, lanPortCount: 4, advancedSecurityThroughputMbps: 250, rawFirewallThroughputMbps: 250 }
             },

@@ -28,7 +28,7 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                         </div>
                         <div>
                             <div className="inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 mb-2">
-                                {VENDOR_LABELS[item.vendor_id] || item.vendor_id}
+                                {(VENDOR_LABELS as Record<string, string>)[item.vendor_id] || item.vendor_id}
                             </div>
                             <h4 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{item.model}</h4>
                             <p className="text-slate-600 dark:text-slate-400 mt-2">{item.description}</p>

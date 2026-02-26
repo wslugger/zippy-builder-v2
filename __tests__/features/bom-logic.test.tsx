@@ -198,7 +198,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 id: "wan_500",
                 model: "WAN 500",
                 vendor_id: "meraki",
-                role: "WAN", primary_purpose: "SDWAN", additional_purposes: [], active: true, status: "Supported",
+                role: "WAN", primary_purpose: "WAN", additional_purposes: [], active: true, status: "Supported",
                 specs: {
                     sdwanCryptoThroughputMbps: 500,
                     rawFirewallThroughputMbps: 0,
@@ -211,7 +211,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 id: "wan_1000",
                 model: "WAN 1000",
                 vendor_id: "meraki",
-                role: "WAN", primary_purpose: "SDWAN", additional_purposes: [], active: true, status: "Supported",
+                role: "WAN", primary_purpose: "WAN", additional_purposes: [], active: true, status: "Supported",
                 specs: {
                     sdwanCryptoThroughputMbps: 1000,
                     rawFirewallThroughputMbps: 0,
@@ -290,7 +290,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 id: "wan_basic",
                 model: "WAN Basic",
                 vendor_id: "meraki",
-                role: "WAN", primary_purpose: "SDWAN", additional_purposes: [], active: true, status: "Supported",
+                role: "WAN", primary_purpose: "WAN", additional_purposes: [], active: true, status: "Supported",
                 specs: {
                     sdwanCryptoThroughputMbps: 1000,
                     rawFirewallThroughputMbps: 0,

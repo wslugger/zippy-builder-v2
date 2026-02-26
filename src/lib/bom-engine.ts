@@ -160,7 +160,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         serviceId: canonicalServiceId,
                         serviceName: service.name,
                         itemId: equip.id,
-                        itemName: `${VENDOR_LABELS[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
+                        itemName: `${(VENDOR_LABELS as Record<string, string>)[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
                         itemType: "equipment",
                         quantity: quantity,
                         reasoning: `Manual Selection`,
@@ -215,7 +215,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         serviceId: canonicalServiceId,
                         serviceName: service.name,
                         itemId: equip.id,
-                        itemName: `${VENDOR_LABELS[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
+                        itemName: `${(VENDOR_LABELS as Record<string, string>)[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
                         itemType: "equipment",
                         quantity: finalQuantity,
                         reasoning: `Rule Match: ${matchingRules[0].name}${finalQuantity === 2 ? ' (Redundant)' : ''}`,
@@ -343,7 +343,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             if (sortedCandidates.length > 1) {
                 alternatives = sortedCandidates.slice(1, 6).map(e => ({
                     itemId: e.id,
-                    itemName: `${VENDOR_LABELS[e.vendor_id] || e.vendor_id} ${e.model}`,
+                    itemName: `${(VENDOR_LABELS as Record<string, string>)[e.vendor_id] || e.vendor_id} ${e.model}`,
                     reasoning: `Alternative option.`,
                     specSummary: getEquipmentSpecSummary(e)
                 }));
@@ -369,7 +369,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     if (sortedFallbackCandidates.length > 1) {
                         alternatives = sortedFallbackCandidates.slice(1, 6).map(e => ({
                             itemId: e.id,
-                            itemName: `${VENDOR_LABELS[e.vendor_id] || e.vendor_id} ${e.model}`,
+                            itemName: `${(VENDOR_LABELS as Record<string, string>)[e.vendor_id] || e.vendor_id} ${e.model}`,
                             reasoning: `Fallback alternative.`,
                             specSummary: getEquipmentSpecSummary(e)
                         }));
@@ -440,7 +440,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     serviceId: canonicalServiceId,
                     serviceName: service.name,
                     itemId: bestFit.id,
-                    itemName: `${VENDOR_LABELS[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,
+                    itemName: `${(VENDOR_LABELS as Record<string, string>)[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,
                     itemType: "equipment",
                     quantity: quantity,
                     reasoning: reasoning,

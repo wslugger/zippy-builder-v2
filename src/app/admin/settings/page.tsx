@@ -26,10 +26,21 @@ export default function AdminSettingsPage() {
     const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
     const [ruleToEdit, setRuleToEdit] = useState<BOMLogicRule | null>(null);
 
+    const [localTaxonomyStrings, setLocalTaxonomyStrings] = useState<Record<string, string>>({});
+
     useEffect(() => {
         if (config) {
             setDraftConfig(config);
-            // If config is explicitly null and we broke out of loading state, that means we need to populate a default
+            // Initialize local strings for taxonomy textareas
+            const initialStrings: Record<string, string> = {};
+            if (config.taxonomy) {
+                Object.entries(config.taxonomy).forEach(([key, value]) => {
+                    if (Array.isArray(value)) {
+                        initialStrings[key] = value.join(', ');
+                    }
+                });
+            }
+            setLocalTaxonomyStrings(initialStrings);
         } else if (config === null && !isLoading) {
             setDraftConfig(SystemConfigSchema.parse({}));
         }
@@ -88,9 +99,14 @@ export default function AdminSettingsPage() {
         setIsRuleModalOpen(true);
     };
 
-    const handleArrayChange = (category: 'taxonomy', field: string, value: string) => {
+    const handleArrayChange = (category: 'taxonomy', field: string, stringValue: string) => {
         if (!draftConfig) return;
-        const arrayValue = value.split(',').map(s => s.trim()).filter(Boolean);
+
+        // Update local string immediately so the user can see what they are typing (including commas)
+        setLocalTaxonomyStrings(prev => ({ ...prev, [field]: stringValue }));
+
+        // Parse and update the actual draft configuration array
+        const arrayValue = stringValue.split(',').map(s => s.trim()).filter(Boolean);
         setDraftConfig({
             ...draftConfig,
             [category]: {
@@ -302,7 +318,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Regions (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.regions.join(', ')}
+                                        value={localTaxonomyStrings.regions || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'regions', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -311,7 +327,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Site Types (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.siteTypes.join(', ')}
+                                        value={localTaxonomyStrings.siteTypes || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'siteTypes', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -320,7 +336,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Vendors (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.vendors.join(', ')}
+                                        value={localTaxonomyStrings.vendors || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'vendors', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -329,7 +345,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Equipment Purposes (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.purposes?.join(', ') || ''}
+                                        value={localTaxonomyStrings.purposes || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'purposes', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -338,7 +354,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Cellular Types (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.cellular_types?.join(', ') || ''}
+                                        value={localTaxonomyStrings.cellular_types || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'cellular_types', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -347,7 +363,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Wi-Fi Standards (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.wifi_standards?.join(', ') || ''}
+                                        value={localTaxonomyStrings.wifi_standards || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'wifi_standards', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -356,7 +372,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Mounting Options (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.mounting_options?.join(', ') || ''}
+                                        value={localTaxonomyStrings.mounting_options || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'mounting_options', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -365,7 +381,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Recommended Use Cases (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.recommended_use_cases?.join(', ') || ''}
+                                        value={localTaxonomyStrings.recommended_use_cases || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'recommended_use_cases', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -374,7 +390,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Interface Types (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.interface_types?.join(', ') || ''}
+                                        value={localTaxonomyStrings.interface_types || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'interface_types', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -383,7 +399,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Feature Categories (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.feature_categories?.join(', ') || ''}
+                                        value={localTaxonomyStrings.feature_categories || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'feature_categories', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -392,7 +408,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Service Categories (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.service_categories?.join(', ') || ''}
+                                        value={localTaxonomyStrings.service_categories || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'service_categories', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
@@ -401,7 +417,7 @@ export default function AdminSettingsPage() {
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Design Option Categories (Comma separated)</label>
                                     <textarea
                                         rows={3}
-                                        value={draftConfig.taxonomy.design_option_categories?.join(', ') || ''}
+                                        value={localTaxonomyStrings.design_option_categories || ''}
                                         onChange={(e) => handleArrayChange('taxonomy', 'design_option_categories', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />

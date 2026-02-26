@@ -1,7 +1,6 @@
 "use client";
 
-import { EQUIPMENT_PURPOSES as DEFAULT_PURPOSES, VENDOR_IDS, VENDOR_LABELS } from "@/src/lib/types";
-import { useSystemConfig } from "@/src/hooks/useSystemConfig";
+import { useCatalogMetadata } from "@/src/hooks";
 
 interface EquipmentFiltersProps {
     search: string;
@@ -20,8 +19,8 @@ export default function EquipmentFilters({
     selectedPurpose,
     onPurposeChange,
 }: EquipmentFiltersProps) {
-    const { config } = useSystemConfig();
-    const activePurposes = (config?.taxonomy?.purposes as string[]) || DEFAULT_PURPOSES;
+    const { metadata, isLoading } = useCatalogMetadata();
+
     return (
         <div className="flex flex-col gap-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -54,53 +53,65 @@ export default function EquipmentFilters({
 
                 {/* Purpose Dropdown (as Tabs) */}
                 <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
-                    <button
-                        onClick={() => onPurposeChange(null)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${selectedPurpose === null
-                            ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
-                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                            }`}
-                    >
-                        All
-                    </button>
-                    {activePurposes.map((purpose) => (
-                        <button
-                            key={purpose}
-                            onClick={() => onPurposeChange(purpose)}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${selectedPurpose === purpose
-                                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
-                                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                                }`}
-                        >
-                            {purpose}
-                        </button>
-                    ))}
+                    {isLoading ? (
+                        <div className="px-3 py-1.5 text-xs font-medium text-zinc-500">Loading options...</div>
+                    ) : (
+                        <>
+                            <button
+                                onClick={() => onPurposeChange(null)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${selectedPurpose === null
+                                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+                                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                                    }`}
+                            >
+                                All
+                            </button>
+                            {metadata.purposes.map((purpose) => (
+                                <button
+                                    key={purpose}
+                                    onClick={() => onPurposeChange(purpose)}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${selectedPurpose === purpose
+                                        ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+                                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                                        }`}
+                                >
+                                    {purpose}
+                                </button>
+                            ))}
+                        </>
+                    )}
                 </div>
             </div>
 
             {/* Vendor Pills */}
             <div className="flex flex-wrap gap-2">
-                <button
-                    onClick={() => onVendorChange(null)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-all ${selectedVendor === null
-                        ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-black dark:border-white"
-                        : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 dark:bg-black dark:text-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-700"
-                        }`}
-                >
-                    All Vendors
-                </button>
-                {VENDOR_IDS.map((vendor) => (
-                    <button
-                        key={vendor}
-                        onClick={() => onVendorChange(vendor)}
-                        className={`px-3 py-1 text-xs rounded-full border transition-all ${selectedVendor === vendor
-                            ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800"
-                            : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 dark:bg-black dark:text-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-700"
-                            }`}
-                    >
-                        {VENDOR_LABELS[vendor]}
-                    </button>
-                ))}
+                {isLoading ? (
+                    <div className="px-3 py-1 text-xs text-zinc-500">Loading options...</div>
+                ) : (
+                    <>
+                        <button
+                            onClick={() => onVendorChange(null)}
+                            className={`px-3 py-1 text-xs rounded-full border transition-all ${selectedVendor === null
+                                ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-black dark:border-white"
+                                : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 dark:bg-black dark:text-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-700"
+                                }`}
+                        >
+                            All Vendors
+                        </button>
+                        {metadata.vendors.map((vendor) => (
+                            <button
+                                key={vendor}
+                                onClick={() => onVendorChange(vendor)}
+                                className={`px-3 py-1 text-xs rounded-full border transition-all ${selectedVendor === vendor
+                                    ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800"
+                                    : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 dark:bg-black dark:text-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-700"
+                                    }`}
+                            >
+                                {vendor}
+                            </button>
+                        ))}
+                    </>
+                )}
             </div>
         </div>
     );

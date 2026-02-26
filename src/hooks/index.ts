@@ -10,4 +10,4 @@ export { useEquipment } from './useEquipment';
 export { useSiteDefinitions } from './useSiteDefinitions';
 export { useBOMRules } from './useBOMRules';
 export { useTechnicalFeatures } from './useTechnicalFeatures';
-
+export { useCatalogMetadata } from './useCatalogMetadata';
