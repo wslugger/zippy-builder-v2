@@ -123,7 +123,7 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         servicesSnap,
         siteTypesSnap,
         featuresSnap,
-        equipmentCatalog,
+        equipmentCatalogRaw,
         rules,
         globalParameters
     ] = await Promise.all([
@@ -137,6 +137,11 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         BOMService.getAllRules().catch(() => []),
         getGlobalParameters().catch(() => ({}))
     ]);
+
+    // Respect Snapshot for completed projects
+    const equipmentCatalog = (project.status === 'completed' && project.embeddedEquipment?.length)
+        ? project.embeddedEquipment
+        : equipmentCatalogRaw;
 
     // Filter the sorted services list to only those referenced by the project.
     // Filtering from the pre-sorted array (rather than fetching per-ID) preserves sortOrder.

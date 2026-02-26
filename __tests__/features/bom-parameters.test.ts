@@ -124,4 +124,19 @@ describe("BOM Parameters Feature", () => {
         const lanSwitches = bom.items.filter(i => i.serviceId === "managed_lan" && i.itemType === "equipment");
         expect(lanSwitches[0].quantity).toBe(2);
     });
+
+    it("should correctly trigger fallback logic when defaultAccessSpeed is modified", () => {
+        // Change defaultAccessSpeed to something else
+        // The mock equipment contains 1G-Copper switches for LAN.
+        mockInput.globalParameters = {
+            defaultAccessSpeed: "10G-Copper"
+        };
+        const bom = calculateBOM(mockInput);
+        const lanSwitches = bom.items.filter(i => i.serviceId === "managed_lan" && i.itemType === "equipment");
+
+        // Since no 10G-Copper switch exists for 52 users, it should use a fallback or not select the standard 1G-Copper one 
+        // Note: We check that "10G-Copper" required type correctly prevents the standard 'eq2'/'eq3' matches
+        // In our fallback logic, if no match, it grabs best effort. Let's see if it correctly processed the global parameter.
+        expect(lanSwitches.some(i => i.reasoning?.includes('Dynamic match'))).toBe(false); // They were 1G-Copper, so won't dynamically match
+    });
 });

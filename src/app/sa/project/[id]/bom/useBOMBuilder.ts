@@ -142,6 +142,7 @@ export interface BOMBuilderState {
     setAcquisitionModel: (model: 'purchase' | 'rental') => void;
     projectManagementLevel: string;
     setProjectManagementLevel: (level: string) => void;
+    handleFinalize: () => Promise<void>;
 }
 
 export function useBOMBuilder(projectId: string): BOMBuilderState {
@@ -219,7 +220,11 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
                 setAllPackages(allPkgs);
                 setServices(svcs);
-                if (eq.length > 0) setCatalog(eq);
+                if (p?.status === "completed" && p?.embeddedEquipment?.length) {
+                    setCatalog(p.embeddedEquipment);
+                } else if (eq.length > 0) {
+                    setCatalog(eq);
+                }
                 setGlobalParameters(globalParams);
                 setManagementPricingMatrix(mgmtMatrix);
 
@@ -684,6 +689,17 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         acquisitionModel,
         setAcquisitionModel,
         projectManagementLevel,
-        setProjectManagementLevel
+        setProjectManagementLevel,
+        handleFinalize: async () => {
+            if (!project || !bom) return;
+            // Get unique equipment used in the BOM
+            const usedEquipmentIds = new Set(bom.items.filter(i => i.itemType === 'equipment').map(i => i.itemId));
+            const usedEquipment = catalog.filter(e => usedEquipmentIds.has(e.id));
+
+            await ProjectService.finalizeProject(projectId, usedEquipment);
+
+            // Update local state
+            setProject({ ...project, status: 'completed', embeddedEquipment: usedEquipment });
+        }
     };
 }

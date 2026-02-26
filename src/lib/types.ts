@@ -323,6 +323,13 @@ export interface Project {
   // Full snapshot of the configuration (Service/Option/Design/Features)
   // Initialized from Package.items, then modified by SA
   customizedItems?: PackageItem[];
+
+  /**
+   * Finalized snapshot of technical specifications for all unique equipment
+   * items used in this project's BOM. This protects historical projects
+   * from future catalog edits/deletions.
+   */
+  embeddedEquipment?: Equipment[];
 }
 
 export interface GeneratedHLD {

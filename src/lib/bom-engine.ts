@@ -279,14 +279,14 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 if (requiredPurpose === "LAN" && role === 'LAN') {
                     // Extract WLAN requirements from already processed items for this site
                     const wlanItem = bomItems.find(item => item.siteName === site.name && normalizeServiceId(item.serviceId) === 'managed_wifi');
-                    let requiredAccessPortType = '1G-Copper';
+                    let requiredAccessPortType = siteParameters['defaultAccessSpeed'] || '1G-Copper';
                     let totalRequiredPoEWatts = 0;
 
                     if (wlanItem) {
                         const apEquip = equipmentCatalog.find(eq => eq.id === wlanItem.itemId);
                         if (apEquip && getEquipmentRole(apEquip) === 'WLAN') {
                             const apSpecs = apEquip.specs as any;
-                            requiredAccessPortType = apSpecs.uplinkType || '1G-Copper';
+                            requiredAccessPortType = apSpecs.uplinkType || siteParameters['defaultAccessSpeed'] || '1G-Copper';
                             totalRequiredPoEWatts = (apSpecs.powerDrawWatts || 0) * ((site.indoorAPs || 0) + (site.outdoorAPs || 0));
                         }
                     }

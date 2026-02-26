@@ -1,6 +1,6 @@
 import { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Project } from "@/src/lib/types";
+import { Project, Equipment } from "@/src/lib/types";
 import { Site } from "@/src/lib/bom-types";
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, storage, PROJECTS_COLLECTION } from "./config";
@@ -95,6 +95,33 @@ export const ProjectService = {
             await batch.commit();
         } catch (error) {
             console.error("[ProjectService] Failed to save sites:", error);
+            throw error;
+        }
+    },
+
+    finalizeProject: async (projectId: string, equipment: Equipment[]): Promise<void> => {
+        try {
+            const docRef = doc(db, PROJECTS_COLLECTION, projectId);
+            const now = new Date().toISOString();
+
+            // Clone only the necessary parts of the equipment (or the whole thing as requested)
+            // to fulfill the "EmbeddedEquipmentSnapshot" requirement if we want strictness,
+            // but the instructions say "fetch current full technical specifications of all equipment in the BOM"
+            // and "Save these specs into a new embeddedEquipment array".
+            const embeddedEquipment = equipment.map(e => cleanObject({
+                ...e,
+                clonedAt: now
+            }));
+
+            await setDoc(docRef, {
+                status: "completed",
+                embeddedEquipment,
+                updatedAt: now
+            }, { merge: true });
+
+            console.log(`[ProjectService] Project ${projectId} finalized with ${embeddedEquipment.length} items cloned.`);
+        } catch (error) {
+            console.error("[ProjectService] Finalization Failed:", error);
             throw error;
         }
     }

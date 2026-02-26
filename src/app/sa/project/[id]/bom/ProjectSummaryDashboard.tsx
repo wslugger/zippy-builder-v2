@@ -5,9 +5,12 @@ interface ProjectSummaryDashboardProps {
     sites: Site[];
     setSiteFilter: (filter: "all" | "flagged") => void;
     onViewPricing?: () => void;
+    onFinalize?: () => Promise<void>;
+    isCompleted?: boolean;
 }
 
-export function ProjectSummaryDashboard({ sites, setSiteFilter, onViewPricing }: ProjectSummaryDashboardProps) {
+export function ProjectSummaryDashboard({ sites, setSiteFilter, onViewPricing, onFinalize, isCompleted }: ProjectSummaryDashboardProps) {
+    const [isFinalizing, setIsFinalizing] = React.useState(false);
     const totalSites = sites.length;
 
     // A simple heuristic for "flagged" until we have more complex rules in state:
@@ -27,6 +30,20 @@ export function ProjectSummaryDashboard({ sites, setSiteFilter, onViewPricing }:
 
     return (
         <div className="flex-1 p-8 bg-slate-50 dark:bg-slate-950 overflow-y-auto">
+            {isCompleted && (
+                <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center gap-4 animate-in slide-in-from-top-4 duration-500">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center text-xl shadow-sm">
+                        🔒
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-bold text-blue-900 dark:text-blue-200 text-sm">Snapshot Active</h4>
+                        <p className="text-blue-800/70 dark:text-blue-300/60 text-xs">
+                            This project is completed. The data shown below is a point-in-time snapshot of the equipment catalog and configurations.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Project Summary</h1>
                 <p className="text-slate-500 dark:text-slate-400 mt-2">Manage your network deployment by exception. Review flagged sites or drill down into specific configurations.</p>
@@ -108,14 +125,50 @@ export function ProjectSummaryDashboard({ sites, setSiteFilter, onViewPricing }:
                     </div>
                 </button>
 
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Detailed BOM Export</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Need the full line-item breakdown for procurement? Export the current configuration to CSV.</p>
-                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex items-center justify-between">
-                        <span className="text-xs font-mono text-slate-400">bom_export_{new Date().toISOString().split('T')[0]}.csv</span>
-                        <div className="text-xs font-bold text-blue-600">Ready</div>
+                {!isCompleted ? (
+                    <button
+                        onClick={async () => {
+                            if (window.confirm("Are you sure you want to finalize this project? This will lock the equipment specifications and cannot be undone.")) {
+                                setIsFinalizing(true);
+                                try {
+                                    await onFinalize?.();
+                                } finally {
+                                    setIsFinalizing(false);
+                                }
+                            }
+                        }}
+                        disabled={isFinalizing || flaggedSites > 0}
+                        className={`rounded-xl p-8 shadow-sm border transition-all text-left flex flex-col justify-center relative overflow-hidden group ${flaggedSites > 0
+                            ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
+                            : 'bg-indigo-50 border-indigo-200 hover:border-indigo-400 hover:shadow-md'}`}
+                    >
+                        {isFinalizing && (
+                            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10">
+                                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                            </div>
+                        )}
+                        <h3 className={`text-lg font-bold mb-2 ${flaggedSites > 0 ? 'text-slate-400' : 'text-indigo-900'}`}>
+                            {flaggedSites > 0 ? "Resolve Flags to Finalize" : "Finalize & Lock Proposal"}
+                        </h3>
+                        <p className="text-slate-500 text-sm mb-4">
+                            {flaggedSites > 0
+                                ? "You must address all flagged sites before the project can be locked for final design."
+                                : "Click to clone current technical specs into the project record and lock the BOM for historical accuracy."}
+                        </p>
+                        <div className={`mt-auto flex items-center gap-2 font-bold text-sm ${flaggedSites > 0 ? 'text-slate-300' : 'text-indigo-600'}`}>
+                            {flaggedSites > 0 ? "Unlock Finalization" : "Snap Catalog & Complete →"}
+                        </div>
+                    </button>
+                ) : (
+                    <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Detailed BOM Export</h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Need the full line-item breakdown for procurement? Export the current configuration to CSV.</p>
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg flex items-center justify-between">
+                            <span className="text-xs font-mono text-slate-400">bom_export_{new Date().toISOString().split('T')[0]}.csv</span>
+                            <div className="text-xs font-bold text-blue-600">Ready</div>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Quick Actions / Getting Started info could go here */}

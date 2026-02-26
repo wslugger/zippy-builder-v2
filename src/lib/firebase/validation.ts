@@ -130,6 +130,7 @@ export const ProjectSchema = z.object({
     createdAt: z.string(),
     updatedAt: z.string(),
     customizedItems: z.array(PackageItemSchema).optional(),
+    embeddedEquipment: z.array(z.any()).optional(), // Equipment is a disc. union, use z.any() for simple validation here if needed, or ideally use EquipmentSchema
 });
 
 // --- CatalogMetadata ---

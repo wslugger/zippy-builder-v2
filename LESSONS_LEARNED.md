@@ -137,3 +137,10 @@
 - **Visual Consistency**: Standardized input heights (48px) and implemented custom select styling to handle dynamic options gracefully.
 - **Key Insight**: In a CMS-driven application, the codebase should provide the *structure* for data, but the *content* (and its validation) must be allowed to evolve dynamically in the database without requiring a redeployment of the entire frontend.
 - **Benefit**: Admins can now add new Vendors, Interface Types, or Purposes through the database interface, and the application will automatically incorporate them into filters and modals without code changes.
+## 20. Finalize State & Data Integrity
+**Issue**: As the master equipment catalog evolves (e.g., price changes, model EOL), historical project BOMs would "drift" or become invalid if they re-queried the live catalog upon reopening. This breaks auditability for signed-off proposals.
+**Solution**: Implemented a **Finalize & Snapshot** pattern.
+- **Project Snapshotting**: When a project is marked as `completed`, the system clones the full technical specifications of all used equipment into an `embeddedEquipment` array within the project document.
+- **Conditional Data Source**: The `useBOMBuilder` hook and HLD generator were updated to detect the `completed` status and switch their data source from the live catalog to the project's internal snapshot.
+- **Key Insight**: Long-term reliability in quoting tools requires decoupling "current catalog" (for new designs) from "project record" (for historical compliance). A point-in-time capture of the technical spec is essential for accurate HLD and pricing reproduction years later.
+- **Visual Locking**: Added "Locked Snapshot" banners and imagery to communicate to the user that they are viewing a permanent record, not a live-editable design.

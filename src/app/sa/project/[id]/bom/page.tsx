@@ -43,8 +43,9 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
         utilization, totalLoad, poeWarnings,
         currentSDWANEquipment, currentSDWANItem,
         handleFileUpload, loadSampleData, getVendorForService,
-        handlePackageChange, handleSiteTypeChange,
+        handlePackageChange, handleSiteTypeChange, handleSiteUpdate,
         siteFilter, setSiteFilter,
+        handleFinalize
     } = state;
 
     const isLoading = !project || siteTypes.length === 0;
@@ -134,9 +135,15 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                             ← Back to Dashboard
                                         </button>
                                     )}
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        Online
-                                    </span>
+                                    {project.status === "completed" ? (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 shadow-sm animate-in fade-in zoom-in">
+                                            <span className="mr-1.5">🔒</span> Locked Snapshot
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Online
+                                        </span>
+                                    )}
                                     <div className="flex gap-4 items-center">
                                         <button
                                             onClick={() => exportBomToCsv(bom?.items || [], project.name)}
@@ -144,13 +151,22 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                         >
                                             Download BOM (.csv)
                                         </button>
-                                        <button
-                                            onClick={handleNext}
-                                            disabled={isSaving}
-                                            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50"
-                                        >
-                                            {isSaving ? "Saving..." : "Next: HLD \u2192"}
-                                        </button>
+                                        {project.status !== "completed" ? (
+                                            <button
+                                                onClick={handleNext}
+                                                disabled={isSaving}
+                                                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50"
+                                            >
+                                                {isSaving ? "Saving..." : "Next: HLD \u2192"}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => router.push(`/sa/project/${projectId}/hld`)}
+                                                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                            >
+                                                View HLD \u2192
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -257,6 +273,8 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             sites={sites}
                             setSiteFilter={setSiteFilter}
                             onViewPricing={() => setActiveTab("Pricing")}
+                            onFinalize={handleFinalize}
+                            isCompleted={project.status === "completed"}
                         />
                         <div className="absolute top-8 right-8 flex gap-3">
                             <button
@@ -265,20 +283,29 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             >
                                 📥 Download Detailed BOM (.csv)
                             </button>
-                            <button
-                                onClick={handleNext}
-                                disabled={isSaving}
-                                className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-blue-400 border-t-white rounded-full animate-spin" />
-                                        Saving...
-                                    </>
-                                ) : (
-                                    "Continue to HLD \u2192"
-                                )}
-                            </button>
+                            {project.status === "completed" ? (
+                                <button
+                                    onClick={() => router.push(`/sa/project/${projectId}/hld`)}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+                                >
+                                    🔍 View HLD \u2192
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleNext}
+                                    disabled={isSaving}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-blue-400 border-t-white rounded-full animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        "Continue to HLD \u2192"
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

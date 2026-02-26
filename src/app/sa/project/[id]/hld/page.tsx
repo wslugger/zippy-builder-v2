@@ -122,6 +122,15 @@ ${document.appendixB}
                     <h1 className="text-3xl font-bold text-slate-900">Step 6: High-Level Design</h1>
                     <p className="text-slate-500 mt-1">Review, refine, and audit the AI-generated design document.</p>
                 </div>
+                {project?.status === "completed" && (
+                    <div className="flex items-center px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl shadow-sm animate-in slide-in-from-right-4 duration-500">
+                        <span className="mr-2 text-blue-600">🔒</span>
+                        <div>
+                            <p className="text-xs font-bold text-blue-900 leading-none">Locked Snapshot</p>
+                            <p className="text-[10px] text-blue-700 mt-0.5">Using historical catalog data</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {error && (
