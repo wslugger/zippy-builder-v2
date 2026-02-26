@@ -91,7 +91,7 @@ export function SiteSidebar({
         <div className="w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-full flex-shrink-0">
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="font-semibold text-slate-800 dark:text-slate-100">Sites ({sites.length})</h2>
+                    <h2 className="font-semibold text-slate-800 dark:text-slate-100" data-testid="sites-header">Sites ({sites.length})</h2>
                     {selectedSiteIndex !== null && (
                         <button
                             onClick={() => onSelectSite(null)}
