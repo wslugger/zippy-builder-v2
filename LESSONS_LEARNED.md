@@ -24,11 +24,11 @@
 - **Lesson**: Modern web apps must be resilient to the user's browser environment, which is outside our control.
 
 ## 5. Deployment & Infrastructure
-**Issue**: Firebase Hosting's support for modern Next.js features (SSR, Server Actions, Image Optimization) was limited or required complex "Web Frameworks" configurations that often failed or incurred high costs (Cloud Run).
-**Solution**: Migrated hosting to **Vercel**.
-- **Decision**: Firebase is retained for **Backend-as-a-Service** (Firestore, Auth), while Vercel handles the **Frontend & Compute** (Next.js Application).
-- **Benefit**: Zero-config support for Server Actions, better build performance, and native Next.js integration.
-- **Migration**: Removed `hosting` config from `firebase.json` and added `vercel.json` / Vercel dashboard configuration.
+**Issue**: Initially, the project used **Vercel** for convenience, but requirements evolved toward hardware-specific builds (Apple Silicon optimized) and local data isolation needs. Additionally, relying on a single cloud provider created a single point of failure for local development teams.
+**Solution**: Pivoted to a **Redundant Self-Hosted Infrastructure**.
+- **Decision**: Next.js is now hosted on local servers (Mac Mini Primary, Ubuntu Backup) managed by **PM2**.
+- **Benefit**: Native performance for ARM64 builds, zero hosting costs, and resilience against internet/provider outages.
+- **Pattern**: Uses a dual-node GitHub Actions runner strategy with `fail-fast: false` to ensure deployments succeed even if one node is offline.
 
 ## 6. Site Classification Precedence
 **Issue**: The BOM engine initially prioritized "dirty" CSV import data (e.g., generic "Single CPE" redundancy) over explicitly selected Site Profiles (e.g., "Platinum" which mandates "Dual CPE"). This led to incorrect hardware suggestions that ignored organizational standards.
@@ -57,6 +57,7 @@
 - **Service ID Normalization**: Implemented `normalizeServiceId` at the UI bucketing boundary to ensure raw package IDs (e.g., `sd_wan_service`) consistently match canonical engine IDs (`managed_sdwan`) throughout the pipeline.
 - **Conditional Generation**: Updated the BOM engine to skip hardware generation entirely if relevant endpoint counts (APs, users) are zero, even if the service is present in the package.
 - **Visual Aggregation**: UI logic now collapses identical hardware models into a single line item per site, even if assigned by different services, to match standard pricing/BOM expectations.
+
 ## 11. Database Resilience & Model Name Sanitization
 **Issue**: Hallucinated prompt configurations (e.g., `gemini-3.0-flash`) saved in the database caused fatal 404 errors during AI workflows, even after the code was updated to use valid IDs. Code defaults were being overridden by stale/invalid database values.
 **Solution**:
@@ -85,3 +86,21 @@
 - **Consistency by Design**: Refactored the Admin Hub layout to strictly mirror the Top Navigation dropdown categories. 
 - **Rule**: Hub pages should serve as an "expanded" version of the navigation menu, providing better descriptions but maintaining the same logical grouping and hierarchy.
 - **Verification**: Added automated tests to ensure critical entry points (like the Start Page "Admin" link) point to the consolidated Hub rather than individual sub-pages, centralizing the user's mental model.
+
+## 14. Self-Hosted Redundancy and Recovery
+**Issue**: A single self-hosted runner (e.g., an Ubuntu box) can become a bottleneck or a single point of failure if it runs out of disk space or loses connectivity.
+**Solution**:
+- **Dual-Node Strategy**: Deploy to both a Primary (ARM64 Mac Mini) and a Backup (x86 Ubuntu) simultaneously.
+- **Matrix Deployments**: Use GitHub Actions matrix strategy to parallelize builds.
+- **Maintenance**: Automated disk cleanup scripts and PM2 process monitoring are essential for "set and forget" local hosting.
+
+## 15. Asynchronous Loading Race Conditions (E2E)
+**Issue**: In complex Next.js dashboards, the "main" data (the Project) might load quickly, but secondary "architectural" data (the Catalog of Site Types) might still be fetching in the background. If the UI "Loading" state clears too early, E2E tests (Playwright) will attempt to interact with empty dropdowns, causing intermittent failures.
+**Solution**:
+- **Strict Loading State**: The loading boundary must include *all* critical data requirements for the page to be functional.
+- **Pattern**: 
+  ```tsx
+  // Only stop loading when both project AND catalog are ready
+  if (!project || siteTypes.length === 0) return <LoadingScreen />;
+  ```
+- **Benefit**: Removes "flakiness" from CI/CD pipelines and ensures a consistent first-render experience for users.

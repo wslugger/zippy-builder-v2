@@ -10,11 +10,12 @@ graph TB
         UI[Next.js UI Components]
     end
     
-    subgraph "Hosting Infrastructure (Vercel)"
+    subgraph "Hosting Infrastructure (Redundant Nodes)"
+        direction TR
+        MacMini[Primary: Mac Mini ARM64]
+        Ubuntu[Backup: Ubuntu x64]
+        PM2[PM2 Process Manager]
         NextJS[Next.js App Router]
-        API[API Routes]
-        Actions[Server Actions]
-        Middleware[Auth Middleware]
     end
     
     subgraph "Google Cloud Platform"
@@ -33,6 +34,9 @@ graph TB
     NextJS --> Actions
     NextJS --> Middleware
     NextJS --> FirebaseService
+    MacMini -.-> PM2
+    Ubuntu -.-> PM2
+    PM2 --> NextJS
 ```
 
 ### Directory Structure
@@ -190,6 +194,19 @@ sequenceDiagram
     - **Implementation**: Instead of hitting live backend services (which causes test flakiness, slows down execution, and costs money for AI APIs), use `page.route()` to **mock network responses**.
     - **Benefit**: This guarantees deterministic tests, allowing the CI/CD pipeline to safely and quickly validate that the Next.js UI components correctly process and flow data through the entire complex asynchronous user journey.
 
-### 9. Workflow Metrics & Telemetry
+### 9. Asynchronous Loading Race Conditions
+- **Lesson**: In Next.js App Router, components may stop "loading" once the primary document is fetched, but before secondary data (from separate Firestore queries) is dry. This causes E2E tests to fail when they expect UI elements (like dropdowns) to be populated.
+- **Pattern**: Implement **Strict Loading Guards**. The main page layout should only exit the "Loading" state when *all* critical architectural data (like Site Type catalogs or Global Parameters) has been resolved.
+    ```tsx
+    if (!project || siteTypes.length === 0) return <LoadingScreen />;
+    ```
+
+### 10. Workflow Metrics & Telemetry
 - **Lesson**: Visibility into long-running, multi-step processes across systems is critical.
 - **Pattern**: Implement a dynamic Metrics Dashboard pulling discrete step progress (e.g., Solution Architecture flow metrics). Rather than hardcoding metric values, flow events update centralized tracking allowing dashboards to reflect accurate real-time states and spot bottlenecks.
+
+## 🏗️ Deployment Infrastructure
+The app is strictly self-hosted for maximum data privacy and performance.
+- **Orchestration**: GitHub Actions.
+- **Runtime**: Node.js managed by PM2.
+- **Redundancy**: Dual-node matrix (Mac Mini Primary, Ubuntu Backup).

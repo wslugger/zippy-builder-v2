@@ -1,107 +1,62 @@
+# Deployment Guide - Zippy Builder v2
 
-# Deploying Zippy Builder v2 to Vercel
+Zippy Builder employs a **Redundant Self-Hosted Deployment (Dual-Node)** architecture to ensure high availability and high-performance builds.
 
-This guide outlines the steps to deploy your Next.js application to Vercel.
+## 🏗️ Architecture Overview
 
-## Prerequisites
+The application is hosted on two local server nodes managed via GitHub Actions:
 
-1.  **Vercel Account:** If you don't have one, sign up at [vercel.com](https://vercel.com/signup).
-2.  **Git Repository:** Ensure your project is pushed to a Git provider (GitHub, GitLab, or Bitbucket).
+-   **Primary Node**: Mac Mini (Apple Silicon ARM64, 192.168.0.245)
+    -   Role: Main production host, high-speed build executor.
+    -   Process Manager: `pm2`
+-   **Backup Node**: Ubuntu dev-box (Linux x64, 192.168.0.28)
+    -   Role: Redundant standby, secondary build executor.
+    -   Process Manager: `pm2`
 
-## Option A: Deploy via Vercel Dashboard (Recommended)
+## 🚀 CI/CD Pipeline (GitHub Actions)
 
-1.  **Log in** to your Vercel dashboard.
-2.  **Add New Project:** Click "Add New..." -> "Project".
-3.  **Import Git Repository:**
-    *   Find your `zippy-builder-v2` repository in the list.
-    *   Click "Import".
-4.  **Configure Project:**
-    *   **Framework Preset:** Vercel should automatically detect **Next.js**.
-    *   **Root Directory:** `./` (default).
-    *   **Build Command:** `next build` (default).
-    *   **Output Directory:** `.next` (default).
-    *   **Install Command:** `npm install` (default).
-5.  **Environment Variables:**
-    *   Expand the **Environment Variables** section.
-    *   Copy the values from your local `.env.local` file.
-    *   **Important:** You need to add all your Firebase configuration keys here:
-        *   `NEXT_PUBLIC_FIREBASE_API_KEY`
-        *   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-        *   `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-        *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-        *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-        *   `NEXT_PUBLIC_FIREBASE_APP_ID`
-        *   Plus any other secrets (e.g., Google AI API keys if used server-side).
-6.  **Deploy:** Click "Deploy".
+Deployments are fully automated via the **Automated Production Deployment** workflow (`.github/workflows/deploy.yml`).
 
-## Option B: Deploy via Vercel CLI
+1.  **Trigger**: Every push or merge to the `main` branch.
+2.  **Dual Execution**: The workflow uses a **parallel matrix strategy** to deploy to both nodes simultaneously.
+3.  **Resilience**: The pipeline uses `fail-fast: false`. If one node is offline or fails, the other will still complete the deployment.
 
-If you prefer the command line:
+### Workflow Steps
+For each node, the pipeline:
+1.  **Checks out** latest code.
+2.  **Installs** Node.js and dependencies.
+3.  **Builds** the Next.js production payload (`npm run build`).
+4.  **Restarts** the application using `pm2 restart`.
 
-1.  **Install Vercel CLI:**
-    ```bash
-    npm i -g vercel
-    ```
-2.  **Login:**
-    ```bash
-    vercel login
-    ```
-3.  **Deploy:**
-    Run this command in your project root:
-    ```bash
-    vercel
-    ```
-4.  **Follow Prompts:**
-    *   Set up and deploy? [Y]
-    *   Which scope? [Select your account]
-    *   Link to existing project? [N]
-    *   Project name? [zippy-builder-v2]
-    *   Directory? [./]
-    *   Want to modify settings? [N] (unless you need to override defaults)
-5.  **Environment Variables:**
-    You can set these in the dashboard project settings after the first deployment (which might fail if they are missing), or use:
-    ```bash
-    vercel env add <variable_name>
-    ```
+## 🛠️ Infrastructure Management
 
-## Development Workflow
+### Process Management (PM2)
+The application is run in the background using PM2.
 
-We use a staged deployment workflow with a `develop` branch for pre-production and `main` for production.
+- **Check Status**: `pm2 list`
+- **View Logs**: `pm2 logs zippy-builder`
+- **Manual Restart**: `pm2 restart zippy-builder`
+- **Stop**: `pm2 stop zippy-builder`
 
-### Daily Development
-1.  **Checkout Develop**: Start your day or when starting a new feature.
-    ```bash
-    git checkout develop
-    git pull origin develop
-    ```
-2.  **Create Feature Branch**: Create a new branch for your work.
-    ```bash
-    git checkout -b feature/my-new-feature
-    ```
-3.  **Work and Commit**: Make your changes and commit them as usual.
-4.  **Open Pull Request**: Push your feature branch and open a PR against `develop`.
-5.  **Merge to Develop**: Once approved, merge the PR. This will trigger a deployment to the **Pre-production** environment.
+### GitHub Runners
+Each server runs a local GitHub Actions Runner:
+-   **Mac Mini**: `macmini-runner` (labels: `self-hosted, macmini`)
+-   **Ubuntu**: `dev-box` (labels: `self-hosted, linux`)
 
-### Production Release
-1.  **Release Preparation**: Switch to `main` and pull latest.
-    ```bash
-    git checkout main
-    git pull origin main
-    ```
-2.  **Merge Develop**: Merge the tested changes from `develop`.
-    ```bash
-    git merge develop
-    ```
-3.  **Push to Production**: Pushing to `main` triggers the **Production** deployment.
-    ```bash
-    git push origin main
-    ```
+#### Starting a Runner (if offline)
+If a runner shows as offline in GitHub Actions settings:
+- **Mac Mini**: `cd ~/actions-runner && ./run.sh`
+- **Ubuntu**: `ssh sdunn22@192.168.0.28 "cd ~/zippy-builder-v2/actions-runner && ./run.sh"`
 
-## Post-Deployment
+## 🛡️ Maintenance Tasks
 
-*   **Custom Domains**: You can add a custom domain in the Vercel project settings under "Domains". You can assign specific domains to branches (e.g., `dev.zippy-builder.com` to `develop`).
-*   **Automatic Deployments**: 
-    - Every push to `develop` triggers a **Pre-production** deployment.
-    - Every push to `main` triggers a **Production** deployment.
-    - Pushes to other branches trigger **Preview** deployments.
+### Disk Space Recovery (Ubuntu Node)
+The Ubuntu node has limited disk space. If builds fail with "No space left on device":
+1.  Run `npm cache clean --force`
+2.  Prune old builds: `rm -rf /home/sdunn22/zippy-builder-v2/.next`
+3.  Run `docker system prune -f` (if Docker is used elsewhere).
 
+### environment Variables
+Both nodes require a local `.env.local` file containing:
+-   `NEXT_PUBLIC_FIREBASE_*` (Firebase Configuration)
+-   `GEMINI_API_KEY` (AI Engine)

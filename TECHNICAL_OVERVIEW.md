@@ -6,7 +6,7 @@ ZippyDesignBuilder v2 is a modern, high-performance web application designed to 
 
 ## 2. System Architecture
 
-The application follows a serverless, edge-optimized architecture hosted on Vercel, with backend services provided by Google Firebase and Gemini.
+The application follows a redundant self-hosted architecture, with backend services provided by Google Firebase and Gemini.
 
 ### High-Level Architecture Diagram
 ```mermaid
@@ -16,11 +16,11 @@ graph TB
         UI[Next.js UI Components]
     end
     
-    subgraph "Hosting Infrastructure (Vercel)"
+    subgraph "Local Infrastructure (Redundant)"
+        MacMini[Primary Node: Mac Mini]
+        Ubuntu[Backup Node: Ubuntu Box]
+        PM2[PM2 Process Manager]
         NextJS[Next.js App Router]
-        API[API Routes]
-        Actions[Server Actions]
-        Middleware[Auth Middleware]
     end
     
     subgraph "Google Cloud Platform"
@@ -31,11 +31,11 @@ graph TB
     
     Browser --> UI
     UI --> NextJS
-    NextJS --> API
-    NextJS --> Actions
-    NextJS --> Middleware
     NextJS --> FirebaseService
     ServerAction --> GeminiService
+    MacMini --> PM2
+    Ubuntu --> PM2
+    PM2 --> NextJS
 ```
 
 ### Technology Stack
@@ -43,18 +43,18 @@ graph TB
 - **Styling**: TailwindCSS v4 with a custom design system.
 - **Backend/Database**: Google Firebase (Firestore for NoSQL data, Authentication for identity).
 - **AI Engine**: Google Gemini 2.5 Flash via Google AI SDK.
-- **Hosting/CI/CD**: Vercel (Edge Network).
+- **Hosting/CI/CD**: Self-Hosted (Mac Mini + Ubuntu) with GitHub Actions.
 
 ## 3. Infrastructure & Deployment
 
-The application utilizes a Git-based workflow with Vercel for continuous deployment.
+The application utilizes a Git-based workflow with automated deployment to local hardware.
 
 - **Source Control**: Git repository with a branching strategy (`main` for production, `develop` for pre-production).
-- **CI/CD Pipeline**:
-    - **Push to Provide Branch**: Triggers a preview deployment (ephemeral URL).
-    - **Merge to Develop**: Triggers a deployment to the Pre-production environment.
-    - **Merge to Main**: Triggers a deployment to the Production environment.
-- **Environment Management**: Configuration is handled via Vercel Environment Variables, securely storing API keys (Firebase, Gemini) and deployment-specific settings.
+- **Redundant Deployment Pipeline**:
+    - **Primary Node**: Mac Mini (ARM64) - Handles primary traffic and high-speed builds.
+    - **Backup Node**: Ubuntu dev-box (x64) - Provides high availability redundancy.
+- **Automation**: GitHub Actions manages the build and deployment process. The pipeline is resilient; a failure on one node does not stop deployment to the other.
+- **Environment Management**: Configuration is handled via local `.env.local` files on each node, securely storing API keys (Firebase, Gemini) and deployment-specific settings.
 
 ## 4. Key Functionalities
 

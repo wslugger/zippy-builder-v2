@@ -50,10 +50,37 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deployment
+## 💻 Local Development Setup
 
-This project is deployed using **Vercel**. 
+This project is optimized for development on macOS (Mac Mini ARM64).
 
-For detailed deployment instructions, please examine [DEPLOYMENT.md](DEPLOYMENT.md).
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   npx playwright install
+   ```
 
-The deployment pipeline is triggered automatically on pushes to the `main` branch. Environment variables for Firebase and Google AI are required for the build.
+2. **Environment Variables**:
+   Copy `.env.example` to `.env.local` and populate with your Firebase and Gemini API keys.
+
+3. **Run Dev Server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Testing**:
+   ```bash
+   npm run test:e2e      # Run Playwright tests
+   npm run test:e2e:ui   # Run with UI mode
+   ```
+
+## 🚀 Deployment
+
+The project uses a **Redundant Self-Hosted Deployment** architecture:
+
+- **Primary**: Mac Mini (Apple Silicon) - High-speed builds and primary application host.
+- **Backup**: Ubuntu dev-box (Linux x64) - Secondary standby host.
+
+The deployment pipeline is managed via **GitHub Actions** and triggers automatically on pushes to the `main` branch. 
+
+For detailed infrastructure and maintenance instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
