@@ -37,23 +37,51 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
 
                     <div className="grid grid-cols-2 gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
                         <div>
-                            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Performance</h5>
-                            <dl className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <dt className="text-slate-500 dark:text-slate-400">VPN Throughput</dt>
-                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.sdwanCryptoThroughputMbps || 0} Mbps</dd>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <dt className="text-slate-500 dark:text-slate-400">Firewall Throughput</dt>
-                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.rawFirewallThroughputMbps || 0} Mbps</dd>
-                                </div>
-                                {(item as any).specs.advancedSecurityThroughputMbps && (
-                                    <div className="flex justify-between text-sm">
-                                        <dt className="text-slate-500 dark:text-slate-400">AdvSec Throughput</dt>
-                                        <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.advancedSecurityThroughputMbps} Mbps</dd>
-                                    </div>
-                                )}
-                            </dl>
+                            {item.role === 'LAN' ? (
+                                <>
+                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Power Over Ethernet</h5>
+                                    <dl className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">PoE Supported</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">
+                                                {(item as any).specs.poeStandard && (item as any).specs.poeStandard !== 'None' ? 'Yes' : 'No'}
+                                            </dd>
+                                        </div>
+                                        {(item as any).specs.poeStandard && (item as any).specs.poeStandard !== 'None' && (
+                                            <>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="text-slate-500 dark:text-slate-400">Standard</dt>
+                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.poeStandard}</dd>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="text-slate-500 dark:text-slate-400">Power Budget</dt>
+                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.poeBudgetWatts || 0} W</dd>
+                                                </div>
+                                            </>
+                                        )}
+                                    </dl>
+                                </>
+                            ) : (
+                                <>
+                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Performance</h5>
+                                    <dl className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">VPN Throughput</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.sdwanCryptoThroughputMbps || 0} Mbps</dd>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Firewall Throughput</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.rawFirewallThroughputMbps || 0} Mbps</dd>
+                                        </div>
+                                        {(item as any).specs.advancedSecurityThroughputMbps && (
+                                            <div className="flex justify-between text-sm">
+                                                <dt className="text-slate-500 dark:text-slate-400">AdvSec Throughput</dt>
+                                                <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.advancedSecurityThroughputMbps} Mbps</dd>
+                                            </div>
+                                        )}
+                                    </dl>
+                                </>
+                            )}
                         </div>
                         <div>
                             <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Hardware</h5>

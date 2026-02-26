@@ -144,3 +144,9 @@
 - **Conditional Data Source**: The `useBOMBuilder` hook and HLD generator were updated to detect the `completed` status and switch their data source from the live catalog to the project's internal snapshot.
 - **Key Insight**: Long-term reliability in quoting tools requires decoupling "current catalog" (for new designs) from "project record" (for historical compliance). A point-in-time capture of the technical spec is essential for accurate HLD and pricing reproduction years later.
 - **Visual Locking**: Added "Locked Snapshot" banners and imagery to communicate to the user that they are viewing a permanent record, not a live-editable design.
+
+## 21. Context-Specific UI for Hardware Roles
+**Issue**: The Equipment Specifications modal was universally displaying VPN and Firewall throughput for all devices, which was irrelevant and confusing for LAN switches.
+**Solution**: Conditional rendering based on Equipment Role.
+- **Contextual Specs**: The modal now checks `item.role` and displays Power over Ethernet (PoE) specifications (Support, Standard, Power Budget) for LAN devices, while preserving VPN/Firewall performance metrics for WAN and Edge devices.
+- **Key Insight**: Generic UI templates break down when dealing with diverse hardware catalogs. UIs must adapt to the *category* of the data they are presenting to ensure relevance and reduce cognitive noise for the user.
