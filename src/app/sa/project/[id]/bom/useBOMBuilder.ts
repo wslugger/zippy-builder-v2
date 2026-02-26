@@ -117,6 +117,8 @@ export interface BOMBuilderState {
         totalSavings: number;
         delta: number;
     } | null;
+    acquisitionModel: 'purchase' | 'rental';
+    setAcquisitionModel: (model: 'purchase' | 'rental') => void;
 }
 
 export function useBOMBuilder(): BOMBuilderState {
@@ -153,6 +155,7 @@ export function useBOMBuilder(): BOMBuilderState {
     // ---- Pricing & Simulation state ----
     const [globalDiscount, setGlobalDiscount] = useState<number>(0);
     const [swapSimulation, setSwapSimulation] = useState<{ fromItemId: string; toItemId: string } | null>(null);
+    const [acquisitionModel, setAcquisitionModel] = useState<'purchase' | 'rental'>('purchase');
 
     // -------------------------------------------------------
     // Data loading
@@ -320,7 +323,11 @@ export function useBOMBuilder(): BOMBuilderState {
             totalListPrice: 0,
             totalNetPrice: 0,
             totalSavings: 0,
-            siteSummaries: {} as Record<string, { list: number; net: number }>
+            totalOTCList: 0,
+            totalOTCNet: 0,
+            totalMRCList: 0,
+            totalMRCNet: 0,
+            siteSummaries: {} as Record<string, { list: number; net: number; otc: number; mrc: number }>
         };
 
         if (!bom) return summary;
@@ -332,26 +339,62 @@ export function useBOMBuilder(): BOMBuilderState {
         bom.items
             .filter(item => SITE_TAB_SERVICE_IDS.has(item.serviceId))
             .forEach(item => {
-                const listPrice = item.pricing?.listPrice || 0;
                 const qty = item.quantity || 0;
-                const itemTotalList = listPrice * qty;
+                let unitOTCList = 0;
+                let unitMRCList = 0;
+
+                if (item.itemType === 'equipment') {
+                    if (acquisitionModel === 'purchase') {
+                        unitOTCList = item.pricing?.purchasePrice ?? item.pricing?.listPrice ?? 0;
+                        unitMRCList = 0;
+                    } else {
+                        unitOTCList = 0;
+                        unitMRCList = item.pricing?.rentalPrice ?? 0;
+                    }
+                } else {
+                    // For Management/Circuits (query pricing matrix/catalog) - mocked for now
+                    // TODO: integrate ManagementPricingMatrix
+                    unitOTCList = 0;
+                    unitMRCList = 0;
+                }
+
+                // Explicitly store resolved prices on the item (as requested by Step 1 & 3)
+                item.unitOTC = unitOTCList;
+                item.unitMRC = unitMRCList;
+
+                const itemTotalOTCList = unitOTCList * qty;
+                const itemTotalMRCList = unitMRCList * qty;
 
                 // Global discount REPLACES any existing discount per requirement
-                const itemTotalNet = itemTotalList * (1 - globalDiscount / 100);
+                const itemTotalOTCNet = itemTotalOTCList * (1 - globalDiscount / 100);
+                const itemTotalMRCNet = itemTotalMRCList * (1 - globalDiscount / 100);
+
+                item.totalOTC = itemTotalOTCNet;
+                item.totalMRC = itemTotalMRCNet;
+
+                summary.totalOTCList += itemTotalOTCList;
+                summary.totalMRCList += itemTotalMRCList;
+                summary.totalOTCNet += itemTotalOTCNet;
+                summary.totalMRCNet += itemTotalMRCNet;
+
+                const itemTotalList = itemTotalOTCList + itemTotalMRCList;
+                const itemTotalNet = itemTotalOTCNet + itemTotalMRCNet;
 
                 summary.totalListPrice += itemTotalList;
                 summary.totalNetPrice += itemTotalNet;
 
                 if (!summary.siteSummaries[item.siteName]) {
-                    summary.siteSummaries[item.siteName] = { list: 0, net: 0 };
+                    summary.siteSummaries[item.siteName] = { list: 0, net: 0, otc: 0, mrc: 0 };
                 }
                 summary.siteSummaries[item.siteName].list += itemTotalList;
                 summary.siteSummaries[item.siteName].net += itemTotalNet;
+                summary.siteSummaries[item.siteName].otc += itemTotalOTCList;
+                summary.siteSummaries[item.siteName].mrc += itemTotalMRCList;
             });
 
         summary.totalSavings = summary.totalListPrice - summary.totalNetPrice;
         return summary;
-    }, [bom, globalDiscount]);
+    }, [bom, globalDiscount, acquisitionModel]);
 
     const simulatedPricingSummary = useMemo(() => {
         if (!bom || !swapSimulation) return null;
@@ -368,15 +411,28 @@ export function useBOMBuilder(): BOMBuilderState {
         };
 
         bom.items.forEach(item => {
-            let listPrice = item.pricing?.listPrice || 0;
+            let unitOTCList = item.unitOTC || 0;
+            let unitMRCList = item.unitMRC || 0;
             const qty = item.quantity || 0;
 
             // If this item is the one we are swapping FROM
             if (item.itemId === swapSimulation.fromItemId) {
-                listPrice = toEquip.listPrice || 0;
+                // Determine new item prices based on acquisition model
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const eq = toEquip as unknown as Record<string, any>;
+                const purchase = eq.pricing?.purchasePrice ?? eq.listPrice ?? eq.price ?? 0;
+                const rental = eq.pricing?.rentalPrice ?? 0;
+
+                if (acquisitionModel === 'purchase') {
+                    unitOTCList = purchase;
+                    unitMRCList = 0;
+                } else {
+                    unitOTCList = 0;
+                    unitMRCList = rental;
+                }
             }
 
-            const itemTotalList = listPrice * qty;
+            const itemTotalList = (unitOTCList + unitMRCList) * qty;
             const itemTotalNet = itemTotalList * (1 - globalDiscount / 100);
 
             summary.totalListPrice += itemTotalList;
@@ -387,7 +443,7 @@ export function useBOMBuilder(): BOMBuilderState {
         summary.delta = summary.totalNetPrice - pricingSummary.totalNetPrice;
 
         return summary;
-    }, [bom, swapSimulation, catalog, globalDiscount, pricingSummary.totalNetPrice]);
+    }, [bom, swapSimulation, catalog, globalDiscount, pricingSummary.totalNetPrice, acquisitionModel]);
 
     const selectedSite = selectedSiteIndex !== null ? sites[selectedSiteIndex] : undefined;
     const siteBOMItems = bom?.items.filter((i) => i.siteName === selectedSite?.name) ?? [];
@@ -530,5 +586,7 @@ export function useBOMBuilder(): BOMBuilderState {
         setSwapSimulation,
         pricingSummary,
         simulatedPricingSummary,
+        acquisitionModel,
+        setAcquisitionModel,
     };
 }

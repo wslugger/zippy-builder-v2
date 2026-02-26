@@ -44,3 +44,6 @@ next-env.d.ts
 zippy-builder-v2-*.json
 mcp_config.json
 firebase-debug.log
+
+# Temporary scratch files
+/tmp/

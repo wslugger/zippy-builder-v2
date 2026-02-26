@@ -95,8 +95,12 @@ const BaseEquipmentSchema = z.object({
   description: z.string().optional(),
   end_of_life: z.string().optional().describe("ISO Date string or 'Not Announced'"),
   formFactor: z.string().optional(),
-  price: z.number().optional(),
-  listPrice: z.number().optional().describe("Vendor list price from pricing CSV ingest"),
+  price: z.number().optional(), // Deprecated in favor of pricing object
+  listPrice: z.number().optional().describe("Vendor list price from pricing CSV ingest"), // Deprecated in favor of pricing object
+  pricing: z.object({
+    purchasePrice: z.number(),
+    rentalPrice: z.number().optional(),
+  }).optional(),
   pricingEffectiveDate: z.string().optional().describe("ISO date when this price became effective"),
   eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
@@ -265,6 +269,20 @@ export interface CatalogMetadata {
   fields: {
     [key: string]: CatalogField;
   };
+}
+
+export interface ManagementPricingMatrix {
+  [tier: string]: {
+    nrc: number;
+    mrc: number;
+  };
+}
+
+export interface PricingSummary {
+  totalOTCNet: number;
+  totalOTCList: number;
+  totalMRCNet: number;
+  totalMRCList: number;
 }
 
 // ============================================================
@@ -517,9 +535,15 @@ export interface BOMLineItem {
   reasoning?: string; // Which rule triggered this?
   alternatives?: { itemId: string; itemName: string; reasoning?: string; specSummary?: string }[];
   matchedRules?: { ruleId: string; ruleName: string; description?: string }[];
+  unitOTC?: number;
+  unitMRC?: number;
+  totalOTC?: number;
+  totalMRC?: number;
   /** Pricing snapshot captured at BOM generation time. Protects historical BOMs from future price changes. */
   pricing?: {
-    listPrice: number;
+    listPrice: number; // Legacy
+    purchasePrice?: number;
+    rentalPrice?: number;
     discountPercent: number;
     netPrice: number;
     effectiveDate?: string;
@@ -536,6 +560,7 @@ export interface BOM {
     totalMonthlyCost?: number;
     siteCount: number;
   };
+  pricingSummary?: PricingSummary;
 }
 
 export interface BOMEngineInput {
