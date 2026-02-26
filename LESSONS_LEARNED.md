@@ -120,3 +120,11 @@
 - **Dynamic Item Injection**: Modified the `useBOMBuilder` hook to scan generated hardware and inject virtual "Managed Service" items based on a 3D pricing matrix (Purpose × Size × Level).
 - **Service-Site Binding**: Injected circuit costs directly from site metadata into the BOM array to ensure total project Opex is captured.
 - **Key Insight**: Complexity in "Managed" logic is best handled at the UI aggregation layer (after the core hardware engine runs) to keep the suggestion logic clean and focused on technical specs.
+123: 
+124: ## 18. Cost Type Granularity (OTC vs. MRC)
+125: **Issue**: Combining hardware installation fees (OTC) and service subscriptions (MRC) into a single "Price" field obscured the true financial structure of a project, especially for circuits where installation is often a separate one-time charge.
+126: **Solution**:
+127: - **Breakout Infrastructure**: Explicitly split `price` into `unitOTC` and `unitMRC` throughout the BOM engine and state.
+128: - **Manual Data Entry**: Added side-by-side $ inputs in the WAN tab for circuits to capture both One-time and Monthly recurring costs independently.
+129: - **Visual Clarity**: Refactored all pricing tables (Site and Global) to remove the "Total Net" column and instead show independent "Net OTC" and "Net MRC" columns, ensuring stakeholders can clearly distinguish between up-front costs and ongoing revenue.
+130: - **Lesson**: Financial transparency in quoting tools requires tracking cost types at the point of origin (manual entry or rule generation) rather than just aggregating at the point of display.

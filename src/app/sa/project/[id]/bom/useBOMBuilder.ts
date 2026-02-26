@@ -128,7 +128,9 @@ export interface BOMBuilderState {
         totalListPrice: number;
         totalNetPrice: number;
         totalSavings: number;
-        siteSummaries: Record<string, { list: number; net: number }>;
+        totalOTCNet: number;
+        totalMRCNet: number;
+        siteSummaries: Record<string, { list: number; net: number; otc: number; mrc: number }>;
     };
     simulatedPricingSummary: {
         totalListPrice: number;
@@ -347,10 +349,11 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 }
             });
 
-            // Inject circuit costs as service items
             sites.forEach(site => {
-                const siteName = site.name;
-                if (site.primaryCircuit && site.primaryCircuitMRC) {
+                const siteName = site.name.trim();
+                if (site.primaryCircuit) {
+                    const mrc = site.primaryCircuitMRC || 0;
+                    const otc = site.primaryCircuitOTC || 0;
                     enrichedItems.push({
                         id: `${site.id || siteName}-circuit-primary`,
                         siteName: siteName,
@@ -361,17 +364,19 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                         itemType: 'service',
                         quantity: 1,
                         pricing: {
-                            listPrice: site.primaryCircuitMRC,
+                            listPrice: otc + mrc,
                             discountPercent: 0,
-                            netPrice: site.primaryCircuitMRC
+                            netPrice: otc + mrc
                         },
-                        unitOTC: 0,
-                        unitMRC: site.primaryCircuitMRC,
-                        totalOTC: 0,
-                        totalMRC: site.primaryCircuitMRC
+                        unitOTC: otc,
+                        unitMRC: mrc,
+                        totalOTC: otc,
+                        totalMRC: mrc
                     });
                 }
-                if (site.secondaryCircuit && site.secondaryCircuitMRC) {
+                if (site.secondaryCircuit) {
+                    const mrc = site.secondaryCircuitMRC || 0;
+                    const otc = site.secondaryCircuitOTC || 0;
                     const secBandwidth = Math.round(site.bandwidthDownMbps * 0.1);
                     enrichedItems.push({
                         id: `${site.id || siteName}-circuit-secondary`,
@@ -383,14 +388,14 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                         itemType: 'service',
                         quantity: 1,
                         pricing: {
-                            listPrice: site.secondaryCircuitMRC,
+                            listPrice: otc + mrc,
                             discountPercent: 0,
-                            netPrice: site.secondaryCircuitMRC
+                            netPrice: otc + mrc
                         },
-                        unitOTC: 0,
-                        unitMRC: site.secondaryCircuitMRC,
-                        totalOTC: 0,
-                        totalMRC: site.secondaryCircuitMRC
+                        unitOTC: otc,
+                        unitMRC: mrc,
+                        totalOTC: otc,
+                        totalMRC: mrc
                     });
                 }
             });

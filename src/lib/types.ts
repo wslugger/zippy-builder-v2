@@ -456,8 +456,10 @@ export const SiteSchema = z.object({
   outdoorAPs: z.number(),
   primaryCircuit: z.string(), // "DIA", "Broadband"
   primaryCircuitMRC: z.number().optional(),
+  primaryCircuitOTC: z.number().optional(),
   secondaryCircuit: z.string().optional(),
   secondaryCircuitMRC: z.number().optional(),
+  secondaryCircuitOTC: z.number().optional(),
   notes: z.string().optional(),
   accessPortSpeed: z.enum(['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber']).optional(),
   uplinkPortType: z.enum(['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber']).optional(),

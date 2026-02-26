@@ -55,32 +55,22 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
             )}
 
             {/* ── Header Stats ── */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Total List Price</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(pricingSummary.totalListPrice)}</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Total Net OTC</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(pricingSummary.totalOTCNet)}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">One-time costs</p>
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/50 shadow-sm">
-                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Total Net Price</p>
-                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(pricingSummary.totalNetPrice)}</p>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Total Net MRC</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(pricingSummary.totalMRCNet)}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Monthly recurring</p>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-2xl border border-green-100 dark:border-green-800/50 shadow-sm">
                     <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">Total Savings</p>
                     <p className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(pricingSummary.totalSavings)}</p>
                     <p className="text-xs text-green-600/80 mt-1">({globalDiscount}% discount applied)</p>
                 </div>
-                {simulatedPricingSummary && (
-                    <div className={`p-6 rounded-2xl border shadow-sm ${simulatedPricingSummary.delta < 0 ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50' : 'bg-rose-50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/50'}`}>
-                        <p className="text-xs font-semibold uppercase tracking-wider mb-1 flex items-center gap-1">
-                            Simulation Impact
-                            <span className="text-[10px] bg-white dark:bg-slate-800 px-1 rounded border">LIVE</span>
-                        </p>
-                        <p className={`text-2xl font-bold ${simulatedPricingSummary.delta < 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
-                            {simulatedPricingSummary.delta > 0 ? '+' : ''}{formatCurrency(simulatedPricingSummary.delta)}
-                        </p>
-                        <p className="text-xs opacity-80 mt-1">across all sites</p>
-                    </div>
-                )}
             </div>
 
             {/* ── Integrations Action Bar ── */}
@@ -145,14 +135,14 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
                                 <tr>
                                     <th className="px-6 py-3 font-semibold">Site / Item</th>
                                     <th className="px-6 py-3 font-semibold text-right">Qty</th>
-                                    <th className="px-6 py-3 font-semibold text-right">Unit List</th>
-                                    <th className="px-6 py-3 font-semibold text-right">Total Net</th>
+                                    <th className="px-6 py-3 font-semibold text-right">Net OTC</th>
+                                    <th className="px-6 py-3 font-semibold text-right">Net MRC</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {Object.keys(pricingSummary.siteSummaries).map(siteName => {
                                     const rawSiteItems = bom.items.filter(
-                                        i => i.siteName === siteName && SITE_TAB_SERVICE_IDS.has(i.serviceId)
+                                        i => i.siteName.trim() === siteName.trim() && SITE_TAB_SERVICE_IDS.has(i.serviceId)
                                     );
 
                                     if (rawSiteItems.length === 0) return null;
@@ -166,6 +156,8 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
                                                 quantity: aggregatedItems[key].quantity + item.quantity,
                                                 serviceId: "mixed",
                                                 serviceName: "Multiple Services",
+                                                totalOTC: (aggregatedItems[key].totalOTC || 0) + (item.totalOTC || 0),
+                                                totalMRC: (aggregatedItems[key].totalMRC || 0) + (item.totalMRC || 0)
                                             };
                                         } else {
                                             aggregatedItems[key] = { ...item };
@@ -181,8 +173,8 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
                                                 </td>
                                             </tr>
                                             {siteItems.map(item => {
-                                                const unitList = (item.unitOTC || 0) + (item.unitMRC || 0);
-                                                const totalNet = (item.totalOTC || 0) + (item.totalMRC || 0);
+                                                const totalOTC = item.totalOTC || 0;
+                                                const totalMRC = item.totalMRC || 0;
 
                                                 return (
                                                     <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
@@ -192,10 +184,10 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
                                                         </td>
                                                         <td className="px-6 py-4 text-right font-medium">{item.quantity}</td>
                                                         <td className="px-6 py-4 text-right text-slate-500">
-                                                            {unitList > 0 ? formatCurrency(unitList) : <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded italic">No Price</span>}
+                                                            {totalOTC > 0 ? formatCurrency(totalOTC) : <span className="text-[10px] text-slate-300">—</span>}
                                                         </td>
-                                                        <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-100">
-                                                            {formatCurrency(totalNet)}
+                                                        <td className="px-6 py-4 text-right text-slate-500">
+                                                            {totalMRC > 0 ? formatCurrency(totalMRC) : <span className="text-[10px] text-slate-300">—</span>}
                                                         </td>
                                                     </tr>
                                                 );
@@ -204,11 +196,14 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
                                     );
                                 })}
                             </tbody>
-                            <tfoot className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                            <tfoot className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] font-bold">
                                 <tr>
-                                    <td colSpan={3} className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 text-right">Project Grand Total (Net)</td>
-                                    <td className="px-6 py-4 text-right font-black text-lg text-blue-600 dark:text-blue-400">
-                                        {formatCurrency(pricingSummary.totalNetPrice)}
+                                    <td colSpan={2} className="px-6 py-4 text-slate-700 dark:text-slate-300 text-right">Project Grand Totals</td>
+                                    <td className="px-6 py-4 text-right text-lg text-blue-600 dark:text-blue-400 font-black">
+                                        {formatCurrency(Object.values(pricingSummary.siteSummaries).reduce((acc, s) => acc + (s.otc || 0), 0))}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-lg text-blue-600 dark:text-blue-400 font-black">
+                                        {formatCurrency(Object.values(pricingSummary.siteSummaries).reduce((acc, s) => acc + (s.mrc || 0), 0))}
                                     </td>
                                 </tr>
                             </tfoot>
@@ -305,91 +300,93 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
             </div>
 
             {/* ── Import Circuit Pricing Modal ── */}
-            {showImportModal && (
-                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Import Circuit Pricing</h3>
-                                <p className="text-xs text-slate-500 mt-1">Add carrier cost data to your deployment model.</p>
-                            </div>
-                            <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div className="border-b border-slate-200 dark:border-slate-800">
-                            <div className="flex">
-                                <button
-                                    onClick={() => setImportTab("api")}
-                                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors ${importTab === "api" ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-                                >
-                                    Import via API
-                                </button>
-                                <button
-                                    onClick={() => setImportTab("csv")}
-                                    className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors ${importTab === "csv" ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
-                                >
-                                    CSV Upload
+            {
+                showImportModal && (
+                    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Import Circuit Pricing</h3>
+                                    <p className="text-xs text-slate-500 mt-1">Add carrier cost data to your deployment model.</p>
+                                </div>
+                                <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-slate-600">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
                                 </button>
                             </div>
-                        </div>
 
-                        <div className="p-6 min-h-[200px]">
-                            {importTab === "api" && (
-                                <div className="space-y-4">
-                                    <p className="text-sm text-slate-600 dark:text-slate-400">Connect to your carrier pricing API to automatically fetch quotes for the {sites?.length || 0} sites in this project.</p>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-500 mb-1">Select Provider Profile</label>
-                                        <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
-                                            <option>Global Aggregator API (Primary)</option>
-                                            <option>Direct Carrier Feed</option>
-                                        </select>
-                                    </div>
+                            <div className="border-b border-slate-200 dark:border-slate-800">
+                                <div className="flex">
                                     <button
-                                        onClick={() => {
-                                            setShowImportModal(false);
-                                            triggerToast("API query initiated. Prices will update shortly.");
-                                        }}
-                                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-colors mt-4"
+                                        onClick={() => setImportTab("api")}
+                                        className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors ${importTab === "api" ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
                                     >
-                                        Run API Query
+                                        Import via API
+                                    </button>
+                                    <button
+                                        onClick={() => setImportTab("csv")}
+                                        className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors ${importTab === "csv" ? "border-blue-600 text-blue-600 dark:text-blue-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                                    >
+                                        CSV Upload
                                     </button>
                                 </div>
-                            )}
+                            </div>
 
-                            {importTab === "csv" && (
-                                <div className="space-y-4 flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                                    <div className="text-3xl">📄</div>
-                                    <div className="text-center">
-                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Drag &amp; Drop CSV File</p>
-                                        <p className="text-xs text-slate-500 mt-1">Must contain Site Name/ID and Monthly Cost columns</p>
+                            <div className="p-6 min-h-[200px]">
+                                {importTab === "api" && (
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-slate-600 dark:text-slate-400">Connect to your carrier pricing API to automatically fetch quotes for the {sites?.length || 0} sites in this project.</p>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-500 mb-1">Select Provider Profile</label>
+                                            <select className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                                                <option>Global Aggregator API (Primary)</option>
+                                                <option>Direct Carrier Feed</option>
+                                            </select>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setShowImportModal(false);
+                                                triggerToast("API query initiated. Prices will update shortly.");
+                                            }}
+                                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition-colors mt-4"
+                                        >
+                                            Run API Query
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => {
-                                            setShowImportModal(false);
-                                            triggerToast("CSV pricing data imported successfully.");
-                                        }}
-                                        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-lg transition-colors mt-2"
-                                    >
-                                        Browse Files
-                                    </button>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Manual Entry hint — directs user to WAN tab */}
-                            <div className="mt-4 flex items-start gap-2 bg-slate-50 dark:bg-slate-800/40 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                                <span className="text-slate-400 text-sm mt-0.5">💡</span>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                                    <strong className="text-slate-700 dark:text-slate-300">Entering costs per circuit?</strong> Navigate to a site in the sidebar and open the <em>WAN</em> tab — each circuit has an inline $/mo field in the Circuit Configuration section.
-                                </p>
+                                {importTab === "csv" && (
+                                    <div className="space-y-4 flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                        <div className="text-3xl">📄</div>
+                                        <div className="text-center">
+                                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Drag &amp; Drop CSV File</p>
+                                            <p className="text-xs text-slate-500 mt-1">Must contain Site Name/ID and Monthly Cost columns</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setShowImportModal(false);
+                                                triggerToast("CSV pricing data imported successfully.");
+                                            }}
+                                            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-semibold text-sm rounded-lg transition-colors mt-2"
+                                        >
+                                            Browse Files
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Manual Entry hint — directs user to WAN tab */}
+                                <div className="mt-4 flex items-start gap-2 bg-slate-50 dark:bg-slate-800/40 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                                    <span className="text-slate-400 text-sm mt-0.5">💡</span>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                        <strong className="text-slate-700 dark:text-slate-300">Entering costs per circuit?</strong> Navigate to a site in the sidebar and open the <em>WAN</em> tab — each circuit has an inline $/mo field in the Circuit Configuration section.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

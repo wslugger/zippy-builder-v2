@@ -186,18 +186,30 @@ export function WANTab({
                                 <div className="text-xs text-slate-500 dark:text-slate-400">Partner ISP • Optical</div>
                             </div>
                         </div>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-3">
                             <div className="font-bold text-slate-900 dark:text-slate-100">{selectedSite.bandwidthDownMbps} Mbps</div>
-                            <div className="flex items-center space-x-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-900">
-                                <span className="text-slate-500 text-sm">$</span>
-                                <input
-                                    type="number"
-                                    className="w-16 bg-transparent border-none p-0 text-sm focus:ring-0 text-right"
-                                    placeholder="MRC"
-                                    value={selectedSite.primaryCircuitMRC || ""}
-                                    onChange={(e) => handleSiteUpdate({ primaryCircuitMRC: Number(e.target.value) })}
-                                />
-                                <span className="text-slate-400 text-xs">/mo</span>
+                            <div className="flex space-x-2">
+                                <div className="flex items-center space-x-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-900">
+                                    <span className="text-slate-500 text-[10px] font-bold">OTC $</span>
+                                    <input
+                                        type="number"
+                                        className="w-14 bg-transparent border-none p-0 text-sm focus:ring-0 text-right"
+                                        placeholder="OTC"
+                                        value={selectedSite.primaryCircuitOTC || ""}
+                                        onChange={(e) => handleSiteUpdate({ primaryCircuitOTC: Number(e.target.value) })}
+                                    />
+                                </div>
+                                <div className="flex items-center space-x-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-900">
+                                    <span className="text-slate-500 text-[10px] font-bold">MRC $</span>
+                                    <input
+                                        type="number"
+                                        className="w-14 bg-transparent border-none p-0 text-sm focus:ring-0 text-right"
+                                        placeholder="MRC"
+                                        value={selectedSite.primaryCircuitMRC || ""}
+                                        onChange={(e) => handleSiteUpdate({ primaryCircuitMRC: Number(e.target.value) })}
+                                    />
+                                    <span className="text-slate-400 text-[10px]">/mo</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -218,18 +230,30 @@ export function WANTab({
                                     <div className="text-xs text-slate-500 dark:text-slate-400">Local Cable • Electrical</div>
                                 </div>
                             </div>
-                            <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-3">
                                 <div className="font-bold text-slate-900 dark:text-slate-100">{Math.round(selectedSite.bandwidthDownMbps * 0.1)} Mbps</div>
-                                <div className="flex items-center space-x-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-900">
-                                    <span className="text-slate-500 text-sm">$</span>
-                                    <input
-                                        type="number"
-                                        className="w-16 bg-transparent border-none p-0 text-sm focus:ring-0 text-right"
-                                        placeholder="MRC"
-                                        value={selectedSite.secondaryCircuitMRC || ""}
-                                        onChange={(e) => handleSiteUpdate({ secondaryCircuitMRC: Number(e.target.value) })}
-                                    />
-                                    <span className="text-slate-400 text-xs">/mo</span>
+                                <div className="flex space-x-2">
+                                    <div className="flex items-center space-x-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-900">
+                                        <span className="text-slate-500 text-[10px] font-bold">OTC $</span>
+                                        <input
+                                            type="number"
+                                            className="w-14 bg-transparent border-none p-0 text-sm focus:ring-0 text-right"
+                                            placeholder="OTC"
+                                            value={selectedSite.secondaryCircuitOTC || ""}
+                                            onChange={(e) => handleSiteUpdate({ secondaryCircuitOTC: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div className="flex items-center space-x-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-900">
+                                        <span className="text-slate-500 text-[10px] font-bold">MRC $</span>
+                                        <input
+                                            type="number"
+                                            className="w-14 bg-transparent border-none p-0 text-sm focus:ring-0 text-right"
+                                            placeholder="MRC"
+                                            value={selectedSite.secondaryCircuitMRC || ""}
+                                            onChange={(e) => handleSiteUpdate({ secondaryCircuitMRC: Number(e.target.value) })}
+                                        />
+                                        <span className="text-slate-400 text-[10px]">/mo</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
