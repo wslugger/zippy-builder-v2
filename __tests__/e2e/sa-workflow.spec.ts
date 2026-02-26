@@ -3,12 +3,14 @@ import path from 'path';
 
 test.describe('SA Workflow Critical Path', () => {
     test('Upload CSV -> Classification -> BOM Generation', async ({ page }) => {
-        // Debugging network requests
-        page.on('request', request => console.log('>>', request.method(), request.url()));
-        page.on('response', response => console.log('<<', response.status(), response.url()));
+        // Log browser errors and demo-mode messages only (avoid noise)
+        page.on('console', msg => {
+            if (msg.type() === 'error' || msg.text().startsWith('DEMO')) {
+                console.log('PAGE LOG:', msg.text());
+            }
+        });
 
         // 1. Intercept AI Classification API
-        // We mock the /api/sa/classify-sites route so we don't hit the real AI and rack up costs.
         await page.route('**/api/sa/classify-sites*', async (route) => {
             await route.fulfill({
                 status: 200,
@@ -32,42 +34,19 @@ test.describe('SA Workflow Critical Path', () => {
             });
         });
 
-        // 2. Intercept Firebase/Firestore Requests
-        // Playwright cannot easily intercept gRPC websockets, but it can intercept REST fallback if forced,
-        // or you can intercept the Next.js API routes if you're doing server-side fetching.
-        // If your app uses the Firebase Client SDK directly, a common strategy is to mock the data at the
-        // repository/hook level or intercept the googleapis.com requests (which can be flaky).
-        // Assuming your app fetches catalogs via an API or we intercept googleapis:
+        // 2. Block Firestore — demo mode uses seed data, no Firestore needed
         await page.route('https://firestore.googleapis.com/**', async (route) => {
-            // Depending on the exact request (e.g., fetching packages/equipment), you map it to mock data.
-            // This is a simplified catch-all. In reality, you'd match specific collection paths.
-            // For this test, we might bypass mocking Firestore if we use a dedicated test project,
-            // OR we return an empty/mocked success response if we strictly want no network.
-            // E.g., returning mocked Equipment Catalog:
-            if (route.request().url().includes('equipment_catalog')) {
-                await route.fulfill({
-                    status: 200,
-                    contentType: 'application/json',
-                    body: JSON.stringify([ /* Mock Equipment Data */]),
-                });
-                return;
-            }
-            // Fallback: let other Firestore requests through (e.g. to emulator or test db)
-            await route.continue();
+            await route.abort();
         });
 
-        // 3. Navigate to the upload page
-        // The SA workflow is under /sa/project/[id]/bom
-        // We'll use a test project ID like "demo"
+        // 3. Navigate to the BOM Builder in demo mode
         await page.goto('/sa/project/demo/bom');
 
-        // 4. Upload a CSV file
-        // Wait for the SiteSidebar to render the file input
-        await expect(page.getByText('Loading Project...')).not.toBeVisible();
-        await expect(page.locator('.w-80.bg-white')).toBeVisible();
-
+        // 4. Wait for the page to be ready by checking for the file input directly.
+        //    Demo mode initializes state synchronously so it should appear quickly.
         const fileInput = page.locator('input[type="file"][accept=".csv"]');
-        await expect(fileInput).toBeAttached();
+        await expect(fileInput).toBeVisible({ timeout: 15000 });
+
 
         // Set the file
         await fileInput.setInputFiles(path.join(__dirname, 'fixtures', 'sample.csv'));

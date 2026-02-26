@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams, useSearchParams } from "next/navigation";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService } from "@/src/lib/firebase";
 import { Project, Package, Service, Equipment } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
+import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
+import { SEED_PACKAGES } from "@/src/lib/seed-packages";
+import { SEED_SERVICES } from "@/src/lib/seed-services";
 import { calculateBOM, calculateUtilization, validatePOE } from "@/src/lib/bom-engine";
 import { normalizeServiceId } from "@/src/lib/bom-utils";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
@@ -24,6 +26,22 @@ LA-Branch,456 Sunset Blvd Los Angeles CA,25,200,50,Single CPE,1,24,10,2,0,Broadb
 CHI-Warehouse,789 Industrial Pkwy Chicago IL,50,500,500,Single CPE,2,48,20,15,2,DIA,LTE,High ceiling warehouse needs industrial APs
 MIA-Office,321 Ocean Dr Miami FL,10,100,20,Single CPE,1,12,5,1,0,Broadband,,Small sales office
 DAL-DataCenter,555 Tech Way Dallas TX,5,10000,10000,Dual CPE,2,24,0,0,0,DIA,DIA,Data center direct connect`;
+
+// -------------------------------------------------------
+// Demo project — initialized synchronously to avoid Suspense races
+// -------------------------------------------------------
+const DEMO_PROJECT: Project = {
+    id: "demo",
+    userId: "demo-user",
+    name: "Demo Project",
+    customerName: "Demo Corporation",
+    description: "Automated test project for BOM troubleshooting.",
+    status: "completed",
+    currentStep: 5,
+    selectedPackageId: "performance_sase",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+} as Project;
 
 // -------------------------------------------------------
 // Preview site type (with AI enrichment fields)
@@ -119,17 +137,27 @@ export interface BOMBuilderState {
     } | null;
 }
 
-export function useBOMBuilder(): BOMBuilderState {
-    const params = useParams();
-    const searchParams = useSearchParams();
-    const projectId = params.id as string;
+export function useBOMBuilder(projectId: string): BOMBuilderState {
+    const isDemo = projectId === "demo";
 
-    // ---- Core data state ----
-    const [project, setProject] = useState<Project | null>(null);
-    const [pkg, setPkg] = useState<Package | null>(null);
-    const [allPackages, setAllPackages] = useState<Package[]>([]);
-    const [services, setServices] = useState<Service[]>([]);
-    const [siteTypes, setSiteTypes] = useState<SiteType[]>([]);
+    // ---- Core data state — lazy initializers for demo mode ----
+    // Using lazy initializers means demo data is set on the FIRST render,
+    // avoiding the useEffect timing issue that caused the loading screen to persist.
+    const [project, setProject] = useState<Project | null>(() =>
+        isDemo ? DEMO_PROJECT : null
+    );
+    const [pkg, setPkg] = useState<Package | null>(() =>
+        isDemo ? (SEED_PACKAGES.find(p => p.id === "performance_sase") || SEED_PACKAGES[0]) : null
+    );
+    const [allPackages, setAllPackages] = useState<Package[]>(() =>
+        isDemo ? SEED_PACKAGES : []
+    );
+    const [services, setServices] = useState<Service[]>(() =>
+        isDemo ? SEED_SERVICES : []
+    );
+    const [siteTypes, setSiteTypes] = useState<SiteType[]>(() =>
+        isDemo ? ALL_SITE_TYPES : []
+    );
     const [catalog, setCatalog] = useState<Equipment[]>(SEED_EQUIPMENT);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [globalParameters, setGlobalParameters] = useState<Record<string, any>>({});
@@ -155,45 +183,20 @@ export function useBOMBuilder(): BOMBuilderState {
     const [swapSimulation, setSwapSimulation] = useState<{ fromItemId: string; toItemId: string } | null>(null);
 
     // -------------------------------------------------------
-    // Data loading
+    // Data loading (real Firestore — skipped for demo mode)
     // -------------------------------------------------------
     useEffect(() => {
+        if (isDemo) return; // demo state is pre-initialized synchronously above
+        if (!projectId) return;
+
         async function loadData() {
-            if (!projectId) return;
-
             try {
-                let p: Project | null = null;
-                if (projectId === "demo") {
-                    // Pre-emptively set demo project so UI doesn't hang on Loading state
-                    p = {
-                        id: "demo",
-                        userId: "demo-user",
-                        name: "Demo Project",
-                        customerName: "Demo Corporation",
-                        description: "Automated test project for BOM troubleshooting.",
-                        status: "completed",
-                        currentStep: 5,
-                        selectedPackageId: "cost_centric",
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                    } as Project;
-                    setProject(p);
+                const p = await ProjectService.getProject(projectId);
+                setProject(p);
 
-                    // Then load real packages to refine
-                    const pkgs = await PackageService.getAllPackages();
-                    const preferredPkg = pkgs.find((pk) => pk.id === "cost_centric") || pkgs[0];
-                    if (preferredPkg) {
-                        setPkg(preferredPkg);
-                        setProject(prev => prev ? { ...prev, selectedPackageId: preferredPkg.id } : prev);
-                    }
-                } else {
-                    p = await ProjectService.getProject(projectId);
-                    setProject(p);
-
-                    if (p?.selectedPackageId) {
-                        const pk = await PackageService.getPackageById(p.selectedPackageId);
-                        setPkg(pk);
-                    }
+                if (p?.selectedPackageId) {
+                    const pk = await PackageService.getPackageById(p.selectedPackageId);
+                    setPkg(pk);
                 }
 
                 const [allPkgs, svcs, eq, globalParams] = await Promise.all([
@@ -209,24 +212,16 @@ export function useBOMBuilder(): BOMBuilderState {
                 setGlobalParameters(globalParams);
 
                 const st = await SiteDefinitionService.getAllSiteDefinitions().catch(() => []);
-                if (st.length === 0) {
-                    const { ALL_SITE_TYPES } = await import("@/src/lib/seed-site-catalog");
-                    setSiteTypes(ALL_SITE_TYPES);
-                } else {
-                    setSiteTypes(st);
-                }
+                setSiteTypes(st.length > 0 ? st : ALL_SITE_TYPES);
             } catch (error) {
                 console.error("Error in loadData:", error);
-                // Ensure we at least have some state if it fails
-                if (projectId === "demo" && !project) {
-                    setProject({ id: "demo", name: "Demo Project" } as Project);
-                }
+                setSiteTypes(ALL_SITE_TYPES);
             }
         }
 
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [projectId]);
+    }, [projectId, isDemo]);
 
     // Engine instantiation removed in favor of pure functions
 
@@ -479,11 +474,14 @@ export function useBOMBuilder(): BOMBuilderState {
 
     // Auto-load sample data when ?loadSample=true
     useEffect(() => {
-        if (searchParams.get("loadSample") === "true") {
+        // Read directly from the URL to avoid needing useSearchParams (which requires Suspense)
+        const hasLoadSample = typeof window !== "undefined" &&
+            new URLSearchParams(window.location.search).get("loadSample") === "true";
+        if (hasLoadSample) {
             const timer = setTimeout(loadSampleData, 500);
             return () => clearTimeout(timer);
         }
-    }, [searchParams, loadSampleData]);
+    }, [loadSampleData]);
 
     return {
         project,

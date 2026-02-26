@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { ProjectService } from "@/src/lib/firebase";
 import { SiteImportReviewModal } from "@/src/components/sa/SiteImportReviewModal";
 import { exportBomToCsv } from "@/src/lib/bom-utils";
@@ -26,11 +26,11 @@ const AlertIcon = () => (
 // ─────────────────────────────────────────────
 // Main content (needs useSearchParams → Suspense wrapper below)
 // ─────────────────────────────────────────────
-function BOMBuilderContent() {
+function BOMBuilderContent({ projectId }: { projectId: string }) {
     const router = useRouter();
     const [isSaving, setIsSaving] = useState(false);
 
-    const state = useBOMBuilder();
+    const state = useBOMBuilder(projectId);
     const {
         project, pkg, allPackages, siteTypes, catalog,
         sites, setSites, selectedSiteIndex, setSelectedSiteIndex, selectedSite,
@@ -42,11 +42,28 @@ function BOMBuilderContent() {
         utilization, totalLoad, poeWarnings,
         currentSDWANEquipment, currentSDWANItem,
         handleFileUpload, loadSampleData, getVendorForService,
-        handlePackageChange, handleSiteTypeChange, projectId,
+        handlePackageChange, handleSiteTypeChange,
         siteFilter, setSiteFilter,
     } = state;
 
-    if (!project || siteTypes.length === 0) return <div className="p-8">Loading Project...</div>;
+    const isLoading = !project || siteTypes.length === 0;
+
+    console.log("BOMBuilderContent Render:", {
+        isLoading,
+        projectId,
+        hasProject: !!project,
+        siteTypesCount: siteTypes.length
+    });
+
+    if (isLoading) {
+        return (
+            <div className="p-8" data-testid="loading-project">
+                <p className="text-slate-600 dark:text-slate-400 font-medium">
+                    Loading Project...
+                </p>
+            </div>
+        );
+    }
 
     const handleNext = async () => {
         if (!project || isSaving) return;
@@ -299,13 +316,20 @@ function BOMBuilderContent() {
     );
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Page export with Suspense boundary
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 export default function BOMBuilderPage() {
-    return (
-        <Suspense fallback={<div className="p-8 text-slate-500">Loading BOM Builder...</div>}>
-            <BOMBuilderContent />
-        </Suspense>
-    );
+    const params = useParams();
+    const projectId = params.id as string;
+
+    if (!projectId) {
+        return (
+            <div className="p-8" data-testid="loading-project-params">
+                Loading Project (params)...
+            </div>
+        );
+    }
+
+    return <BOMBuilderContent projectId={projectId} />;
 }
