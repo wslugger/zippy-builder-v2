@@ -13,6 +13,7 @@ import { LANTab } from "./LANTab";
 import { WLANTab } from "./WLANTab";
 import { PricingTab } from "./PricingTab";
 import { ProjectSummaryDashboard } from "./ProjectSummaryDashboard";
+import { GlobalPricingView } from "./GlobalPricingView";
 
 // ─────────────────────────────────────────────
 // Small local icons (trivial, kept in page file)
@@ -225,7 +226,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
 
                             {/* ── Pricing Tab ── */}
                             {activeTab === "Pricing" && (
-                                <PricingTab state={state} />
+                                <PricingTab state={state} selectedSite={selectedSite} />
                             )}
                         </div>
                     </>
@@ -235,7 +236,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Project Pricing Analysis</h1>
-                                    <p className="text-sm text-slate-500 mt-1">Simulate discounts and hardware swaps across all {sites.length} sites.</p>
+                                    <p className="text-sm text-slate-500 mt-1">Aggregate discounts, hardware simulators, and integrations for all {sites.length} sites.</p>
                                 </div>
                                 <button
                                     onClick={() => { setActiveTab("WAN"); setSelectedSiteIndex(0); }}
@@ -246,7 +247,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             </div>
                         </div>
                         <div className="p-6">
-                            <PricingTab state={state} />
+                            <GlobalPricingView state={state} />
                         </div>
                     </>
                 ) : (

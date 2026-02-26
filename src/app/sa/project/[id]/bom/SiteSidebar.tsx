@@ -170,6 +170,26 @@ export function SiteSidebar({
             </div>
 
             <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 relative">
+                <div className="p-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20">
+                    <button
+                        onClick={() => onSelectSite(null)}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${selectedSiteIndex === null
+                                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                                : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-sm"
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">📊</span>
+                            <span className={`font-bold text-sm ${selectedSiteIndex === null ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
+                                Project Overview
+                            </span>
+                        </div>
+                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${selectedSiteIndex === null ? "bg-blue-500 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"}`}>
+                            Global
+                        </span>
+                    </button>
+                </div>
+
                 {totalFiltered === 0 && sites.length > 0 && (
                     <div className="p-8 text-center text-sm text-slate-500">
                         No sites match the current filter.

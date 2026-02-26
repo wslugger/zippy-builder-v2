@@ -104,3 +104,12 @@
   if (!project || siteTypes.length === 0) return <LoadingScreen />;
   ```
 - **Benefit**: Removes "flakiness" from CI/CD pipelines and ensures a consistent first-render experience for users.
+
+## 16. Progressive Disclosure & Contextual Integrity in Complex UIs
+**Issue**: The BOM Pricing tab showed project-wide aggregate totals (global discount slider, hardware swap simulator, multi-site breakdown) alongside site-specific pricing. When a user had a specific site selected in the sidebar, the aggregated data created cognitive overload and broke the user's contextual mental model — they were thinking about *one site* but the UI was showing *all sites*.
+**Solution**: Separated the BOM builder into two distinct views:
+- **Micro-view** (`PricingTab`): Site-scoped, contextual, clean. Only shows pricing for the currently selected site.
+- **Macro-view** (`GlobalPricingView`): Accessed via a dedicated "Project Overview" top-level button in the sidebar. Houses aggregates, discount simulation, hardware swap simulator, and integration endpoints.
+- **Manual Circuit Pricing**: Moved to the WAN tab as inline $/mo inputs per circuit row, since it is inherently a per-site, per-circuit data entry concern — not a global pricing operation.
+- **Key Insight**: The place where data *lives* (site-level vs. project-level) should dictate the view where it is *entered and displayed*. Mixing contextual scope in a single view creates hidden cognitive tax for power users who iteratively review many sites.
+- **Pattern**: Use a sidebar navigation item to flip between micro and macro modes rather than cramming both into a single tab.
