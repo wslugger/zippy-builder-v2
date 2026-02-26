@@ -97,6 +97,7 @@ const BaseEquipmentSchema = z.object({
   formFactor: z.string().optional(),
   price: z.number().optional(),
   listPrice: z.number().optional().describe("Vendor list price from pricing CSV ingest"),
+  pricing: z.object({ purchasePrice: z.number().optional(), rentalPrice: z.number().optional() }).optional().describe("Detailed dual-axis pricing scheme"),
   pricingEffectiveDate: z.string().optional().describe("ISO date when this price became effective"),
   eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
@@ -517,9 +518,14 @@ export interface BOMLineItem {
   reasoning?: string; // Which rule triggered this?
   alternatives?: { itemId: string; itemName: string; reasoning?: string; specSummary?: string }[];
   matchedRules?: { ruleId: string; ruleName: string; description?: string }[];
-  /** Pricing snapshot captured at BOM generation time. Protects historical BOMs from future price changes. */
+  unitOTC?: number;
+  unitMRC?: number;
+  totalOTC?: number;
+  totalMRC?: number;
   pricing?: {
-    listPrice: number;
+    listPrice: number; // Legacy
+    purchasePrice?: number;
+    rentalPrice?: number;
     discountPercent: number;
     netPrice: number;
     effectiveDate?: string;

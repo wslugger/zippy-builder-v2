@@ -342,6 +342,48 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 </div>
                             </section>
 
+                            {/* Pricing Information Card */}
+                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                <h4 className={sectionTitleClass}>Pricing Information</h4>
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-8">
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Purchase Price (OTC) ($)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                            <input
+                                                type="number"
+                                                value={formData.pricing?.purchasePrice ?? formData.listPrice ?? formData.price ?? 0}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    pricing: { ...(formData.pricing || {}), purchasePrice: Number(e.target.value) },
+                                                    listPrice: Number(e.target.value) // Keep legacy field in sync just in case
+                                                } as any)}
+                                                className={`${inputClass} pl-8`}
+                                                placeholder="0.00"
+                                                step="0.01"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Monthly Rental Price (MRC) ($)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                            <input
+                                                type="number"
+                                                value={formData.pricing?.rentalPrice ?? 0}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    pricing: { ...(formData.pricing || {}), rentalPrice: Number(e.target.value) }
+                                                } as any)}
+                                                className={`${inputClass} pl-8`}
+                                                placeholder="0.00"
+                                                step="0.01"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
                             {/* Throughput & Performance Card - Primarily for WAN */}
                             {getEquipmentRole(formData) === 'WAN' && (
                                 <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
