@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { SystemDefaultsService } from '@/src/lib/firebase';
@@ -18,6 +18,8 @@ export default function ProjectLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const params = useParams();
+    const projectId = params?.id as string;
     const [steps, setSteps] = useState<WorkflowStep[]>(DEFAULT_STEPS);
 
     useEffect(() => {
@@ -70,13 +72,13 @@ export default function ProjectLayout({
                                 const isActive = index === currentStepIndex;
                                 const isCompleted = index < currentStepIndex;
 
-                                return (
-                                    <div key={step.id} className="flex flex-col items-center group relative">
+                                const stepContent = (
+                                    <div key={step.id} className={`flex flex-col items-center group relative ${isCompleted ? 'cursor-pointer' : ''}`}>
                                         <div
                                             className={`
                                                 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-300 z-10
                                                 ${isActive ? 'bg-blue-600 border-blue-600 text-white scale-110 shadow-lg shadow-blue-500/30' :
-                                                    isCompleted ? 'bg-blue-600 border-blue-600 text-white' :
+                                                    isCompleted ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 hover:scale-110' :
                                                         'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500'}
                                             `}
                                         >
@@ -85,12 +87,24 @@ export default function ProjectLayout({
                                         <span className={`
                                             absolute mt-10 text-xs font-medium transition-colors duration-300 whitespace-nowrap
                                             ${isActive ? 'text-blue-600 dark:text-blue-400' :
-                                                isCompleted ? 'text-neutral-900 dark:text-neutral-100' :
+                                                isCompleted ? 'text-neutral-900 dark:text-neutral-100 group-hover:text-blue-600 dark:group-hover:text-blue-400' :
                                                     'text-neutral-400 dark:text-neutral-500'}
                                         `}>
                                             {step.label}
                                         </span>
                                     </div>
+                                );
+
+                                return isCompleted ? (
+                                    <Link
+                                        key={step.id}
+                                        href={`/sa/project/${projectId}/${step.path}`}
+                                        title={`Go back to ${step.label}`}
+                                    >
+                                        {stepContent}
+                                    </Link>
+                                ) : (
+                                    <div key={step.id}>{stepContent}</div>
                                 );
                             })}
                         </div>

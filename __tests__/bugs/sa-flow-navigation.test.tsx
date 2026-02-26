@@ -5,6 +5,7 @@ import '@testing-library/jest-dom';
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
     usePathname: () => '/sa/project/123/design-doc',
+    useParams: () => ({ id: '123' }),
 }));
 
 // Mock next/link
