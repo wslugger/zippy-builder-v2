@@ -23,12 +23,12 @@
 **Solution**: Added `suppressHydrationWarning` to the `<html>` and `<body>` tags in `layout.tsx`.
 - **Lesson**: Modern web apps must be resilient to the user's browser environment, which is outside our control.
 
-## 5. Deployment & Infrastructure
-**Issue**: Initially, the project used **Vercel** for convenience, but requirements evolved toward hardware-specific builds (Apple Silicon optimized) and local data isolation needs. Additionally, relying on a single cloud provider created a single point of failure for local development teams.
-**Solution**: Pivoted to a **Redundant Self-Hosted Infrastructure**.
-- **Decision**: Next.js is now hosted on local servers (Mac Mini Primary, Ubuntu Backup) managed by **PM2**.
-- **Benefit**: Native performance for ARM64 builds, zero hosting costs, and resilience against internet/provider outages.
-- **Pattern**: Uses a dual-node GitHub Actions runner strategy with `fail-fast: false` to ensure deployments succeed even if one node is offline.
+## 5. Build Infrastructure & Runners
+**Issue**: Initially, build tasks and E2E tests were running on generic cloud runners, which were slow and lacked Apple Silicon optimization. 
+**Solution**: Pivoted to a **Redundant Self-Hosted Runner Infrastructure**.
+- **Decision**: Main production hosting stays on **Vercel**, but all CI/CD build and test tasks are now executed on local hardware (Mac Mini Primary, Ubuntu Backup).
+- **Benefit**: Native performance for ARM64 builds, faster E2E execution, and resilience against runner availability issues.
+- **Pattern**: Uses a dual-node GitHub Actions runner strategy with `fail-fast: false` to ensure build/test jobs succeed even if one node is offline.
 
 ## 6. Site Classification Precedence
 **Issue**: The BOM engine initially prioritized "dirty" CSV import data (e.g., generic "Single CPE" redundancy) over explicitly selected Site Profiles (e.g., "Platinum" which mandates "Dual CPE"). This led to incorrect hardware suggestions that ignored organizational standards.

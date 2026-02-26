@@ -10,12 +10,18 @@ graph TB
         UI[Next.js UI Components]
     end
     
-    subgraph "Hosting Infrastructure (Redundant Nodes)"
-        direction TR
-        MacMini[Primary: Mac Mini ARM64]
-        Ubuntu[Backup: Ubuntu x64]
-        PM2[PM2 Process Manager]
+    subgraph "Hosting Infrastructure (Vercel)"
         NextJS[Next.js App Router]
+        API[API Routes]
+        Actions[Server Actions]
+        Middleware[Auth Middleware]
+    end
+    
+    subgraph "Build & Test Infrastructure (Dev Runners)"
+        MacMini[Primary Runner: Mac Mini ARM64]
+        Ubuntu[Backup Runner: Ubuntu x64]
+        PM2[PM2 (Local Dev Preview)]
+        ActionsRunner[GitHub Actions Runner]
     end
     
     subgraph "Google Cloud Platform"
@@ -34,9 +40,9 @@ graph TB
     NextJS --> Actions
     NextJS --> Middleware
     NextJS --> FirebaseService
-    MacMini -.-> PM2
-    Ubuntu -.-> PM2
-    PM2 --> NextJS
+    NextJS -.-> MacMini
+    MacMini --> ActionsRunner
+    Ubuntu --> ActionsRunner
 ```
 
 ### Directory Structure
@@ -206,7 +212,7 @@ sequenceDiagram
 - **Pattern**: Implement a dynamic Metrics Dashboard pulling discrete step progress (e.g., Solution Architecture flow metrics). Rather than hardcoding metric values, flow events update centralized tracking allowing dashboards to reflect accurate real-time states and spot bottlenecks.
 
 ## 🏗️ Deployment Infrastructure
-The app is strictly self-hosted for maximum data privacy and performance.
-- **Orchestration**: GitHub Actions.
-- **Runtime**: Node.js managed by PM2.
-- **Redundancy**: Dual-node matrix (Mac Mini Primary, Ubuntu Backup).
+- **Production**: Hosted on **Vercel** with global edge distribution.
+- **CI/CD Orchestration**: GitHub Actions.
+- **Build/Test Runners**: Redundant self-hosted matrix (Mac Mini Primary, Ubuntu Backup).
+- **Local Dev Preview**: PM2 on internal hardware.

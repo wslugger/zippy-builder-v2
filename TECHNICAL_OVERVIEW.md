@@ -6,7 +6,7 @@ ZippyDesignBuilder v2 is a modern, high-performance web application designed to 
 
 ## 2. System Architecture
 
-The application follows a redundant self-hosted architecture, with backend services provided by Google Firebase and Gemini.
+The application is hosted on **Vercel** for production, with backend services provided by Google Firebase and Gemini. It utilizes local redundant hardware for development and CI/CD builds.
 
 ### High-Level Architecture Diagram
 ```mermaid
@@ -16,11 +16,16 @@ graph TB
         UI[Next.js UI Components]
     end
     
-    subgraph "Local Infrastructure (Redundant)"
-        MacMini[Primary Node: Mac Mini]
-        Ubuntu[Backup Node: Ubuntu Box]
-        PM2[PM2 Process Manager]
+    subgraph "Production Hosting (Vercel)"
         NextJS[Next.js App Router]
+        API[API Routes]
+        Actions[Server Actions]
+        Middleware[Auth Middleware]
+    end
+    
+    subgraph "Internal Dev Infrastructure"
+        MacMini[Primary Runner: Mac Mini]
+        Ubuntu[Backup Runner: Ubuntu Box]
     end
     
     subgraph "Google Cloud Platform"
@@ -33,9 +38,8 @@ graph TB
     UI --> NextJS
     NextJS --> FirebaseService
     ServerAction --> GeminiService
-    MacMini --> PM2
-    Ubuntu --> PM2
-    PM2 --> NextJS
+    MacMini --> NextJS
+    Ubuntu --> NextJS
 ```
 
 ### Technology Stack
@@ -43,18 +47,18 @@ graph TB
 - **Styling**: TailwindCSS v4 with a custom design system.
 - **Backend/Database**: Google Firebase (Firestore for NoSQL data, Authentication for identity).
 - **AI Engine**: Google Gemini 2.5 Flash via Google AI SDK.
-- **Hosting/CI/CD**: Self-Hosted (Mac Mini + Ubuntu) with GitHub Actions.
+- **Hosting/CI/CD**: Vercel (Production) + GitHub Actions with local Redundant Runners.
 
 ## 3. Infrastructure & Deployment
 
-The application utilizes a Git-based workflow with automated deployment to local hardware.
+The application utilizes a Git-based workflow with automated deployment to both cloud and local environments.
 
 - **Source Control**: Git repository with a branching strategy (`main` for production, `develop` for pre-production).
-- **Redundant Deployment Pipeline**:
-    - **Primary Node**: Mac Mini (ARM64) - Handles primary traffic and high-speed builds.
-    - **Backup Node**: Ubuntu dev-box (x64) - Provides high availability redundancy.
-- **Automation**: GitHub Actions manages the build and deployment process. The pipeline is resilient; a failure on one node does not stop deployment to the other.
-- **Environment Management**: Configuration is handled via local `.env.local` files on each node, securely storing API keys (Firebase, Gemini) and deployment-specific settings.
+- **Production Host**: Hosted on **Vercel** with automatic deployment on push to `main`.
+- **Redundant Runner Infrastructure**:
+    - **Primary Node**: Mac Mini (ARM64) - Handles primary CI/CD builds and tests.
+    - **Backup Node**: Ubuntu dev-box (x64) - Provides high availability for the build pipeline.
+- **Local Dev Preview**: GitHub Actions automates a local build and restart on the development nodes for internal review.
 
 ## 4. Key Functionalities
 

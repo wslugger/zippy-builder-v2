@@ -76,11 +76,13 @@ This project is optimized for development on macOS (Mac Mini ARM64).
 
 ## 🚀 Deployment
 
-The project uses a **Redundant Self-Hosted Deployment** architecture:
+The project uses a split deployment architecture:
 
-- **Primary**: Mac Mini (Apple Silicon) - High-speed builds and primary application host.
-- **Backup**: Ubuntu dev-box (Linux x64) - Secondary standby host.
+- **Production**: Hosted on **Vercel** ([Live Site](https://zippy-builder-v2.vercel.app)).
+- **Runner Infrastructure**: Redundant self-hosted matrix via GitHub Actions.
+    - **Primary**: Mac Mini (Apple Silicon ARM64) - Main build/test node.
+    - **Backup**: Ubuntu dev-box (Linux x64) - Standby build/test node.
 
-The deployment pipeline is managed via **GitHub Actions** and triggers automatically on pushes to the `main` branch. 
+The deployment pipeline triggers automatically on pushes to the `main` branch. 
 
 For detailed infrastructure and maintenance instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
