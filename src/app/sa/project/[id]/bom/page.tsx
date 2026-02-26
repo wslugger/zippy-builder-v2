@@ -46,7 +46,7 @@ function BOMBuilderContent() {
         siteFilter, setSiteFilter,
     } = state;
 
-    if (!project) return <div className="p-8">Loading Project...</div>;
+    if (!project || siteTypes.length === 0) return <div className="p-8">Loading Project...</div>;
 
     const handleNext = async () => {
         if (!project || isSaving) return;
