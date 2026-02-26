@@ -65,7 +65,7 @@ describe('Solution Design Document Page Layout', () => {
                     service_id: 'srv-1',
                     service_option_id: 'opt-1',
                     design_option_id: 'dopt-1',
-                    enabled_features: [{ feature_id: 'feat-1' }]
+                    enabled_features: [{ feature_id: 'feat-1', inclusion_type: 'standard' }]
                 }
             ]
         });

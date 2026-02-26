@@ -125,14 +125,19 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
                         const serviceItems = items.filter(i => i.service_id === service.id);
                         const hasOptions = serviceItems.some(i => i.service_option_id);
 
-                        const enabledFeatureIds = new Set<string>();
-                        serviceItems.forEach(item => {
-                            item.enabled_features?.forEach(f => {
-                                const fId = typeof f === 'string' ? f : f.feature_id;
-                                if (fId) enabledFeatureIds.add(fId);
-                            });
-                        });
-                        const serviceFeatures = features.filter(f => enabledFeatureIds.has(f.id));
+                        const enabledFeatures = serviceItems.flatMap(i => i.enabled_features || []);
+                        const getGroupedFeatures = (typeStr: string) => features.filter(f =>
+                            enabledFeatures.some(ef => {
+                                const fId = typeof ef === 'string' ? ef : ef.feature_id;
+                                const inc = typeof ef === 'string' ? 'standard' : (ef.inclusion_type || 'standard');
+                                return fId === f.id && inc === typeStr;
+                            })
+                        );
+
+                        const requiredFeatures = getGroupedFeatures('required');
+                        const standardFeatures = getGroupedFeatures('standard');
+                        const optionalFeatures = getGroupedFeatures('optional');
+                        const hasFeatures = requiredFeatures.length > 0 || standardFeatures.length > 0 || optionalFeatures.length > 0;
 
                         return (
                             <div key={service.id} className="border border-neutral-200 rounded-lg overflow-hidden break-inside-avoid">
@@ -196,17 +201,51 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
                                     </div>
                                 )}
 
-                                {serviceFeatures.length > 0 && (
+                                {hasFeatures && (
                                     <div className="px-4 py-3 bg-neutral-50 border-t border-neutral-200">
                                         <h5 className="text-sm font-bold text-neutral-800 mb-2">Enabled Features</h5>
-                                        <ul className="space-y-2">
-                                            {serviceFeatures.map(f => (
-                                                <li key={f.id} className="text-sm grid grid-cols-1 md:grid-cols-4 gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0">
-                                                    <span className="font-semibold text-neutral-700">{f.name}</span>
-                                                    <span className="text-neutral-600 col-span-3">{f.description}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
+
+                                        {requiredFeatures.length > 0 && (
+                                            <div className="mb-4 last:mb-0">
+                                                <h6 className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-2 border-b border-neutral-200 pb-1">Required</h6>
+                                                <ul className="space-y-2">
+                                                    {requiredFeatures.map(f => (
+                                                        <li key={f.id} className="text-sm grid grid-cols-1 md:grid-cols-4 gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0">
+                                                            <span className="font-semibold text-neutral-700">{f.name}</span>
+                                                            <span className="text-neutral-600 col-span-3">{f.description}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {standardFeatures.length > 0 && (
+                                            <div className="mb-4 last:mb-0">
+                                                <h6 className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-2 border-b border-neutral-200 pb-1">Standard</h6>
+                                                <ul className="space-y-2">
+                                                    {standardFeatures.map(f => (
+                                                        <li key={f.id} className="text-sm grid grid-cols-1 md:grid-cols-4 gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0">
+                                                            <span className="font-semibold text-neutral-700">{f.name}</span>
+                                                            <span className="text-neutral-600 col-span-3">{f.description}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {optionalFeatures.length > 0 && (
+                                            <div className="mb-4 last:mb-0">
+                                                <h6 className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-2 border-b border-neutral-200 pb-1">Optional</h6>
+                                                <ul className="space-y-2">
+                                                    {optionalFeatures.map(f => (
+                                                        <li key={f.id} className="text-sm grid grid-cols-1 md:grid-cols-4 gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0">
+                                                            <span className="font-semibold text-neutral-700">{f.name}</span>
+                                                            <span className="text-neutral-600 col-span-3">{f.description}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
