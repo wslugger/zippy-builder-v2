@@ -7,8 +7,8 @@ on:
 
 jobs:
   deploy:
-    name: Deploy on Local Ubuntu Server
-    runs-on: self-hosted # <--- The critical routing tag
+    name: Deploy on Mac Mini
+    runs-on: [self-hosted, macmini] # <--- Moved from failing Linux box to this new Mac Mini
     
     steps:
       - name: Checkout Code
