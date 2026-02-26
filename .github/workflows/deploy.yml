@@ -7,8 +7,16 @@ on:
 
 jobs:
   deploy:
-    name: Deploy on Mac Mini
-    runs-on: [self-hosted, macmini] # <--- Moved from failing Linux box to this new Mac Mini
+    name: Deploy to ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: "Primary (Mac Mini)"
+            runner: [self-hosted, macmini]
+          - target: "Backup (Ubuntu dev-box)"
+            runner: [self-hosted, linux]
     
     steps:
       - name: Checkout Code
