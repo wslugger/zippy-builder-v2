@@ -98,9 +98,9 @@ const BaseEquipmentSchema = z.object({
   price: z.number().optional(), // Deprecated in favor of pricing object
   listPrice: z.number().optional().describe("Vendor list price from pricing CSV ingest"), // Deprecated in favor of pricing object
   pricing: z.object({
-    purchasePrice: z.number(),
+    purchasePrice: z.number().optional(),
     rentalPrice: z.number().optional(),
-  }).optional(),
+  }).optional().describe("Detailed dual-axis pricing scheme"),
   pricingEffectiveDate: z.string().optional().describe("ISO date when this price became effective"),
   eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
