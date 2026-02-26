@@ -19,7 +19,7 @@ export function PricingTab({ state }: { state: BOMBuilderState }) {
     // Only show items from the canonical managed services that the site tabs render.
     // WAN tab renders managed_sdwan, LAN tab renders managed_lan.
     // TODO: Add "managed_wifi" here once WLAN features are built out.
-    const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan"]);
+    const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan", "managed_circuit"]);
 
     if (!bom) return <div className="p-8 text-slate-500">No BOM data available to price.</div>;
 
@@ -107,62 +107,64 @@ export function PricingTab({ state }: { state: BOMBuilderState }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {Object.keys(pricingSummary.siteSummaries).map(siteName => {
-                                    // Only include items from services that have a visible tab.
-                                    const rawSiteItems = bom.items.filter(
-                                        i => i.siteName === siteName && SITE_TAB_SERVICE_IDS.has(i.serviceId)
-                                    );
+                                {Object.keys(pricingSummary.siteSummaries)
+                                    .filter(siteName => !state.selectedSite || siteName === state.selectedSite.name)
+                                    .map(siteName => {
+                                        // Only include items from services that have a visible tab.
+                                        const rawSiteItems = bom.items.filter(
+                                            i => i.siteName === siteName && SITE_TAB_SERVICE_IDS.has(i.serviceId)
+                                        );
 
-                                    if (rawSiteItems.length === 0) return null; // Skip sites with no visible items
+                                        if (rawSiteItems.length === 0) return null; // Skip sites with no visible items
 
-                                    // Aggregate items by physical device (itemId only).
-                                    const aggregatedItems: Record<string, (typeof rawSiteItems)[0]> = {};
-                                    rawSiteItems.forEach(item => {
-                                        const key = item.itemId;
-                                        if (aggregatedItems[key]) {
-                                            aggregatedItems[key] = {
-                                                ...aggregatedItems[key],
-                                                quantity: aggregatedItems[key].quantity + item.quantity,
-                                                serviceId: "mixed",
-                                                serviceName: "Multiple Services",
-                                            };
-                                        } else {
-                                            aggregatedItems[key] = { ...item };
-                                        }
-                                    });
-                                    const siteItems = Object.values(aggregatedItems);
+                                        // Aggregate items by physical device (itemId only).
+                                        const aggregatedItems: Record<string, (typeof rawSiteItems)[0]> = {};
+                                        rawSiteItems.forEach(item => {
+                                            const key = item.itemId;
+                                            if (aggregatedItems[key]) {
+                                                aggregatedItems[key] = {
+                                                    ...aggregatedItems[key],
+                                                    quantity: aggregatedItems[key].quantity + item.quantity,
+                                                    serviceId: "mixed",
+                                                    serviceName: "Multiple Services",
+                                                };
+                                            } else {
+                                                aggregatedItems[key] = { ...item };
+                                            }
+                                        });
+                                        const siteItems = Object.values(aggregatedItems);
 
-                                    return (
-                                        <React.Fragment key={siteName}>
-                                            <tr className="bg-slate-50/50 dark:bg-slate-800/20">
-                                                <td colSpan={4} className="px-6 py-2 font-bold text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                                                    {siteName}
-                                                </td>
-                                            </tr>
-                                            {siteItems.map(item => {
-                                                const listPrice = item.pricing?.listPrice || 0;
-                                                const netPrice = listPrice * (1 - globalDiscount / 100);
-                                                const totalNet = netPrice * item.quantity;
+                                        return (
+                                            <React.Fragment key={siteName}>
+                                                <tr className="bg-slate-50/50 dark:bg-slate-800/20">
+                                                    <td colSpan={4} className="px-6 py-2 font-bold text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                                                        {siteName}
+                                                    </td>
+                                                </tr>
+                                                {siteItems.map(item => {
+                                                    const listPrice = item.pricing?.listPrice || 0;
+                                                    const netPrice = listPrice * (1 - globalDiscount / 100);
+                                                    const totalNet = netPrice * item.quantity;
 
-                                                return (
-                                                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                                        <td className="px-6 py-4">
-                                                            <div className="font-medium text-slate-900 dark:text-slate-100">{item.itemName}</div>
-                                                            <div className="text-[10px] text-slate-400 uppercase">{item.serviceName}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right font-medium">{item.quantity}</td>
-                                                        <td className="px-6 py-4 text-right text-slate-500">
-                                                            {listPrice > 0 ? formatCurrency(listPrice) : <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded italic">No Price</span>}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-100">
-                                                            {formatCurrency(totalNet)}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </React.Fragment>
-                                    );
-                                })}
+                                                    return (
+                                                        <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                                            <td className="px-6 py-4">
+                                                                <div className="font-medium text-slate-900 dark:text-slate-100">{item.itemName}</div>
+                                                                <div className="text-[10px] text-slate-400 uppercase">{item.serviceName}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right font-medium">{item.quantity}</td>
+                                                            <td className="px-6 py-4 text-right text-slate-500">
+                                                                {listPrice > 0 ? formatCurrency(listPrice) : <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded italic">No Price</span>}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-100">
+                                                                {formatCurrency(totalNet)}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </React.Fragment>
+                                        );
+                                    })}
                             </tbody>
                             <tfoot className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800">
                                 <tr>

@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService } from "@/src/lib/firebase";
-import { Project, Package, Service, Equipment } from "@/src/lib/types";
+import { ManagementPricingService } from "@/src/lib/firebase/management-pricing-service";
+import { Project, Package, Service, Equipment, ManagementPricingMatrix } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
@@ -119,6 +120,8 @@ export interface BOMBuilderState {
     } | null;
     acquisitionModel: 'purchase' | 'rental';
     setAcquisitionModel: (model: 'purchase' | 'rental') => void;
+    projectManagementLevel: string;
+    setProjectManagementLevel: (level: string) => void;
 }
 
 export function useBOMBuilder(): BOMBuilderState {
@@ -156,6 +159,8 @@ export function useBOMBuilder(): BOMBuilderState {
     const [globalDiscount, setGlobalDiscount] = useState<number>(0);
     const [swapSimulation, setSwapSimulation] = useState<{ fromItemId: string; toItemId: string } | null>(null);
     const [acquisitionModel, setAcquisitionModel] = useState<'purchase' | 'rental'>('purchase');
+    const [projectManagementLevel, setProjectManagementLevel] = useState<string>('Watch & Alert');
+    const [managementPricingMatrix, setManagementPricingMatrix] = useState<ManagementPricingMatrix | null>(null);
 
     // -------------------------------------------------------
     // Data loading
@@ -199,17 +204,19 @@ export function useBOMBuilder(): BOMBuilderState {
                     }
                 }
 
-                const [allPkgs, svcs, eq, globalParams] = await Promise.all([
+                const [allPkgs, svcs, eq, globalParams, mgmtMatrix] = await Promise.all([
                     PackageService.getAllPackages().catch(() => []),
                     ServiceService.getAllServices().catch(() => []),
                     EquipmentService.getAllEquipment().catch(() => []),
                     getGlobalParameters().catch(() => ({})),
+                    ManagementPricingService.getManagementPricing().catch(() => null),
                 ]);
 
                 setAllPackages(allPkgs);
                 setServices(svcs);
                 if (eq.length > 0) setCatalog(eq);
                 setGlobalParameters(globalParams);
+                setManagementPricingMatrix(mgmtMatrix);
 
                 const st = await SiteDefinitionService.getAllSiteDefinitions().catch(() => []);
                 if (st.length === 0) {
@@ -300,7 +307,7 @@ export function useBOMBuilder(): BOMBuilderState {
     // -------------------------------------------------------
     const bom = useMemo<BOM | null>(() => {
         if (sites.length > 0 && pkg && services.length > 0 && siteTypes.length > 0) {
-            return calculateBOM({
+            const calculatedBom = calculateBOM({
                 projectId,
                 sites,
                 selectedPackage: pkg,
@@ -311,9 +318,93 @@ export function useBOMBuilder(): BOMBuilderState {
                 manualSelections,
                 globalParameters
             });
+
+            // Inject dynamically created Managed Service Items for OPEX tracking
+            const enrichedItems: BOM["items"] = [];
+            calculatedBom.items.forEach(item => {
+                enrichedItems.push(item);
+
+                if (item.itemType === 'equipment') {
+                    const equipment = catalog.find(e => e.id === item.itemId);
+                    if (equipment?.managementSize && equipment.managementSize !== 'None') {
+                        const mrcPrice = managementPricingMatrix?.[equipment.primary_purpose || '']?.[equipment.managementSize]?.[projectManagementLevel] || 0;
+
+                        enrichedItems.push({
+                            id: `${item.id}-mgmt`,
+                            siteName: item.siteName,
+                            itemId: 'managed_service',
+                            serviceId: item.serviceId,
+                            serviceName: item.serviceName,
+                            itemName: `Managed ${equipment.primary_purpose || 'Equipment'} - ${equipment.managementSize} (${projectManagementLevel})`,
+                            itemType: 'managed_service',
+                            quantity: item.quantity,
+                            pricing: {
+                                listPrice: 0,
+                                discountPercent: 0,
+                                netPrice: mrcPrice
+                            },
+                            unitOTC: 0,
+                            unitMRC: mrcPrice,
+                            totalOTC: 0,
+                            totalMRC: mrcPrice * (item.quantity || 0)
+                        });
+                    }
+                }
+            });
+
+            // Inject circuit costs as service items
+            sites.forEach(site => {
+                const siteName = site.name;
+                if (site.primaryCircuit && site.primaryCircuitMRC) {
+                    enrichedItems.push({
+                        id: `${site.id || siteName}-circuit-primary`,
+                        siteName: siteName,
+                        itemId: 'primary_circuit',
+                        serviceId: 'managed_circuit',
+                        serviceName: 'Circuit Services',
+                        itemName: `${site.primaryCircuit} Circuit (${site.bandwidthDownMbps} Mbps)`,
+                        itemType: 'service',
+                        quantity: 1,
+                        pricing: {
+                            listPrice: site.primaryCircuitMRC,
+                            discountPercent: 0,
+                            netPrice: site.primaryCircuitMRC
+                        },
+                        unitOTC: 0,
+                        unitMRC: site.primaryCircuitMRC,
+                        totalOTC: 0,
+                        totalMRC: site.primaryCircuitMRC
+                    });
+                }
+                if (site.secondaryCircuit && site.secondaryCircuitMRC) {
+                    const secBandwidth = Math.round(site.bandwidthDownMbps * 0.1);
+                    enrichedItems.push({
+                        id: `${site.id || siteName}-circuit-secondary`,
+                        siteName: siteName,
+                        itemId: 'secondary_circuit',
+                        serviceId: 'managed_circuit',
+                        serviceName: 'Circuit Services',
+                        itemName: `${site.secondaryCircuit} Circuit (${secBandwidth} Mbps)`,
+                        itemType: 'service',
+                        quantity: 1,
+                        pricing: {
+                            listPrice: site.secondaryCircuitMRC,
+                            discountPercent: 0,
+                            netPrice: site.secondaryCircuitMRC
+                        },
+                        unitOTC: 0,
+                        unitMRC: site.secondaryCircuitMRC,
+                        totalOTC: 0,
+                        totalMRC: site.secondaryCircuitMRC
+                    });
+                }
+            });
+
+            calculatedBom.items = enrichedItems;
+            return calculatedBom;
         }
         return null;
-    }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections, globalParameters]);
+    }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections, globalParameters, managementPricingMatrix, projectManagementLevel]);
 
     // -------------------------------------------------------
     // Pricing Analysis
@@ -351,11 +442,14 @@ export function useBOMBuilder(): BOMBuilderState {
                         unitOTCList = 0;
                         unitMRCList = item.pricing?.rentalPrice ?? 0;
                     }
+                } else if (item.itemType === 'managed_service' || item.itemType === 'service') {
+                    // Pre-calculated from matrix logic above OR default 0
+                    unitOTCList = item.unitOTC || 0;
+                    unitMRCList = item.unitMRC || 0;
                 } else {
-                    // For Management/Circuits (query pricing matrix/catalog) - mocked for now
-                    // TODO: integrate ManagementPricingMatrix
-                    unitOTCList = 0;
-                    unitMRCList = 0;
+                    // For specific Management/Circuits (TODO future features)
+                    unitOTCList = item.unitOTC || 0;
+                    unitMRCList = item.unitMRC || 0;
                 }
 
                 // Explicitly store resolved prices on the item (as requested by Step 1 & 3)
@@ -586,5 +680,7 @@ export function useBOMBuilder(): BOMBuilderState {
         simulatedPricingSummary,
         acquisitionModel,
         setAcquisitionModel,
+        projectManagementLevel,
+        setProjectManagementLevel
     };
 }

@@ -7,9 +7,10 @@ import { useBOMRules } from "@/src/hooks/useBOMRules";
 import RuleList from "@/src/components/admin/bom-logic/RuleList";
 import RuleEditorModal from "@/src/components/admin/bom-logic/RuleEditorModal";
 import { BOMService } from "@/src/lib/firebase/bom-service";
+import ManagementPricingEditor from "@/src/components/admin/ManagementPricingEditor";
 
 // Tab enum
-type Tab = 'general' | 'taxonomy' | 'bom_logic';
+type Tab = 'general' | 'taxonomy' | 'bom_logic' | 'pricing_matrix';
 
 export default function AdminSettingsPage() {
     const { config, isLoading, updateConfigAsync } = useSystemConfig();
@@ -217,6 +218,13 @@ export default function AdminSettingsPage() {
                     >
                         BOM Logic
                     </button>
+                    <button
+                        onClick={() => setActiveTab('pricing_matrix')}
+                        className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'pricing_matrix' ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
+                            }`}
+                    >
+                        Pricing Matrix
+                    </button>
                 </nav>
             </aside>
 
@@ -243,6 +251,13 @@ export default function AdminSettingsPage() {
                 >
                     BOM Logic
                 </button>
+                <button
+                    onClick={() => setActiveTab('pricing_matrix')}
+                    className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'pricing_matrix' ? 'bg-blue-50 text-blue-600' : 'text-slate-600 bg-slate-50'
+                        }`}
+                >
+                    Pricing Matrix
+                </button>
             </nav>
 
             {/* Content Area */}
@@ -252,6 +267,7 @@ export default function AdminSettingsPage() {
                         {activeTab === 'general' && 'General Settings'}
                         {activeTab === 'taxonomy' && 'Site Taxonomy'}
                         {activeTab === 'bom_logic' && 'BOM Logic Baselines'}
+                        {activeTab === 'pricing_matrix' && 'Management Pricing Matrix'}
                     </h1>
 
                     <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-100 space-y-6">
@@ -514,6 +530,11 @@ export default function AdminSettingsPage() {
                                     onSave={handleSaveRule}
                                 />
                             </div>
+                        )}
+
+                        {/* PRICING MATRIX TAB */}
+                        {activeTab === 'pricing_matrix' && (
+                            <ManagementPricingEditor />
                         )}
                     </div>
                 </div>

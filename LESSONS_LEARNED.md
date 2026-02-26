@@ -85,3 +85,9 @@
 77: - **Consistency by Design**: Refactored the Admin Hub layout to strictly mirror the Top Navigation dropdown categories. 
 78: - **Rule**: Hub pages should serve as an "expanded" version of the navigation menu, providing better descriptions but maintaining the same logical grouping and hierarchy.
 79: - **Verification**: Added automated tests to ensure critical entry points (like the Start Page "Admin" link) point to the consolidated Hub rather than individual sub-pages, centralizing the user's mental model.
+## 14. Dual-Axis Pricing & Management Matrix
+**Issue**: Generating a BOM initially only accounted for one-time costs (Capex). Introducing Opex (MRC for Managed Services and Circuits) required dynamic item injection that wasn't present in the static hardware rules engine.
+**Solution**:
+- **Dynamic Item Injection**: Modified the `useBOMBuilder` hook to scan generated hardware and inject virtual "Managed Service" items based on a 3D pricing matrix (Purpose × Size × Level).
+- **Service-Site Binding**: Injected circuit costs directly from site metadata into the BOM array to ensure total project Opex is captured.
+- **Key Insight**: Complexity in "Managed" logic is best handled at the UI aggregation layer (after the core hardware engine runs) to keep the suggestion logic clean and focused on technical specs.

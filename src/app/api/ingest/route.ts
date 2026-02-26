@@ -67,6 +67,7 @@ export async function POST(req: Request) {
             "primary_purpose": "WAN | LAN | WLAN | Security",
             "additional_purposes": ["WAN", "Security", etc],
             "family": "Product Family (e.g. Catalyst 9200, Meraki MX)",
+            "managementSize": "'X-Small' | 'Small' | 'Medium' | 'Large' | 'X-Large' | 'None'",
             "specs": {
               "performance_rating": "Wire Rate | etc",
               "ports": Number (Total),
@@ -99,7 +100,13 @@ export async function POST(req: Request) {
          - rawFirewallThroughputMbps: Plain stateful firewall / NAT / Forwarding. (Used for DIA-only sites with no advanced security or tunnels).
          - sdwanCryptoThroughputMbps: IPsec + SD-WAN routing. (Used for sites sending traffic to a Hub/SASE where security is handled off-box).
          - advancedSecurityThroughputMbps: IPsec + SD-WAN + IDS/IPS/Malware. (Used for sites doing on-box advanced threat protection).
-      7. Return ONLY the JSON object. No markdown.
+      7. ESTIMATING MANAGEMENT SIZE:
+         - If access switch ports < 8 or micro firewall: "X-Small".
+         - If access switch ports < 24 or small firewall: "Small".
+         - If access switch ports >= 24 or medium firewall: "Medium".
+         - If large core switch / chassis or high-end border router: "Large" or "X-Large".
+         - If accessory: "None".
+      8. Return ONLY the JSON object. No markdown.
     `;
 
     const result = await model.generateContent([

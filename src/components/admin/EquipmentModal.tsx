@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES as DEFAULT_PURPOSES, CELLULAR_TYPES as DEFAULT_CELLULAR_TYPES, WIFI_STANDARDS as DEFAULT_WIFI_STANDARDS, EQUIPMENT_STATUSES as DEFAULT_STATUSES } from "@/src/lib/types";
+import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES as DEFAULT_PURPOSES, CELLULAR_TYPES as DEFAULT_CELLULAR_TYPES, WIFI_STANDARDS as DEFAULT_WIFI_STANDARDS, EQUIPMENT_STATUSES as DEFAULT_STATUSES, MANAGEMENT_SIZES } from "@/src/lib/types";
 import { useState } from "react";
 import { EquipmentService } from "@/src/lib/firebase";
 import { useSystemConfig } from "@/src/hooks/useSystemConfig";
@@ -310,6 +310,20 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 </label>
                                             ))}
                                         </div>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className={labelClass}>Management Size</label>
+                                        <select
+                                            value={formData.managementSize || "None"}
+                                            onChange={(e) => handleChange("managementSize", e.target.value as Equipment['managementSize'])}
+                                            className={inputClass}
+                                        >
+                                            {MANAGEMENT_SIZES.map((size) => (
+                                                <option key={size} value={size}>
+                                                    {size}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div className="col-span-2">
                                         <label className={`${labelClass} flex items-center`}>

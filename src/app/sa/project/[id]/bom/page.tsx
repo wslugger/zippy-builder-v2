@@ -182,6 +182,7 @@ function BOMBuilderContent() {
                                     utilization={utilization}
                                     totalLoad={totalLoad}
                                     pkg={pkg}
+                                    handleSiteUpdate={state.handleSiteUpdate}
                                 />
                             )}
 
