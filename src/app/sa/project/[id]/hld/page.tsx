@@ -248,6 +248,36 @@ ${document.appendixB}
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {(service.enabledFeatures?.length || 0) > 0 && (
+                                                <div className="ml-4 mt-8 pt-6 border-t border-slate-100">
+                                                    <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                        <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>
+                                                        Enabled Features
+                                                    </h4>
+
+                                                    {['required', 'standard', 'optional'].map((typeStr) => {
+                                                        const groupFeats = service.enabledFeatures?.filter(f => (f.inclusion_type || 'standard') === typeStr) || [];
+                                                        if (groupFeats.length === 0) return null;
+
+                                                        return (
+                                                            <div key={typeStr} className="mb-6 last:mb-0 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                                                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">
+                                                                    {typeStr}
+                                                                </h5>
+                                                                <ul className="space-y-3">
+                                                                    {groupFeats.map(f => (
+                                                                        <li key={f.id} className="text-sm flex flex-col gap-1">
+                                                                            <span className="font-bold text-slate-900">{f.name}</span>
+                                                                            <span className="text-slate-600 leading-relaxed">{f.description}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}

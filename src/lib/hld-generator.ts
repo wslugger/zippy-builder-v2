@@ -47,10 +47,12 @@ export interface HLDPayload {
         caveats: string;
         serviceOptions: Array<{ name: string; description: string; assumptions: string; caveats: string }>;
         designOptions: Array<{ name: string; description: string; assumptions: string; caveats: string; category?: string }>;
+        enabledFeatures: Array<{ id: string; name: string; description: string; inclusion_type: string }>;
     }>;
     features: Array<{
         name: string;
         description: string;
+        inclusion_type: string;
         assumptions: string;
         caveats: string;
     }>;
@@ -83,10 +85,16 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
     // Collect referenced service IDs (for filtering after sorted fetch)
     const serviceIds = new Set<string>();
     const featureIds = new Set<string>();
+    const featureInclusions = new Map<string, string>();
 
     items.forEach(item => {
         serviceIds.add(item.service_id);
-        item.enabled_features?.forEach(f => featureIds.add(f.feature_id));
+        item.enabled_features?.forEach(f => {
+            const fId = typeof f === 'string' ? f : f.feature_id;
+            const inc = typeof f === 'string' ? 'standard' : f.inclusion_type;
+            featureIds.add(fId);
+            featureInclusions.set(fId, inc || 'standard');
+        });
     });
 
     // Also include features defined directly on the package
@@ -96,10 +104,11 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
             pkg?.items?.forEach(item => {
                 // A PackageFeature object has a feature_id property
                 item.enabled_features?.forEach(f => {
-                    if (typeof f === "string") {
-                        featureIds.add(f); // Support legacy string arrays if they exist
-                    } else if (f && f.feature_id) {
-                        featureIds.add(f.feature_id); // The standard PackageFeature interface
+                    const fId = typeof f === 'string' ? f : f.feature_id;
+                    const inc = typeof f === 'string' ? 'standard' : f.inclusion_type;
+                    featureIds.add(fId);
+                    if (!featureInclusions.has(fId)) {
+                        featureInclusions.set(fId, inc || 'standard');
                     }
                 });
             });
@@ -162,13 +171,26 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
             }))
         ) || [];
 
+        const serviceFeatures = features.filter(f =>
+            serviceItems.some(i => i.enabled_features?.some(ef => {
+                const efId = typeof ef === 'string' ? ef : ef.feature_id;
+                return efId === f.id;
+            }))
+        ).map(f => ({
+            id: f.id,
+            name: f.name,
+            description: f.description,
+            inclusion_type: featureInclusions.get(f.id) || 'standard'
+        }));
+
         return {
             name: service.name,
             description: service.detailed_description || service.short_description || "",
             assumptions: (service.assumptions || []).join(" "),
             caveats: (service.caveats || []).join(" "),
             serviceOptions,
-            designOptions
+            designOptions,
+            enabledFeatures: serviceFeatures
         };
     });
 
@@ -253,6 +275,7 @@ export async function generateHLDPayload(projectId: string): Promise<HLDPayload>
         features: features.map(f => ({
             name: f.name,
             description: f.description,
+            inclusion_type: featureInclusions.get(f.id) || 'standard',
             assumptions: (f.assumptions || []).join(" "),
             caveats: (f.caveats || []).join(" ")
         })),
