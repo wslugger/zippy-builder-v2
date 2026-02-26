@@ -2,8 +2,9 @@
 "use client";
 
 import { useState } from "react";
-import { Equipment, VENDOR_IDS, VENDOR_LABELS, EQUIPMENT_PURPOSES } from "@/src/lib/types";
+import { Equipment, VENDOR_LABELS } from "@/src/lib/types";
 import { useEquipment } from "@/src/hooks/useEquipment";
+import { useCatalogMetadata } from "@/src/hooks";
 import EquipmentTable from "@/src/components/admin/EquipmentTable";
 import EquipmentFilters from "@/src/components/admin/EquipmentFilters";
 import EquipmentModal from "@/src/components/admin/EquipmentModal";
@@ -11,6 +12,7 @@ import Link from "next/link";
 
 export default function CatalogPage() {
     const { equipment: data, loading, refreshEquipment: fetchData } = useEquipment();
+    const { metadata, isLoading: isMetadataLoading } = useCatalogMetadata();
 
     // Filter States
     const [search, setSearch] = useState("");
@@ -39,10 +41,18 @@ export default function CatalogPage() {
             (item as any).specs.cellular_type?.toLowerCase().includes(lowerSearch) ||
             (item as any).specs.wifi_standard?.toLowerCase().includes(lowerSearch) ||
             item.status?.toLowerCase().includes(lowerSearch);
-        const matchesVendor = selectedVendor ? item.vendor_id === selectedVendor : true;
+        const matchesVendor = selectedVendor
+            ? (item.vendor_id === selectedVendor || VENDOR_LABELS[item.vendor_id as keyof typeof VENDOR_LABELS] === selectedVendor)
+            : true;
+
         const itemWithAny = item as any;
         const matchesPurpose = selectedPurpose
-            ? (itemWithAny.primary_purpose === selectedPurpose || (itemWithAny.additional_purposes || []).includes(selectedPurpose))
+            ? (
+                itemWithAny.primary_purpose === selectedPurpose ||
+                (itemWithAny.additional_purposes || []).includes(selectedPurpose) ||
+                // Handle case where purpose might be different in taxonomy vs stored values
+                itemWithAny.primary_purpose?.toLowerCase() === selectedPurpose.toLowerCase()
+            )
             : true;
 
         return matchesSearch && matchesVendor && matchesPurpose;
@@ -192,17 +202,19 @@ export default function CatalogPage() {
                                         value={bulkVendor}
                                         onChange={(e) => setBulkVendor(e.target.value)}
                                         className="text-sm rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black py-1.5"
+                                        disabled={isMetadataLoading}
                                     >
                                         <option value="">-- Change Vendor --</option>
-                                        {VENDOR_IDS.map((v: string) => <option key={v} value={v}>{VENDOR_LABELS[v as keyof typeof VENDOR_LABELS]}</option>)}
+                                        {metadata.vendors.map((v: string) => <option key={v} value={v}>{v}</option>)}
                                     </select>
                                     <select
                                         value={bulkPurpose}
                                         onChange={(e) => setBulkPurpose(e.target.value)}
                                         className="text-sm rounded border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black py-1.5"
+                                        disabled={isMetadataLoading}
                                     >
                                         <option value="">-- Change Purpose --</option>
-                                        {EQUIPMENT_PURPOSES.map((p: string) => <option key={p} value={p}>{p}</option>)}
+                                        {metadata.purposes.map((p: string) => <option key={p} value={p}>{p}</option>)}
                                     </select>
                                     <select
                                         value={bulkStatus}

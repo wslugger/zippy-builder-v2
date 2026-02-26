@@ -189,7 +189,10 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
 
     const labelClass = "block text-[10px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-[0.1em] mb-2 ml-0.5";
-    const inputClass = "w-full px-4 py-3 text-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-300";
+    const inputBaseClass = "w-full px-4 py-3 text-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-300";
+    const inputClass = `${inputBaseClass} h-[48px]`;
+    const selectClass = `${inputClass} appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%221.5%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M6%208l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_1rem_center] bg-no-repeat pr-10 cursor-pointer`;
+    const textareaClass = `${inputBaseClass} min-h-[120px] py-4`;
     const sectionTitleClass = "text-[11px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-6 block border-b border-slate-100 dark:border-zinc-800 pb-2";
 
     return (
@@ -255,7 +258,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         <select
                                             value={formData.vendor_id}
                                             onChange={(e) => handleChange("vendor_id", e.target.value as Equipment['vendor_id'])}
-                                            className={inputClass}
+                                            className={selectClass}
                                             disabled={isMetadataLoading}
                                         >
                                             {isMetadataLoading ? (
@@ -276,7 +279,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         <select
                                             value={formData.status || "Supported"}
                                             onChange={(e) => handleChange("status", e.target.value as Equipment['status'])}
-                                            className={inputClass}
+                                            className={selectClass}
                                             disabled={isMetadataLoading}
                                         >
                                             {isMetadataLoading ? (
@@ -297,7 +300,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         <select
                                             value={formData.primary_purpose || ""}
                                             onChange={(e) => handlePrimaryPurposeChange(e.target.value)}
-                                            className={inputClass}
+                                            className={selectClass}
                                             disabled={isMetadataLoading}
                                         >
                                             {isMetadataLoading ? (
@@ -337,7 +340,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         <select
                                             value={formData.managementSize || "None"}
                                             onChange={(e) => handleChange("managementSize", e.target.value as Equipment['managementSize'])}
-                                            className={inputClass}
+                                            className={selectClass}
                                         >
                                             {MANAGEMENT_SIZES.map((size) => (
                                                 <option key={size} value={size}>
@@ -370,7 +373,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                     handleChange("description", e.target.value);
                                                     setDescriptionSuggestion(null);
                                                 }}
-                                                className={inputClass}
+                                                className={textareaClass}
                                             />
                                         </CopilotSuggestion>
                                     </div>
@@ -491,7 +494,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 <select
                                                     value={specs.recommended_use_case || ""}
                                                     onChange={(e) => handleSpecChange("recommended_use_case", e.target.value)}
-                                                    className={inputClass}
+                                                    className={selectClass}
                                                     disabled={isMetadataLoading}
                                                 >
                                                     {isMetadataLoading ? (
@@ -524,7 +527,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 <div className="col-span-1">
                                                     <label className={labelClass}>
                                                         WAN Port Count
-                                                        <span className="text-slate-400 font-normal ml-2 block normal-case tracking-normal">WAN: For circuits.</span>
+                                                        <span className="text-slate-400 font-normal block normal-case tracking-normal">WAN: For circuits.</span>
                                                     </label>
                                                     <input
                                                         type="number"
@@ -536,50 +539,13 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 </div>
                                                 <div className="col-span-1">
                                                     <label className={labelClass}>
-                                                        LAN Port Count
-                                                        <span className="text-slate-400 font-normal ml-2 block normal-case tracking-normal">LAN: For switch handoff & HA.</span>
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.lanPortCount ?? 0}
-                                                        onChange={(e) => handleSpecChange('lanPortCount', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Qty (e.g. 4)"
-                                                    />
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {getEquipmentRole(formData) === 'LAN' && (
-                                            <>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>Access Port Count</label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.accessPortCount ?? 0}
-                                                        onChange={(e) => handleSpecChange('accessPortCount', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Qty (e.g. 24, 48)"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>Uplink Port Count</label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.uplinkPortCount ?? 0}
-                                                        onChange={(e) => handleSpecChange('uplinkPortCount', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Qty (e.g. 4)"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass} title="Copper supports PoE. Fiber is for aggregation/distribution. mGig covers 2.5G/5G.">
-                                                        Access Port Type <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
+                                                        WAN Port Type
+                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
                                                     </label>
                                                     <select
-                                                        value={specs.accessPortType || ""}
-                                                        onChange={(e) => handleSpecChange('accessPortType', e.target.value)}
-                                                        className={inputClass}
+                                                        value={specs.wanPortType || ""}
+                                                        onChange={(e) => handleSpecChange('wanPortType', e.target.value)}
+                                                        className={selectClass}
                                                         disabled={isMetadataLoading}
                                                     >
                                                         {isMetadataLoading ? (
@@ -593,11 +559,99 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                     </select>
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <label className={labelClass}>Uplink Port Type</label>
+                                                    <label className={labelClass}>
+                                                        LAN Port Count
+                                                        <span className="text-slate-400 font-normal block normal-case tracking-normal">LAN: For switch handoff & HA.</span>
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={specs.lanPortCount ?? 0}
+                                                        onChange={(e) => handleSpecChange('lanPortCount', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Qty (e.g. 4)"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>
+                                                        LAN Port Type
+                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                                    </label>
+                                                    <select
+                                                        value={specs.lanPortType || ""}
+                                                        onChange={(e) => handleSpecChange('lanPortType', e.target.value)}
+                                                        className={selectClass}
+                                                        disabled={isMetadataLoading}
+                                                    >
+                                                        {isMetadataLoading ? (
+                                                            <option value="">Loading options...</option>
+                                                        ) : (
+                                                            <>
+                                                                <option value="">Select Speed...</option>
+                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                            </>
+                                                        )}
+                                                    </select>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {getEquipmentRole(formData) === 'LAN' && (
+                                            <>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>
+                                                        Access Port Count
+                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={specs.accessPortCount ?? 0}
+                                                        onChange={(e) => handleSpecChange('accessPortCount', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Qty (e.g. 24, 48)"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>
+                                                        Uplink Port Count
+                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={specs.uplinkPortCount ?? 0}
+                                                        onChange={(e) => handleSpecChange('uplinkPortCount', parseInt(e.target.value) || 0)}
+                                                        className={inputClass}
+                                                        placeholder="Qty (e.g. 4)"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass} title="Copper supports PoE. Fiber is for aggregation/distribution. mGig covers 2.5G/5G.">
+                                                        Access Port Type <span className="opacity-50 block font-normal normal-case">Hover for details</span>
+                                                    </label>
+                                                    <select
+                                                        value={specs.accessPortType || ""}
+                                                        onChange={(e) => handleSpecChange('accessPortType', e.target.value)}
+                                                        className={selectClass}
+                                                        disabled={isMetadataLoading}
+                                                    >
+                                                        {isMetadataLoading ? (
+                                                            <option value="">Loading options...</option>
+                                                        ) : (
+                                                            <>
+                                                                <option value="">Select Speed...</option>
+                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                            </>
+                                                        )}
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>
+                                                        Uplink Port Type
+                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                                    </label>
                                                     <select
                                                         value={specs.uplinkPortType || ""}
                                                         onChange={(e) => handleSpecChange('uplinkPortType', e.target.value)}
-                                                        className={inputClass}
+                                                        className={selectClass}
                                                         disabled={isMetadataLoading}
                                                     >
                                                         {isMetadataLoading ? (
@@ -623,11 +677,14 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <label className={labelClass}>PoE Standard</label>
+                                                    <label className={labelClass}>
+                                                        PoE Standard
+                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                                    </label>
                                                     <select
                                                         value={specs.poeStandard || ""}
                                                         onChange={(e) => handleSpecChange('poeStandard', e.target.value)}
-                                                        className={inputClass}
+                                                        className={selectClass}
                                                     >
                                                         <option value="">Select Standard...</option>
                                                         <option value="None">None</option>
@@ -641,11 +698,14 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                         {formData.role === 'WLAN' && (
                                             <div className="col-span-2 grid grid-cols-2 gap-x-8 gap-y-8">
                                                 <div className="col-span-1">
-                                                    <label className={labelClass}>Wi-Fi Standard</label>
+                                                    <label className={labelClass}>
+                                                        Wi-Fi Standard
+                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                                    </label>
                                                     <select
                                                         value={specs.wifiStandard || ""}
                                                         onChange={(e) => handleSpecChange('wifiStandard', e.target.value)}
-                                                        className={inputClass}
+                                                        className={selectClass}
                                                         disabled={isMetadataLoading}
                                                     >
                                                         {isMetadataLoading ? (
@@ -659,11 +719,14 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                     </select>
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <label className={labelClass}>MIMO Density</label>
+                                                    <label className={labelClass}>
+                                                        MIMO Density
+                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                                    </label>
                                                     <select
                                                         value={specs.mimoBandwidth || ""}
                                                         onChange={(e) => handleSpecChange('mimoBandwidth', e.target.value)}
-                                                        className={inputClass}
+                                                        className={selectClass}
                                                     >
                                                         <option value="">Select Density...</option>
                                                         <option value="2x2">2x2</option>
@@ -672,12 +735,12 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 </div>
                                                 <div className="col-span-1">
                                                     <label className={labelClass} title="The required switchport speed. High-end Wi-Fi 7 often requires 10G-Copper.">
-                                                        Uplink Type <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
+                                                        Uplink Type <span className="opacity-50 block font-normal normal-case">Hover for details</span>
                                                     </label>
                                                     <select
                                                         value={specs.uplinkType || ""}
                                                         onChange={(e) => handleSpecChange('uplinkType', e.target.value)}
-                                                        className={inputClass}
+                                                        className={selectClass}
                                                         disabled={isMetadataLoading}
                                                     >
                                                         {isMetadataLoading ? (

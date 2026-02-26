@@ -26,7 +26,11 @@ function AttributeCell({ attributes, role }: { attributes: any, role: string }) 
     if (role === 'WAN') {
         if (data.rawFirewallThroughputMbps) keyAttrs.push({ label: 'Firewall', value: `${data.rawFirewallThroughputMbps} Mbps` });
         if (data.sdwanCryptoThroughputMbps) keyAttrs.push({ label: 'Crypto', value: `${data.sdwanCryptoThroughputMbps} Mbps` });
-        if (data.wanPortCount !== undefined) keyAttrs.push({ label: 'Ports', value: `${data.wanPortCount}W / ${data.lanPortCount || 0}L` });
+        if (data.wanPortCount !== undefined) {
+            const wanType = data.wanPortType ? ` ${data.wanPortType.replace('-Copper', 'C').replace('-Fiber', 'F')}` : '';
+            const lanType = data.lanPortType ? ` ${data.lanPortType.replace('-Copper', 'C').replace('-Fiber', 'F')}` : '';
+            keyAttrs.push({ label: 'Ports', value: `${data.wanPortCount}W${wanType} / ${data.lanPortCount || 0}L${lanType}` });
+        }
     } else if (role === 'LAN') {
         if (data.accessPortCount) {
             keyAttrs.push({ label: 'Ports', value: `${data.accessPortCount}x ${data.accessPortType ? data.accessPortType.replace('-Copper', ' Copper').replace('-Fiber', ' Fiber') : 'Port'}` });
@@ -90,8 +94,9 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
 
             const matchesCategory = categoryFilter === "All" ||
                 item.primary_purpose === categoryFilter ||
+                item.primary_purpose?.toLowerCase() === categoryFilter.toLowerCase() ||
                 getEquipmentRole(item) === categoryFilter ||
-                (item.additional_purposes || []).includes(categoryFilter as any);
+                (item.additional_purposes || []).some(p => p === categoryFilter || p.toLowerCase() === categoryFilter.toLowerCase());
 
             return matchesSearch && matchesCategory;
         });
@@ -120,7 +125,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                         className="py-2 pl-3 pr-8 text-sm bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 auto-cols-auto"
                     >
                         <option value="All">All Categories</option>
-                        {Array.from(new Set([...EQUIPMENT_PURPOSES, "WAN", "LAN", "WLAN", "SECURITY"])).map(p => (
+                        {Array.from(new Set([...EQUIPMENT_PURPOSES.map(p => p.toUpperCase()), "WAN", "LAN", "WLAN", "SECURITY"])).map(p => (
                             <option key={p} value={p}>{p}</option>
                         ))}
                     </select>

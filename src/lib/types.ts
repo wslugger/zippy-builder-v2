@@ -42,7 +42,9 @@ export const WANSpecsSchema = z.object({
   advancedSecurityThroughputMbps: z.number(),
   vpn_tunnels: z.number().optional(),
   wanPortCount: z.number().default(0),
+  wanPortType: z.string().nullish().catch('1G-Copper'),
   lanPortCount: z.number().default(0),
+  lanPortType: z.string().nullish().catch('1G-Copper'),
   sfpPortCount: z.number().optional(),
   // Support mixed WAN/LAN fields often used in compact branches
   ports: z.number().optional(),

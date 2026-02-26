@@ -128,3 +128,12 @@
 128: - **Manual Data Entry**: Added side-by-side $ inputs in the WAN tab for circuits to capture both One-time and Monthly recurring costs independently.
 129: - **Visual Clarity**: Refactored all pricing tables (Site and Global) to remove the "Total Net" column and instead show independent "Net OTC" and "Net MRC" columns, ensuring stakeholders can clearly distinguish between up-front costs and ongoing revenue.
 130: - **Lesson**: Financial transparency in quoting tools requires tracking cost types at the point of origin (manual entry or rule generation) rather than just aggregating at the point of display.
+
+## 19. Schema Resilience & Metadata-Driven UI
+**Issue**: Hardcoded enums in Zod schemas (e.g., `z.enum(VENDOR_IDS)`) caused application-wide crashes whenever an administrator added a new, valid value to the database that wasn't yet reflected in the source code.
+**Solution**:
+- **Relaxed Schema Validation**: Transitioned critical taxonomy fields from strict `z.enum()` to `z.string().catch()` or `.default()` patterns.
+- **Unified Metadata Hook**: Created a central `useCatalogMetadata` hook as the single source of truth for all UI dropdowns and filters.
+- **Visual Consistency**: Standardized input heights (48px) and implemented custom select styling to handle dynamic options gracefully.
+- **Key Insight**: In a CMS-driven application, the codebase should provide the *structure* for data, but the *content* (and its validation) must be allowed to evolve dynamically in the database without requiring a redeployment of the entire frontend.
+- **Benefit**: Admins can now add new Vendors, Interface Types, or Purposes through the database interface, and the application will automatically incorporate them into filters and modals without code changes.
