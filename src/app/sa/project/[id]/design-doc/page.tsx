@@ -1,8 +1,12 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { Project, Package, Service } from '@/src/lib/types';
-import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
+import { Project, Package, Service, TechnicalFeature, Site, SiteType } from '@/src/lib/types';
+import { ProjectService, PackageService, ServiceService, FeatureService, SiteDefinitionService } from '@/src/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/src/lib/firebase/config';
+import { validateDoc } from '@/src/lib/firebase/validation';
+import { SiteSchema } from '@/src/lib/types';
 import Link from 'next/link';
 
 export default function DesignDocPage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,6 +15,9 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
     const [project, setProject] = useState<Project | null>(null);
     const [pkg, setPkg] = useState<Package | null>(null);
     const [services, setServices] = useState<Service[]>([]);
+    const [features, setFeatures] = useState<TechnicalFeature[]>([]);
+    const [sites, setSites] = useState<Site[]>([]);
+    const [siteTypes, setSiteTypes] = useState<SiteType[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -20,12 +27,21 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
                 setProject(proj);
 
                 if (proj?.selectedPackageId) {
-                    const [packageData, servicesData] = await Promise.all([
+                    const [packageData, servicesData, featuresData, siteTypesData] = await Promise.all([
                         PackageService.getPackageById(proj.selectedPackageId),
-                        ServiceService.getAllServices()
+                        ServiceService.getAllServices(),
+                        FeatureService.getAllFeatures(),
+                        SiteDefinitionService.getAllSiteDefinitions()
                     ]);
                     setPkg(packageData);
                     setServices(servicesData);
+                    setFeatures(featuresData);
+                    setSiteTypes(siteTypesData);
+
+                    const sitesRef = collection(db, "projects", projectId, "sites");
+                    const sitesSnap = await getDocs(sitesRef);
+                    const sitesData = sitesSnap.docs.map(d => validateDoc(SiteSchema, d.data(), d.id)) as Site[];
+                    setSites(sitesData);
                 }
             } catch (error) {
                 console.error("Failed to load data:", error);
@@ -109,11 +125,23 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
                         const serviceItems = items.filter(i => i.service_id === service.id);
                         const hasOptions = serviceItems.some(i => i.service_option_id);
 
+                        const enabledFeatureIds = new Set<string>();
+                        serviceItems.forEach(item => {
+                            item.enabled_features?.forEach(f => {
+                                const fId = typeof f === 'string' ? f : f.feature_id;
+                                if (fId) enabledFeatureIds.add(fId);
+                            });
+                        });
+                        const serviceFeatures = features.filter(f => enabledFeatureIds.has(f.id));
+
                         return (
                             <div key={service.id} className="border border-neutral-200 rounded-lg overflow-hidden break-inside-avoid">
-                                <div className="bg-neutral-100 px-4 py-3 border-b border-neutral-200 flex justify-between items-center">
-                                    <h4 className="font-bold text-neutral-900">{service.name}</h4>
-                                    <span className="text-xs font-mono text-neutral-500 uppercase">{service.metadata?.category}</span>
+                                <div className="bg-neutral-100 px-4 py-3 border-b border-neutral-200 flex flex-col gap-1">
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="font-bold text-neutral-900">{service.name}</h4>
+                                        <span className="text-xs font-mono text-neutral-500 uppercase">{service.metadata?.category}</span>
+                                    </div>
+                                    <p className="text-sm text-neutral-600">{service.detailed_description || service.short_description}</p>
                                 </div>
 
                                 {hasOptions ? (
@@ -131,21 +159,26 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
                                                             <span className="text-blue-600 font-bold">✓</span>
                                                             <div>
                                                                 <span className="font-semibold">{option.name}</span>
-                                                                <p className="text-sm text-neutral-600 mt-1">{option.short_description}</p>
+                                                                <p className="text-sm text-neutral-600 mt-1">{option.detailed_description || option.short_description}</p>
                                                             </div>
                                                         </div>
 
                                                         {designItems.length > 0 && (
                                                             <div className="ml-6 mt-3 bg-blue-50/50 p-3 rounded border border-blue-100">
                                                                 <h5 className="text-xs font-bold uppercase text-blue-800 mb-2">Design Configurations</h5>
-                                                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                     {designItems.map(dItem => {
                                                                         const design = option.design_options.find(d => d.id === dItem.design_option_id);
                                                                         return (
-                                                                            <li key={dItem.design_option_id} className="text-sm flex items-center gap-2">
-                                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                                                                                <span className="font-medium text-neutral-800">{design?.name}</span>
-                                                                                <span className="text-neutral-500 text-xs">({design?.category})</span>
+                                                                            <li key={dItem.design_option_id} className="text-sm flex flex-col gap-1">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                                                                    <span className="font-medium text-neutral-800">{design?.name}</span>
+                                                                                    <span className="text-neutral-500 text-xs">({design?.category})</span>
+                                                                                </div>
+                                                                                {(design?.detailed_description || design?.short_description) && (
+                                                                                    <p className="text-xs text-neutral-600 ml-3">{design.detailed_description || design.short_description}</p>
+                                                                                )}
                                                                             </li>
                                                                         );
                                                                     })}
@@ -162,10 +195,103 @@ export default function DesignDocPage({ params }: { params: Promise<{ id: string
                                         Standard service implementation included.
                                     </div>
                                 )}
+
+                                {serviceFeatures.length > 0 && (
+                                    <div className="px-4 py-3 bg-neutral-50 border-t border-neutral-200">
+                                        <h5 className="text-sm font-bold text-neutral-800 mb-2">Enabled Features</h5>
+                                        <ul className="space-y-2">
+                                            {serviceFeatures.map(f => (
+                                                <li key={f.id} className="text-sm grid grid-cols-1 md:grid-cols-4 gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0">
+                                                    <span className="font-semibold text-neutral-700">{f.name}</span>
+                                                    <span className="text-neutral-600 col-span-3">{f.description}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
                 </div>
+            </section>
+
+            {/* Appendix A: Caveats, Assumptions, Constraints */}
+            <section className="mb-12 page-break-before">
+                <h2 className="text-2xl font-bold text-blue-900 mb-6 border-b border-neutral-200 pb-2">Appendix A: Assumptions, Caveats, and Constraints</h2>
+                {(() => {
+                    const allAssumptions = new Set<string>();
+                    const allCaveats = new Set<string>();
+                    const allConstraints = new Set<string>();
+
+                    services.filter(s => items.some(i => i.service_id === s.id)).forEach(service => {
+                        (service.assumptions || []).forEach(a => allAssumptions.add(a));
+                        (service.caveats || []).forEach(c => allCaveats.add(c));
+
+                        const serviceItems = items.filter(i => i.service_id === service.id);
+                        service.service_options?.filter(o => serviceItems.some(i => i.service_option_id === o.id)).forEach(option => {
+                            (option.assumptions || []).forEach(a => allAssumptions.add(a));
+                            (option.caveats || []).forEach(c => allCaveats.add(c));
+
+                            option.design_options?.filter(d => serviceItems.some(i => i.design_option_id === d.id)).forEach(dOpt => {
+                                (dOpt.assumptions || []).forEach(a => allAssumptions.add(a));
+                                (dOpt.caveats || []).forEach(c => allCaveats.add(c));
+                            });
+                        });
+
+                        const enabledFeatureIds = new Set<string>();
+                        serviceItems.forEach(item => {
+                            item.enabled_features?.forEach(f => {
+                                const fId = typeof f === 'string' ? f : f.feature_id;
+                                if (fId) enabledFeatureIds.add(fId);
+                            });
+                        });
+                        features.filter(f => enabledFeatureIds.has(f.id)).forEach(f => {
+                            (f.assumptions || []).forEach(a => allAssumptions.add(a));
+                            (f.caveats || []).forEach(c => allCaveats.add(c));
+                        });
+                    });
+
+                    siteTypes.forEach(st => {
+                        if (sites.some(s => s.siteTypeId === st.id || s.lanSiteTypeId === st.id)) {
+                            (st.constraints || []).forEach(c => allConstraints.add(`[${c.type}] ${c.description}`));
+                        }
+                    });
+
+                    return (
+                        <div className="space-y-6 text-neutral-800">
+                            <div>
+                                <h3 className="font-bold text-lg mb-2">Assumptions</h3>
+                                {allAssumptions.size > 0 ? (
+                                    <ul className="list-disc pl-5 space-y-1 text-sm text-neutral-700">
+                                        {Array.from(allAssumptions).map((a, i) => <li key={i}>{a}</li>)}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-neutral-500 italic">No assumptions specified.</p>
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg mb-2">Caveats</h3>
+                                {allCaveats.size > 0 ? (
+                                    <ul className="list-disc pl-5 space-y-1 text-sm text-neutral-700">
+                                        {Array.from(allCaveats).map((c, i) => <li key={i}>{c}</li>)}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-neutral-500 italic">No caveats specified.</p>
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg mb-2">Site Constraints</h3>
+                                {allConstraints.size > 0 ? (
+                                    <ul className="list-disc pl-5 space-y-1 text-sm text-neutral-700">
+                                        {Array.from(allConstraints).map((c, i) => <li key={i}>{c}</li>)}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-neutral-500 italic">No site technical constraints specified.</p>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
             </section>
 
             {/* Sticky Action Footer */}
