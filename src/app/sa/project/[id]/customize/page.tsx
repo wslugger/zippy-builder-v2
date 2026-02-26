@@ -123,7 +123,7 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                     });
 
                     // If any conflict is REQUIRED, block the switch
-                    const hasRequiredConflict = conflicts.some(i => 
+                    const hasRequiredConflict = conflicts.some(i =>
                         getPackageRule(i.service_id, i.service_option_id, i.design_option_id) === 'required'
                     );
 
@@ -282,53 +282,78 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                                                         <span className="text-xs text-neutral-400 uppercase">({effectiveOptionRule})</span>
                                                     </div>
 
-                                                    {/* Design Options */}
-                                                    {isOptionActive && option.design_options?.length > 0 && (
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8">
-                                                            {option.design_options.map(design => {
-                                                                const designRule = getPackageRule(service.id, option.id, design.id);
-                                                                if (designRule === null) return null;
+                                                    {/* Design Options — grouped by category */}
+                                                    {isOptionActive && option.design_options?.length > 0 && (() => {
+                                                        // Filter to whitelisted options first
+                                                        const visibleDesigns = option.design_options.filter(d => getPackageRule(service.id, option.id, d.id) !== null);
 
-                                                                const isDesignActive = isItemActive(service.id, option.id, design.id);
-                                                                const isDesignRequired = designRule === 'required';
+                                                        // Group by category
+                                                        const grouped = visibleDesigns.reduce<Record<string, typeof visibleDesigns>>((acc, design) => {
+                                                            const cat = design.category || 'Other';
+                                                            if (!acc[cat]) acc[cat] = [];
+                                                            acc[cat].push(design);
+                                                            return acc;
+                                                        }, {});
 
-                                                                return (
-                                                                    <div
-                                                                        key={design.id}
-                                                                        onClick={() => !isDesignRequired && toggleItem(service.id, option.id, design.id, designRule)}
-                                                                        className={`
-                                                                            p-3 rounded-xl border cursor-pointer transition-all flex justify-between items-center group
-                                                                            ${isDesignActive
-                                                                                ? 'bg-white dark:bg-neutral-800 border-blue-500 shadow-sm'
-                                                                                : 'bg-transparent border-neutral-200 dark:border-neutral-800 hover:border-neutral-400'}
-                                                                            ${isDesignRequired ? 'cursor-not-allowed opacity-80' : ''}
-                                                                        `}
-                                                                    >
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center
-                                                                                ${isDesignActive ? 'border-blue-500 bg-blue-500' : 'border-neutral-400'}
-                                                                             `}>
-                                                                                {isDesignActive && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                                                                            </div>
-                                                                            <div className="text-sm">
-                                                                                <span className="font-medium block">{design.name}</span>
-                                                                                <span className="text-xs text-neutral-500">{design.category}</span>
-                                                                            </div>
+                                                        const categories = Object.keys(grouped);
+                                                        if (categories.length === 0) return null;
+
+                                                        return (
+                                                            <div className="pl-8 space-y-4 mt-2">
+                                                                {categories.map(cat => (
+                                                                    <div key={cat}>
+                                                                        {/* Category header */}
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{cat}</span>
+                                                                            <div className="flex-1 h-px bg-neutral-100 dark:bg-neutral-800" />
                                                                         </div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            {designRule === 'required' ? (
-                                                                                <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-1.5 py-0.5 rounded font-bold">REQ</span>
-                                                                            ) : designRule === 'standard' ? (
-                                                                                <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 px-1.5 py-0.5 rounded font-bold">STD</span>
-                                                                            ) : (
-                                                                                <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded font-bold">OPT</span>
-                                                                            )}
+
+                                                                        {/* Options in this category */}
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                            {grouped[cat].map(design => {
+                                                                                const designRule = getPackageRule(service.id, option.id, design.id)!;
+                                                                                const isDesignActive = isItemActive(service.id, option.id, design.id);
+                                                                                const isDesignRequired = designRule === 'required';
+
+                                                                                return (
+                                                                                    <div
+                                                                                        key={design.id}
+                                                                                        onClick={() => !isDesignRequired && toggleItem(service.id, option.id, design.id, designRule)}
+                                                                                        className={`
+                                                                                            p-3 rounded-xl border transition-all flex justify-between items-center group
+                                                                                            ${isDesignRequired ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}
+                                                                                            ${isDesignActive
+                                                                                                ? 'bg-white dark:bg-neutral-800 border-blue-500 shadow-sm'
+                                                                                                : 'bg-transparent border-neutral-200 dark:border-neutral-800 hover:border-neutral-400'}
+                                                                                        `}
+                                                                                    >
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0
+                                                                                                ${isDesignActive ? 'border-blue-500 bg-blue-500' : 'border-neutral-400'}
+                                                                                            `}>
+                                                                                                {isDesignActive && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                                                                                            </div>
+                                                                                            <span className="text-sm font-medium">{design.name}</span>
+                                                                                        </div>
+                                                                                        <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                                                                                            {designRule === 'required' ? (
+                                                                                                <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-1.5 py-0.5 rounded font-bold">REQ</span>
+                                                                                            ) : designRule === 'standard' ? (
+                                                                                                <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 px-1.5 py-0.5 rounded font-bold">STD</span>
+                                                                                            ) : (
+                                                                                                <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded font-bold">OPT</span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
                                                                         </div>
                                                                     </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
+                                                                ))}
+                                                            </div>
+                                                        );
+                                                    })()}
+
                                                 </div>
                                             );
                                         })}
