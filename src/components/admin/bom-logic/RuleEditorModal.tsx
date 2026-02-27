@@ -137,6 +137,36 @@ export default function RuleEditorModal({
     const [saving, setSaving] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiPrompt, setAiPrompt] = useState("");
+    const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
+    const [jsonImportValue, setJsonImportValue] = useState("");
+
+    const handleJsonImport = () => {
+        if (!jsonImportValue.trim()) return;
+        try {
+            const parsed = JSON.parse(jsonImportValue);
+
+            // Basic validation for rule shape
+            if (typeof parsed !== "object" || parsed === null || !parsed.name || !parsed.condition || !parsed.actions) {
+                throw new Error("JSON must contain name, condition, and actions fields.");
+            }
+
+            setRule({
+                ...rule,
+                name: parsed.name,
+                priority: typeof parsed.priority === "number" ? parsed.priority : rule.priority,
+                condition: parsed.condition,
+                actions: Array.isArray(parsed.actions) ? parsed.actions : rule.actions,
+            });
+
+            setIsJsonImportOpen(false);
+            setJsonImportValue("");
+            // Logic to check if simple mode should follow setRule
+            // However, useMemo will re-calculate parsedSimpleConditions
+        } catch (err) {
+            console.error("JSON Import Error:", err);
+            alert(err instanceof Error ? err.message : "Invalid JSON format");
+        }
+    };
 
     const handleAIGenerate = async () => {
         if (!aiPrompt.trim()) return;
@@ -195,6 +225,8 @@ export default function RuleEditorModal({
             });
             setShowRawJson(false); // New rules are inherently simple
         }
+        setIsJsonImportOpen(false);
+        setJsonImportValue("");
     }, [ruleToEdit, isOpen, serviceCategory]);
 
     if (!isOpen) return null;
@@ -287,7 +319,46 @@ export default function RuleEditorModal({
                         </h2>
                         <p className="text-xs text-slate-500 mt-1">Rules dynamically process site parameters to select equipment.</p>
                     </div>
+                    <div className="flex items-center space-x-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsJsonImportOpen(!isJsonImportOpen)}
+                            className="text-xs font-semibold px-2 py-1 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded transition-colors shadow-sm"
+                        >
+                            {isJsonImportOpen ? "Close JSON Import" : "📋 Paste JSON"}
+                        </button>
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
+
+                {isJsonImportOpen && (
+                    <div className="p-6 bg-slate-100 border-b border-slate-200 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-2 flex justify-between">
+                            <span>Paste BOM Logic Rule JSON</span>
+                            <span className="text-[10px] text-slate-400 normal-case font-normal">Fields: name, priority, condition, actions</span>
+                        </label>
+                        <textarea
+                            value={jsonImportValue}
+                            onChange={(e) => setJsonImportValue(e.target.value)}
+                            rows={8}
+                            placeholder='{&#10;  "name": "High Bandwidth Branch",&#10;  "priority": 15,&#10;  "condition": { "==": [{ "var": "site.bandwidthDownMbps" }, 1000] },&#10;  "actions": [ ... ]&#10;}'
+                            className="w-full text-[13px] font-mono border-slate-300 rounded-lg p-3 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-y bg-white"
+                        />
+                        <div className="mt-3 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={handleJsonImport}
+                                className="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold hover:bg-slate-900 shadow-sm transition-colors"
+                            >
+                                Load JSON Rule
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="p-6 overflow-y-auto flex-1 bg-slate-50/50">
                     <form id="rule-form" onSubmit={handleSave} className="space-y-8">
