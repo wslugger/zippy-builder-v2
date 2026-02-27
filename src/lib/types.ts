@@ -478,6 +478,7 @@ export const SiteSchema = z.object({
   embeddedServices: z.array(z.any()).optional(),  // typed as EmbeddedServiceSnapshot[] in usage
   uxRoute: z.enum(['FAST_TRACK', 'GUIDED_FLOW']).optional(),
   triageReason: z.string().optional(),
+  isReviewed: z.boolean().optional(),
 });
 
 export type Site = Omit<z.infer<typeof SiteSchema>, 'embeddedEquipment' | 'embeddedServices'> & {

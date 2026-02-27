@@ -164,3 +164,18 @@
 - **Metadata Persistence**: Added `uxRoute` and `triageReason` to the core `Site` model.
 - **Unified Logic**: Updated both the `ProjectSummaryDashboard` and the `SiteSidebar` to respect the AI's classification as the primary source of truth for "Flagged" status. 
 - **Lesson**: Data boundaries between sub-features (like Triage vs. Builder) must explicitly pass and preserve critical "intent" metadata. Relying on re-calculating status from raw state (like missing profiles) often leads to inconsistent UI states.
+
+## 24. Site Review Acknowledgment Workflow
+**Issue**: Users needed a way to formally "resolve" flagged sites without necessarily fixing every warning (e.g., acknowledging a PoE budget slightly over but acceptable). Simple heuristics like "hide if configured" were insufficient for audit trails.
+**Solution**:
+- **Explicit State**: Introduced `isReviewed` as a persistent boolean on each site.
+- **Unified Alerting**: Aggregated varied alert types (AI Flags, Missing Profiles, PoE Warnings) into a single "Action Required" list.
+- **State Override**: Allowed the user to "Confirm Review," which changes the visual status (amber to green) and dismisses the dashboard flag, while still keeping the alert list visible as a "Review Acknowledged" summary for transparency.
+- **Lesson**: Complex workflows with "warnings" vs "errors" benefit from an explicit "Reviewed/Acknowledged" state rather than trying to auto-derive resolution from other state changes.
+
+## 25. Core Attribute Extraction in AI Triage
+**Issue**: The AI Triage pipeline initially relied on the LLM to extract only high-level requirements (users, notes) while relying on UI defaults for core network attributes like circuits, bandwidth, and ports. This resulted in "TBD" values and missing secondary circuit data even when the source data explicitly contained them.
+**Solution**:
+- **Base Schema Hardening**: Updated the AI system prompt to explicitly request core attributes (`address`, `bandwidth`, `primaryCircuit`, `secondaryCircuit`, `redundancyModel`, `ports`, `APs`) in the mandatory JSON output.
+- **Dynamic Property Mapping**: Implemented a case-insensitive mapping layer in the site import modal that prioritizes these AI-extracted fields, falling back to manual column parsing only if the AI fails.
+- **Key Insight**: While LLMs are good at interpreting unstructured notes, explicitly defining "mandatory" extraction fields for core business logic prevents data loss and reduces the need for manual data entry after the import.

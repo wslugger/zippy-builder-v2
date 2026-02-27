@@ -53,9 +53,8 @@ export function SiteSidebar({
         return sites.map((site, index) => ({ site, index }))
             .filter((item) => {
                 if (siteFilter === "flagged") {
-                    // Align with ProjectSummaryDashboard logic
-                    if (item.site.uxRoute) return item.site.uxRoute === 'GUIDED_FLOW';
-                    return !item.site.siteTypeId;
+                    const needsReview = item.site.uxRoute === 'GUIDED_FLOW' || (!item.site.uxRoute && !item.site.siteTypeId);
+                    return needsReview && !item.site.isReviewed;
                 }
                 return true;
             });
@@ -273,9 +272,9 @@ export function SiteSidebar({
                                                         </div>
                                                     </div>
                                                     <div className="mt-1">
-                                                        <div className={`w-2 h-2 rounded-full ${site.uxRoute === 'GUIDED_FLOW' || (!site.uxRoute && !site.siteTypeId)
-                                                            ? "bg-amber-400"
-                                                            : "bg-green-400"
+                                                        <div className={`w-2 h-2 rounded-full ${(!site.isReviewed && (site.uxRoute === 'GUIDED_FLOW' || (!site.uxRoute && !site.siteTypeId)))
+                                                            ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                                                            : "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]"
                                                             }`} />
                                                     </div>
                                                 </div>

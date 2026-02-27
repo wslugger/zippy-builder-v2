@@ -167,7 +167,18 @@ REQUIRED SCHEMA FORMAT FOR EACH SITE IN THE ARRAY:
   "sqFt": <number | null> - The square footage of the site, if provided (else null),
   "rawNotes": <string> - A brief summary or raw copy of the notes for this site,
   "dynamicAttributes": {
-  ${dynamicSchemaMap}
+    "address": <string> - The street address or city/state,
+    "bandwidthDownMbps": <number> - Download speed in Mbps,
+    "bandwidthUpMbps": <number> - Upload speed in Mbps,
+    "primaryCircuit": <string> - e.g. DIA, Broadband, LTE, Fiber,
+    "secondaryCircuit": <string | null> - Secondary circuit type if HA is required,
+    "redundancyModel": <string> - e.g. Single CPE, Dual CPE,
+    "wanLinks": <number> - Number of WAN links/circuits,
+    "lanPorts": <number> - Number of copper LAN ports needed,
+    "poePorts": <number> - Number of PoE ports needed,
+    "indoorAPs": <number> - Count of indoor access points,
+    "outdoorAPs": <number> - Count of outdoor access points,
+    ${dynamicSchemaMap}
   }
 }
 

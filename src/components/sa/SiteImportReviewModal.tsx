@@ -18,23 +18,36 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
 
     const handleConfirm = () => {
         // Map TriagedSite to the standard Site format for the BOM Engine
-        const finalSites: Site[] = sites.map(s => ({
-            name: s.siteName,
-            address: "TBD", // Requires mapping from dynamic or notes if available
-            userCount: s.estimatedUsers,
-            bandwidthDownMbps: 1000, // Default placeholders
-            bandwidthUpMbps: 1000, // Default placeholders
-            redundancyModel: "Single CPE",
-            wanLinks: 1,
-            lanPorts: Math.ceil(s.estimatedUsers * 2), // Rough estimate
-            poePorts: 0,
-            indoorAPs: Math.ceil(s.estimatedUsers / 20),
-            outdoorAPs: 0,
-            primaryCircuit: "Broadband",
-            notes: s.rawNotes,
-            uxRoute: s.uxRoute,
-            triageReason: s.triageReason,
-        }));
+        const finalSites: Site[] = sites.map(s => {
+            const attrs = s.dynamicAttributes || {};
+
+            // Helper to get attribute by case-insensitive key or common variations
+            const getAttr = (keys: string[], fallback: unknown) => {
+                const foundKey = Object.keys(attrs).find(k =>
+                    keys.some(key => k.toLowerCase().includes(key.toLowerCase()))
+                );
+                return foundKey ? attrs[foundKey] : fallback;
+            };
+
+            return {
+                name: s.siteName,
+                address: String(attrs.address || getAttr(['address', 'location'], "TBD")),
+                userCount: Number(s.estimatedUsers) || 0,
+                bandwidthDownMbps: Number(attrs.bandwidthDownMbps || getAttr(['bandwidth down', 'down', 'download'], 1000)),
+                bandwidthUpMbps: Number(attrs.bandwidthUpMbps || getAttr(['bandwidth up', 'up', 'upload'], 1000)),
+                redundancyModel: String(attrs.redundancyModel || getAttr(['redundancy', 'ha'], "Single CPE")),
+                wanLinks: Number(attrs.wanLinks || getAttr(['wan links', 'links'], 1)),
+                lanPorts: Number(attrs.lanPorts || getAttr(['lan ports', 'ports'], Math.ceil(s.estimatedUsers * 2))),
+                poePorts: Number(attrs.poePorts || getAttr(['poe ports'], 0)),
+                indoorAPs: Number(attrs.indoorAPs || getAttr(['indoor'], Math.ceil(s.estimatedUsers / 20))),
+                outdoorAPs: Number(attrs.outdoorAPs || getAttr(['outdoor'], 0)),
+                primaryCircuit: String(attrs.primaryCircuit || getAttr(['primary circuit', 'primary'], "Broadband")),
+                secondaryCircuit: (attrs.secondaryCircuit || getAttr(['secondary circuit', 'secondary'], undefined)) ? String(attrs.secondaryCircuit || getAttr(['secondary circuit', 'secondary'], "")) : undefined,
+                notes: s.rawNotes,
+                uxRoute: s.uxRoute,
+                triageReason: s.triageReason,
+            };
+        });
         onConfirm(finalSites);
     };
 

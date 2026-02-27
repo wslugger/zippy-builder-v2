@@ -15,8 +15,8 @@ export function ProjectSummaryDashboard({ sites, setSiteFilter, onFinalize, isCo
     // Flagging logic: Favor AI triage classification if present, 
     // otherwise fallback to missing site profile as the indicator.
     const flaggedSites = sites.filter((s) => {
-        if (s.uxRoute) return s.uxRoute === 'GUIDED_FLOW';
-        return !s.siteTypeId;
+        const needsReview = s.uxRoute === 'GUIDED_FLOW' || (!s.uxRoute && !s.siteTypeId);
+        return needsReview && !s.isReviewed;
     }).length;
     const configuredSites = totalSites - flaggedSites;
 
@@ -99,7 +99,7 @@ export function ProjectSummaryDashboard({ sites, setSiteFilter, onFinalize, isCo
                     </div>
                     <div>
                         <p className="text-sm font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">Flagged For Review</p>
-                        <h3 className="text-4xl font-bold text-slate-800 dark:text-slate-100">{flaggedSites}</h3>
+                        <h3 className="text-4xl font-bold text-slate-800 dark:text-slate-100" data-testid="flagged-sites-count">{flaggedSites}</h3>
                         {flaggedSites > 0 && (
                             <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">Click to filter master list →</p>
                         )}

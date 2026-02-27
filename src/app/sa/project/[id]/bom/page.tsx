@@ -13,16 +13,13 @@ import { LANTab } from "./LANTab";
 import { WLANTab } from "./WLANTab";
 import { PricingTab } from "./PricingTab";
 import { ProjectSummaryDashboard } from "./ProjectSummaryDashboard";
+import { Tooltip } from "@/src/components/common/Tooltip";
 import { GlobalPricingView } from "./GlobalPricingView";
 
 // ─────────────────────────────────────────────
 // Small local icons (trivial, kept in page file)
 // ─────────────────────────────────────────────
-const AlertIcon = () => (
-    <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
-);
+
 
 // ─────────────────────────────────────────────
 // Main content (needs useSearchParams → Suspense wrapper below)
@@ -80,6 +77,19 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
         }
     };
 
+    const reviewItems = [];
+    if (selectedSite) {
+        if (selectedSite.uxRoute === 'GUIDED_FLOW') {
+            reviewItems.push(selectedSite.triageReason || "Guided Flow: AI flagged this site for manual review.");
+        }
+        if (!selectedSite.siteTypeId) {
+            reviewItems.push("Missing Profile: Please select a site configuration profile.");
+        }
+        reviewItems.push(...poeWarnings);
+    }
+    const hasReviewItems = reviewItems.length > 0;
+    const isReviewed = !!selectedSite?.isReviewed;
+
     return (
         <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
             {/* ── Sidebar ── */}
@@ -101,7 +111,6 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                 onViewPricing={() => setActiveTab("Pricing")}
             />
 
-            {/* ── Main Content ── */}
             <div className="flex-1 flex flex-col overflow-y-auto">
                 {selectedSite ? (
                     <>
@@ -110,22 +119,31 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{selectedSite.name}</h1>
-                                    <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center space-x-4 mt-1">
-                                        <span>{selectedSite.address}</span>
-                                        <span>•</span>
+                                    <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center flex-wrap gap-x-4 gap-y-1 mt-1">
+                                        <span>{selectedSite.address || "TBD"}</span>
+                                        <span className="text-slate-300 dark:text-slate-700">•</span>
                                         <span>{selectedSite.userCount} Users</span>
-                                        <span>•</span>
-                                        <select
-                                            className="text-xs border-none bg-transparent text-blue-600 font-medium cursor-pointer focus:ring-0"
-                                            value={selectedSite.siteTypeId || ""}
-                                            onChange={(e) => handleSiteTypeChange(e.target.value)}
-                                        >
-                                            <option value="">Select Profile...</option>
-                                            {siteTypes.map((t) => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </select>
+                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                        <span>{selectedSite.bandwidthDownMbps}/{selectedSite.bandwidthUpMbps} Mbps</span>
+                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                        <Tooltip content="Primary + Secondary Circuits">
+                                            <span>{selectedSite.primaryCircuit}{selectedSite.secondaryCircuit ? ` + ${selectedSite.secondaryCircuit}` : ''}</span>
+                                        </Tooltip>
+                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                        <Tooltip content="Total LAN Ports / PoE Required">
+                                            <span>{selectedSite.lanPorts} LAN / {selectedSite.poePorts} PoE</span>
+                                        </Tooltip>
+                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                        <Tooltip content="Indoor / Outdoor Access Points">
+                                            <span>{selectedSite.indoorAPs} Indoor / {selectedSite.outdoorAPs} Outdoor APs</span>
+                                        </Tooltip>
                                     </div>
+                                    {selectedSite.notes && (
+                                        <div className="text-xs text-slate-400 dark:text-slate-500 mt-2 italic flex items-center gap-1">
+                                            <span>📝</span>
+                                            <span className="truncate max-w-2xl">{selectedSite.notes}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-2">
                                     {activeTab === "Pricing" && (
@@ -172,12 +190,46 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                 </div>
                             </div>
 
-                            {poeWarnings.length > 0 && (
-                                <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-3 flex items-start space-x-3">
-                                    <AlertIcon />
-                                    <div className="text-sm text-red-700">
-                                        {poeWarnings.map((w, i) => <div key={i}>{w}</div>)}
+                            {hasReviewItems && (
+                                <div className={`mt-4 border rounded-xl p-4 flex items-start justify-between gap-4 transition-all ${isReviewed
+                                    ? "bg-slate-50 border-slate-200 opacity-75"
+                                    : "bg-amber-50 border-amber-200 shadow-sm"
+                                    }`}>
+                                    <div className="flex items-start gap-3">
+                                        <div className={`mt-0.5 ${isReviewed ? "text-slate-400" : "text-amber-500"}`}>
+                                            {isReviewed ? (
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className={`text-sm font-bold uppercase tracking-wider mb-2 ${isReviewed ? "text-slate-500" : "text-amber-800"}`}>
+                                                {isReviewed ? "Review Acknowledged" : "Action Required"}
+                                            </h3>
+                                            <ul className={`text-sm space-y-1 ${isReviewed ? "text-slate-400" : "text-amber-700"}`}>
+                                                {reviewItems.map((item, idx) => (
+                                                    <li key={idx} className="flex items-start gap-2">
+                                                        <span className="opacity-50 mt-1.5 w-1 h-1 rounded-full bg-current shrink-0" />
+                                                        {item}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
+                                    <button
+                                        onClick={() => handleSiteUpdate({ isReviewed: !isReviewed })}
+                                        className={`shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isReviewed
+                                            ? "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                            : "bg-amber-600 text-white shadow-lg shadow-amber-600/20 hover:bg-amber-700"
+                                            }`}
+                                    >
+                                        {isReviewed ? "Mark Unresolved" : "Confirm Review"}
+                                    </button>
                                 </div>
                             )}
                         </div>
