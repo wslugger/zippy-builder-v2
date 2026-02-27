@@ -185,3 +185,10 @@
 - **Schema Update**: Added a `category` field to the design options metadata.
 - **UI Refactoring**: Updated components to pre-process flat lists into grouped structures (e.g., `Record<string, Option[]>`) before rendering.
 - **Key Insight**: Grouping data by logical categories (Topology, Security, etc.) significantly reduces cognitive load and allows the UI to use header-based navigation, making complex configuration flows feel more manageable.
+
+## 27. AI Extraction Property Name and Label Discrepancies
+**Issue**: When extracting data via an LLM (like Gemini) into a structured system, the LLM may output JSON keys differently than the target schema expects (e.g., `wifi_standard` vs. `wifiStandard`), or different equipment roles might use the same physical layout for completely different metrics (e.g., "PoE Budget" for LAN switches vs. "Power Draw" for WLAN access points). This causes UI components to display "Unknown" or incorrect static text like "0W".
+**Solution**:
+- **Tolerant Data Binding**: UI components consuming AI-extracted data should intelligently fall back across expected variations of a property name (`item.specs.wifi_standard || item.specs.wifiStandard`).
+- **Contextual Labelling**: Render labels dynamically based on the object's context/role, not just blindly reusing the same layout block. "PoE Budget" only makes sense for LAN; shift to "Power Draw" for WLAN while reading from the correct underlying extracted value.
+- **Key Insight**: AI pipelines are occasionally loose with snake_case vs camelCase unless heavily enforced. The consuming UI mapping layer must be defensively coded to handle slight deviations in property names and use contextual labels so users don't think the extraction failed.
