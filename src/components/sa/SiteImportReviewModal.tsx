@@ -1,47 +1,82 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Site } from '@/src/lib/bom-types';
 import { SiteType } from '@/src/lib/site-types';
+import { TriagedSite } from '@/src/lib/types';
 
 interface SiteImportReviewModalProps {
-    sites: (Site & {
-        recommendedType?: string;
-        recommendedLanType?: string;
-        confidence?: number;
-        reasoning?: string;
-    })[];
-    siteTypes: SiteType[];
+    sites: TriagedSite[];
     onConfirm: (finalSites: Site[]) => void;
     onCancel: () => void;
 }
 
 export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
     sites,
-    siteTypes,
     onConfirm,
     onCancel
 }) => {
-    const [reviewedSites, setReviewedSites] = useState([...sites]);
-
-    const handleTypeChange = (index: number, typeId: string) => {
-        const next = [...reviewedSites];
-        next[index] = { ...next[index], recommendedType: typeId, siteTypeId: typeId };
-        setReviewedSites(next);
-    };
-
-    const handleLanTypeChange = (index: number, typeId: string) => {
-        const next = [...reviewedSites];
-        next[index] = { ...next[index], recommendedLanType: typeId, lanSiteTypeId: typeId };
-        setReviewedSites(next);
-    };
+    const fastTrackSites = sites.filter(s => s.uxRoute === 'FAST_TRACK');
+    const guidedFlowSites = sites.filter(s => s.uxRoute === 'GUIDED_FLOW');
 
     const handleConfirm = () => {
-        const finalSites = reviewedSites.map(s => ({
-            ...s,
-            siteTypeId: s.recommendedType || s.siteTypeId,
-            lanSiteTypeId: s.recommendedLanType || s.lanSiteTypeId
+        // Map TriagedSite to the standard Site format for the BOM Engine
+        const finalSites: Site[] = sites.map(s => ({
+            name: s.siteName,
+            address: "TBD", // Requires mapping from dynamic or notes if available
+            userCount: s.estimatedUsers,
+            bandwidthDownMbps: 1000, // Default placeholders
+            bandwidthUpMbps: 1000, // Default placeholders
+            redundancyModel: "Single CPE",
+            wanLinks: 1,
+            lanPorts: Math.ceil(s.estimatedUsers * 2), // Rough estimate
+            poePorts: 0,
+            indoorAPs: Math.ceil(s.estimatedUsers / 20),
+            outdoorAPs: 0,
+            primaryCircuit: "Broadband",
+            notes: s.rawNotes,
+            // Include dynamic attributes conceptually or store them in notes/metadata
         }));
         onConfirm(finalSites);
     };
+
+    const renderSiteRow = (site: TriagedSite, idx: number) => (
+        <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
+            <td className="py-4 px-4 w-1/3 text-sm text-slate-800">
+                <div className="font-bold">{site.siteName}</div>
+                <div className="text-xs text-slate-500 mt-1 line-clamp-2">{site.rawNotes || "No notes"}</div>
+            </td>
+            <td className="py-4 px-4 w-1/4 text-sm text-slate-600">
+                <div className="flex space-x-3 items-center">
+                    <span>👥 {site.estimatedUsers} Users</span>
+                    {site.sqFt && <span>📏 {site.sqFt} SqFt</span>}
+                </div>
+                {Object.keys(site.dynamicAttributes || {}).length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                        {Object.entries(site.dynamicAttributes).map(([key, val]) => (
+                            <span key={key} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                {key}: {String(val)}
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </td>
+            <td className="py-4 px-4 text-sm font-medium">
+                {site.uxRoute === 'FAST_TRACK' ? (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-green-700 bg-green-100">
+                        ⚡ Fast Track
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-amber-700 bg-amber-100">
+                        ⚠️ Guided Flow
+                    </span>
+                )}
+            </td>
+            <td className="py-4 px-4 w-1/4 text-sm">
+                <div className="text-xs text-slate-600 italic">
+                    {site.triageReason}
+                </div>
+            </td>
+        </tr>
+    );
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
@@ -49,9 +84,11 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
                 {/* Header */}
                 <div className="bg-slate-50 px-8 py-5 border-b border-slate-200 flex justify-between items-center">
                     <div>
-                        <h3 className="text-xl font-bold text-slate-900">Review AI Site Analysis</h3>
+                        <h3 className="text-xl font-bold text-slate-900 flex items-center">
+                            🌐 AI Triage Complete
+                        </h3>
                         <p className="text-sm text-slate-500 mt-1">
-                            Gemini has analyzed your CSV and recommended deployment profiles for {sites.length} sites.
+                            Analyzed {sites.length} sites. {fastTrackSites.length} fast-tracked, {guidedFlowSites.length} flagged for guided configuration.
                         </p>
                     </div>
                     <div className="flex space-x-3">
@@ -65,99 +102,50 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
                             onClick={handleConfirm}
                             className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
                         >
-                            Confirm & Generate BOM
+                            Continue to Builder
                         </button>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-0">
                     <table className="w-full text-left border-collapse">
-                        <thead>
+                        <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
                             <tr className="border-b border-slate-200">
-                                <th className="pb-4 pt-2 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Site Name</th>
-                                <th className="pb-4 pt-2 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Raw Data (Users/BW)</th>
-                                <th className="pb-4 pt-2 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">AI Recommendation</th>
-                                <th className="pb-4 pt-2 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest w-1/4">Reasoning</th>
+                                <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-widest">Site Detail</th>
+                                <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-widest">Extracted Parameters</th>
+                                <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-widest">UX Route</th>
+                                <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-widest">Reasoning</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {reviewedSites.map((site, idx) => (
-                                <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
-                                    <td className="py-5 px-4">
-                                        <div className="font-bold text-slate-900">{site.name}</div>
-                                        <div className="text-xs text-slate-500 truncate max-w-[200px]">{site.address}</div>
-                                    </td>
-                                    <td className="py-5 px-4 text-sm text-slate-600">
-                                        <div className="flex space-x-3">
-                                            <span>👥 {site.userCount}</span>
-                                            <span>🚀 {site.bandwidthDownMbps}M</span>
-                                        </div>
-                                        <div className="text-[10px] text-slate-400 font-mono mt-1 mt-1 truncate max-w-[150px]">{site.notes || "No notes"}</div>
-                                    </td>
-                                    <td className="py-5 px-4">
-                                        <div className="flex flex-col space-y-3">
-                                            <div className="flex items-center space-x-2">
-                                                <div className="relative flex-1 min-w-[180px]">
-                                                    <select
-                                                        value={site.recommendedType || ""}
-                                                        onChange={(e) => handleTypeChange(idx, e.target.value)}
-                                                        className={`w-full text-sm font-medium border rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none bg-white ${(site.confidence || 0) > 80 ? 'border-green-200' : 'border-slate-200'
-                                                            }`}
-                                                    >
-                                                        <option value="">Select Edge Profile...</option>
-                                                        {siteTypes.filter(t => t.category !== "LAN").map(t => (
-                                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                                    </div>
-                                                </div>
-                                                {(site.confidence || 0) > 0 && (
-                                                    <div
-                                                        className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border ${site.confidence! > 80
-                                                            ? 'bg-green-50 text-green-700 border-green-100'
-                                                            : site.confidence! > 50
-                                                                ? 'bg-amber-50 text-amber-700 border-amber-100'
-                                                                : 'bg-slate-50 text-slate-500 border-slate-100'
-                                                            }`}
-                                                        title={`Confidence: ${site.confidence}%`}
-                                                    >
-                                                        {site.confidence}%
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="relative min-w-[180px]">
-                                                <select
-                                                    value={site.recommendedLanType || ""}
-                                                    onChange={(e) => handleLanTypeChange(idx, e.target.value)}
-                                                    className={`w-full text-sm font-medium border rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none bg-white border-slate-200`}
-                                                >
-                                                    <option value="">Select LAN Profile...</option>
-                                                    {siteTypes.filter(t => t.category === "LAN").map(t => (
-                                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="py-5 px-4">
-                                        <div className="text-xs text-slate-500 italic leading-relaxed">
-                                            {site.reasoning || "No explanation provided."}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {fastTrackSites.length > 0 && (
+                                <>
+                                    <tr className="bg-slate-50/80">
+                                        <td colSpan={4} className="px-6 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                            Fast Track (Automated Build Check)
+                                        </td>
+                                    </tr>
+                                    {fastTrackSites.map((site, index) => renderSiteRow(site, index))}
+                                </>
+                            )}
+
+                            {guidedFlowSites.length > 0 && (
+                                <>
+                                    <tr className="bg-orange-50/50">
+                                        <td colSpan={4} className="px-6 py-3 text-xs font-bold text-orange-800 uppercase tracking-wider border-t border-orange-100">
+                                            Guided Flow (Requires SA Review)
+                                        </td>
+                                    </tr>
+                                    {guidedFlowSites.map((site, index) => renderSiteRow(site, index))}
+                                </>
+                            )}
                         </tbody>
                     </table>
                 </div>
 
-                <div className="bg-slate-50 p-4 border-t border-slate-200 text-center text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-                    Powered by Google Gemini 1.5 Flash
+                <div className="bg-slate-50 p-4 border-t border-slate-200 text-center text-[10px] text-slate-400 uppercase tracking-widest font-bold flex items-center justify-center space-x-2">
+                    <span>⚡ Powered by Gemini 2.5 Flash Triage Engine</span>
                 </div>
             </div>
         </div>

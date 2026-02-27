@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService } from "@/src/lib/firebase";
 import { ManagementPricingService } from "@/src/lib/firebase/management-pricing-service";
-import { Project, Package, Service, Equipment, ManagementPricingMatrix } from "@/src/lib/types";
+import { Project, Package, Service, Equipment, ManagementPricingMatrix, TriagedSite } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
@@ -98,8 +98,8 @@ export interface BOMBuilderState {
     setSelectedSpecsItem: (eq: Equipment | null) => void;
     // AI classification
     isClassifying: boolean;
-    previewSites: PreviewSite[] | null;
-    setPreviewSites: (sites: PreviewSite[] | null) => void;
+    triagedSites: TriagedSite[] | null;
+    setTriagedSites: (sites: TriagedSite[] | null) => void;
     // Derived values
     utilization: number;
     totalLoad: number;
@@ -184,7 +184,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
     // ---- AI state ----
     const [isClassifying, setIsClassifying] = useState(false);
-    const [previewSites, setPreviewSites] = useState<PreviewSite[] | null>(null);
+    const [triagedSites, setTriagedSites] = useState<TriagedSite[] | null>(null);
 
     // ---- Pricing & Simulation state ----
     const [globalDiscount, setGlobalDiscount] = useState<number>(0);
@@ -594,24 +594,24 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     }, [selectedSiteIndex]);
 
     // -------------------------------------------------------
-    // CSV + AI classification
+    // AI Triage Pipeline
     // -------------------------------------------------------
-    const classifyAndPreview = useCallback(async (parsed: Site[]) => {
-        if (parsed.length === 0) return;
+    const triageAndPreview = useCallback(async (rawInput: string) => {
+        if (!rawInput.trim()) return;
         setIsClassifying(true);
         try {
-            const analysis = await AIService.classifySites(parsed, siteTypes);
-            const preview: PreviewSite[] = parsed.map((site, idx) => {
-                const rec = analysis.find((a) => a.siteIndex === idx);
-                return { ...site, recommendedType: rec?.siteTypeId, recommendedLanType: rec?.lanSiteTypeId, confidence: rec?.confidence, reasoning: rec?.reasoning };
-            });
-            setPreviewSites(preview);
-        } catch {
-            setSites(parsed); // Fallback: skip AI, import raw
+            const results = await AIService.triageSites(rawInput);
+            setTriagedSites(results);
+        } catch (error) {
+            console.error("Triage classification failed:", error);
+            // Fallback: parse locally and just import as is if AI fails?
+            // Or better yet, show error. For now, let's keep it robust.
+            const parsed = parseSiteListCSV(rawInput);
+            setSites(parsed);
         } finally {
             setIsClassifying(false);
         }
-    }, [siteTypes]);
+    }, []);
 
     const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -619,16 +619,14 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         const reader = new FileReader();
         reader.onload = (event) => {
             const text = event.target?.result as string;
-            const parsed = parseSiteListCSV(text);
-            classifyAndPreview(parsed);
+            triageAndPreview(text);
         };
         reader.readAsText(file);
-    }, [classifyAndPreview]);
+    }, [triageAndPreview]);
 
     const loadSampleData = useCallback(async () => {
-        const parsed = parseSiteListCSV(SAMPLE_CSV);
-        await classifyAndPreview(parsed);
-    }, [classifyAndPreview]);
+        await triageAndPreview(SAMPLE_CSV);
+    }, [triageAndPreview]);
 
     // Auto-load sample data when ?loadSample=true
     useEffect(() => {
@@ -665,8 +663,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         selectedSpecsItem,
         setSelectedSpecsItem,
         isClassifying,
-        previewSites,
-        setPreviewSites,
+        triagedSites,
+        setTriagedSites,
         utilization,
         totalLoad,
         poeWarnings,

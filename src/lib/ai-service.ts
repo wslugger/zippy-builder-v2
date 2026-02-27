@@ -1,4 +1,4 @@
-import { Project, AIAnalysisResult, Package, Service, GeneratedHLD } from "@/src/lib/types";
+import { Project, AIAnalysisResult, Package, Service, GeneratedHLD, TriageCriterion, TriagedSite } from "@/src/lib/types";
 import { Site } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { HLDPayload } from "./hld-generator";
@@ -72,23 +72,23 @@ export const AIService = {
     },
 
     /**
-     * Classifies a list of sites into Site Types using Gemini.
+     * Triage logic: Extracts site requirements from raw notes and routes them.
      */
-    classifySites: async (sites: Site[], availableSiteTypes: SiteType[]): Promise<{ siteIndex: number, siteTypeId: string, lanSiteTypeId?: string, confidence: number, reasoning: string }[]> => {
+    triageSites: async (rawInput: string): Promise<TriagedSite[]> => {
         try {
             const response = await fetch('/api/sa/classify-sites', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sites, availableSiteTypes })
+                body: JSON.stringify({ rawInput })
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.details || errorData.error || "Classification failed");
+                throw new Error(errorData.details || errorData.error || "Triage failed");
             }
             return await response.json();
         } catch (error) {
-            console.error("AI Site Classification Failed:", error);
+            console.error("AI Site Triage Failed:", error);
             throw error;
         }
     },
@@ -147,5 +147,34 @@ export const AIService = {
             console.error("HLD Document Audit Failed:", error);
             throw error;
         }
+    },
+
+    /**
+     * Builds a dynamic system prompt for the AI Triage "Schema as Data" pipeline.
+     */
+    buildDynamicTriagePrompt: (rawCustomerInput: string, activeCriteria: TriageCriterion[]): string => {
+        const dynamicSchemaMap = activeCriteria.map(criterion => {
+            return `"${criterion.id}": <${criterion.type}> - ${criterion.promptInstruction}`;
+        }).join('\n  ');
+
+        return `You are an Expert Network Solutions Architect AI.
+Your objective is to read the unstructured customer input regarding their network site requirements and extract the parameters into a strictly formatted JSON array.
+
+REQUIRED SCHEMA FORMAT FOR EACH SITE IN THE ARRAY:
+{
+  "siteName": <string> - The name or location of the site,
+  "estimatedUsers": <number> - The approximate number of users or employees at the site,
+  "sqFt": <number | null> - The square footage of the site, if provided (else null),
+  "rawNotes": <string> - A brief summary or raw copy of the notes for this site,
+  "dynamicAttributes": {
+  ${dynamicSchemaMap}
+  }
+}
+
+You MUST output ONLY a valid JSON array matching the schema above.
+Do not include markdown blocks like \`\`\`json. Output ONLY the raw JSON string.
+
+CUSTOMER INPUT:
+${rawCustomerInput}`;
     }
 };

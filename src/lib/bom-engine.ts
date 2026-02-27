@@ -13,6 +13,11 @@ import {
     getEquipmentPerformanceValue,
     getEquipmentRole
 } from "./bom-utils";
+import {
+    ExtractedSiteRequirements,
+    TriageCriterion,
+    TriagedSite
+} from "./types";
 
 /**
  * Generates a Bill of Materials based on pure JSON input via a declarative Rules Engine.
@@ -28,6 +33,41 @@ jsonLogic.add_operation("includes", (array, value) => {
     if (!Array.isArray(array)) return false;
     return array.includes(value);
 });
+
+/**
+ * Evaluates the complexity of a site to determine the UX route.
+ */
+export function evaluateSiteComplexity(site: ExtractedSiteRequirements, activeCriteria: TriageCriterion[]): TriagedSite {
+    const defaultRoute: 'FAST_TRACK' | 'GUIDED_FLOW' = 'FAST_TRACK';
+    const result: TriagedSite = {
+        ...site,
+        uxRoute: defaultRoute,
+        triageReason: '',
+    };
+
+    if (site.estimatedUsers > 15) {
+        result.uxRoute = 'GUIDED_FLOW';
+        result.triageReason = 'User count exceeds standard branch limit';
+        return result;
+    }
+
+    for (const criterion of activeCriteria) {
+        if (criterion.forcesGuidedFlow) {
+            const hasAttribute = site.dynamicAttributes && site.dynamicAttributes[criterion.id];
+
+            // Evaluates to true if boolean true, string 'true', or non-zero positive numeric conditions.
+            // Simplified here per instruction: "evaluates to true".
+            if (hasAttribute === true || (typeof hasAttribute === 'string' && hasAttribute.toLowerCase() === 'true')) {
+                result.uxRoute = 'GUIDED_FLOW';
+                result.triageReason = `Requires custom handling for: ${criterion.label}`;
+                return result;
+            }
+        }
+    }
+
+    result.triageReason = 'Standard site complexity';
+    return result;
+}
 
 /**
  * Build a pricing snapshot from catalog equipment data.

@@ -39,7 +39,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
         bom,
         manualSelections, setManualSelections,
         selectedSpecsItem, setSelectedSpecsItem,
-        isClassifying, previewSites, setPreviewSites,
+        isClassifying, triagedSites, setTriagedSites,
         utilization, totalLoad, poeWarnings,
         currentSDWANEquipment, currentSDWANItem,
         handleFileUpload, loadSampleData, getVendorForService,
@@ -332,12 +332,14 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                     </div>
                 )}
 
-                {previewSites && (
+                {triagedSites && (
                     <SiteImportReviewModal
-                        sites={previewSites}
-                        siteTypes={siteTypes}
-                        onCancel={() => setPreviewSites(null)}
-                        onConfirm={(finalSites) => { setSites(finalSites); setPreviewSites(null); }}
+                        sites={triagedSites}
+                        onCancel={() => setTriagedSites(null)}
+                        onConfirm={(finalSites) => {
+                            setSites(finalSites);
+                            setTriagedSites(null);
+                        }}
                     />
                 )}
             </div>

@@ -1,7 +1,8 @@
 import { collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "firebase/firestore";
 import { BOMLogicRule } from "@/src/lib/bom-types";
+import { TriageCriterion } from "@/src/lib/types";
 import { cleanObject } from "@/src/lib/feature-utils";
-import { db, BOM_RULES_COLLECTION } from "./config";
+import { db, BOM_RULES_COLLECTION, TRIAGE_CRITERIA_COLLECTION } from "./config";
 import { validateDoc, validateDocs, BOMLogicRuleSchema } from "./validation";
 import { z } from "zod";
 
@@ -34,6 +35,27 @@ export const BOMService = {
 
     deleteRule: async (id: string) => {
         const docRef = doc(db, BOM_RULES_COLLECTION, id);
+        await deleteDoc(docRef);
+    },
+
+    // ============================================================
+    // AI Triage Criteria Pipeline
+    // ============================================================
+
+    fetchTriageCriteria: async (): Promise<TriageCriterion[]> => {
+        const snapshot = await getDocs(collection(db, TRIAGE_CRITERIA_COLLECTION));
+        return snapshot.docs.map(doc => doc.data() as TriageCriterion);
+    },
+
+    saveTriageCriterion: async (criterion: TriageCriterion) => {
+        const docRef = doc(db, TRIAGE_CRITERIA_COLLECTION, criterion.id);
+        const cleaned = cleanObject(criterion);
+        await setDoc(docRef, cleaned, { merge: true });
+        return criterion.id;
+    },
+
+    deleteTriageCriterion: async (id: string) => {
+        const docRef = doc(db, TRIAGE_CRITERIA_COLLECTION, id);
         await deleteDoc(docRef);
     }
 };

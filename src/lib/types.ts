@@ -627,3 +627,27 @@ export const SystemConfigSchema = z.object({
 
 export type SystemConfig = z.infer<typeof SystemConfigSchema>;
 
+// ============================================================
+// AI Triage & Site Extraction Types
+// ============================================================
+
+export interface TriageCriterion {
+  id: string;
+  label: string;
+  type: 'boolean' | 'string' | 'number';
+  promptInstruction: string;
+  forcesGuidedFlow: boolean;
+}
+
+export interface ExtractedSiteRequirements {
+  siteName: string;
+  estimatedUsers: number;
+  sqFt: number | null;
+  rawNotes: string;
+  dynamicAttributes: Record<string, string | number | boolean>;
+}
+
+export interface TriagedSite extends ExtractedSiteRequirements {
+  uxRoute: 'FAST_TRACK' | 'GUIDED_FLOW';
+  triageReason: string;
+}

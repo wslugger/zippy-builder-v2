@@ -4,14 +4,17 @@ import { useState } from "react";
 import { useBOMRules } from "@/src/hooks/useBOMRules";
 import RuleList from "@/src/components/admin/bom-logic/RuleList";
 import RuleEditorModal from "@/src/components/admin/bom-logic/RuleEditorModal";
+import { AITriageRuleEditor } from "@/src/components/admin/bom-logic/AITriageRuleEditor";
 import { BOMLogicRule } from "@/src/lib/types";
 import { BOMService } from "@/src/lib/firebase/bom-service";
+
+type TabValues = "managed_sdwan" | "managed_lan" | "managed_wifi" | "ai_triage";
 
 export default function BOMRulesListPage() {
     const { rules, loading, refreshRules: loadRules } = useBOMRules();
     const [seeding, setSeeding] = useState(false);
 
-    const [activeTab, setActiveTab] = useState<"managed_sdwan" | "managed_lan" | "managed_wifi">("managed_sdwan");
+    const [activeTab, setActiveTab] = useState<TabValues>("managed_sdwan");
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,21 +78,23 @@ export default function BOMRulesListPage() {
                     <h1 className="text-2xl font-bold text-slate-800">BOM Logic Settings</h1>
                     <p className="text-slate-500">Manage logic properties and equipment selections using Rules.</p>
                 </div>
-                <div className="space-x-4">
-                    <button
-                        onClick={handleSeed}
-                        disabled={seeding}
-                        className="px-4 py-2 text-sm text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50"
-                    >
-                        {seeding ? "Seeding..." : "Reset Verified Defaults"}
-                    </button>
-                    <button
-                        onClick={openCreateModal}
-                        className="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 font-medium shadow-sm transition-colors"
-                    >
-                        + Create New Rule
-                    </button>
-                </div>
+                {activeTab !== "ai_triage" && (
+                    <div className="space-x-4">
+                        <button
+                            onClick={handleSeed}
+                            disabled={seeding}
+                            className="px-4 py-2 text-sm text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50"
+                        >
+                            {seeding ? "Seeding..." : "Reset Verified Defaults"}
+                        </button>
+                        <button
+                            onClick={openCreateModal}
+                            className="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 font-medium shadow-sm transition-colors"
+                        >
+                            + Create New Rule
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Tabs */}
@@ -97,11 +102,12 @@ export default function BOMRulesListPage() {
                 {[
                     { id: "managed_sdwan", label: "SD-WAN Rules" },
                     { id: "managed_lan", label: "LAN Rules" },
-                    { id: "managed_wifi", label: "WLAN Rules" }
+                    { id: "managed_wifi", label: "WLAN Rules" },
+                    { id: "ai_triage", label: "AI Extraction Rules" }
                 ].map((tab) => (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id as "managed_sdwan" | "managed_lan" | "managed_wifi")}
+                        onClick={() => setActiveTab(tab.id as TabValues)}
                         className={`px-4 py-2 font-medium text-sm transition-colors rounded-t-lg
                             ${activeTab === tab.id
                                 ? "bg-white border-t border-l border-r text-blue-600 mb-[-1px]"
@@ -113,17 +119,21 @@ export default function BOMRulesListPage() {
                 ))}
             </div>
 
-            {/* Rule List */}
-            <RuleList rules={filteredRules} onEdit={openEditModal} onDelete={handleDeleteRule} />
-
-            {/* Modal */}
-            <RuleEditorModal
-                isOpen={isModalOpen}
-                ruleToEdit={ruleToEdit}
-                serviceCategory={activeTab}
-                onClose={closeAndRefresh}
-                onSave={handleSaveRule}
-            />
+            {/* Content Area */}
+            {activeTab === "ai_triage" ? (
+                <AITriageRuleEditor />
+            ) : (
+                <>
+                    <RuleList rules={filteredRules} onEdit={openEditModal} onDelete={handleDeleteRule} />
+                    <RuleEditorModal
+                        isOpen={isModalOpen}
+                        ruleToEdit={ruleToEdit}
+                        serviceCategory={activeTab}
+                        onClose={closeAndRefresh}
+                        onSave={handleSaveRule}
+                    />
+                </>
+            )}
         </div>
     );
 }

@@ -150,3 +150,11 @@
 **Solution**: Conditional rendering based on Equipment Role.
 - **Contextual Specs**: The modal now checks `item.role` and displays Power over Ethernet (PoE) specifications (Support, Standard, Power Budget) for LAN devices, while preserving VPN/Firewall performance metrics for WAN and Edge devices.
 - **Key Insight**: Generic UI templates break down when dealing with diverse hardware catalogs. UIs must adapt to the *category* of the data they are presenting to ensure relevance and reduce cognitive noise for the user.
+
+## 22. AI Triage & Dynamic Routing ("Extract & Evaluate")
+**Issue**: Selected site requirements (users, sqft, customized needs) were being manually typed into CSVs, which is slow and error-prone. Hardcoded logic for routing sites was inflexible.
+**Solution**: Implemented a "Schema as Data" AI Triage Pipeline.
+- **Dynamic Prompting**: Admin-configurable `TriageCriterion` are injected into the Gemini prompt at runtime. This allows non-developers to add new extraction fields (e.g., "isOutdoor") and instructions without code changes.
+- **Dual-Path UX Routing**: Sites are automatically classified into `FAST_TRACK` (automated generation) or `GUIDED_FLOW` (manual review requested) based on complexity and custom triggers.
+- **Integrated Admin Editor**: Built a tool for admins to manage these rules with a "Paste JSON" accelerator for expert-level efficiency.
+- **Key Insight**: Shifting from "parsing fixed columns" to "LLM-based feature extraction" allows the system to handle unstructured customer notes while maintaining structured downstream logic.
