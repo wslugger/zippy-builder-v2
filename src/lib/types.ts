@@ -82,6 +82,13 @@ export const WLANSpecsSchema = z.object({
   powerDrawWatts: z.number().catch(15),
   uplinkType: z.string().catch('1G-Copper'),
   environment: z.string().catch('Indoor'),
+  usage: z.string().optional(),
+  radioSpecification: z.string().optional(),
+  spatialStreams: z.string().optional(),
+  aggregateFrame: z.string().optional(),
+  interfaces: z.string().optional(),
+  management: z.string().optional(),
+  power: z.string().optional(),
 }).passthrough();
 export const MANAGEMENT_SIZES = ['X-Small', 'Small', 'Medium', 'Large', 'X-Large', 'None'] as const;
 

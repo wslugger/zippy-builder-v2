@@ -247,8 +247,8 @@ export default function EquipmentIngestion() {
                                     ) : getEquipmentRole(item) === 'WLAN' ? (
                                         <div>
                                             <span className="block text-xs font-medium text-zinc-500 uppercase">Wi-Fi Specs</span>
-                                            <span className="text-zinc-700 dark:text-zinc-300 font-medium">{(item.specs as any).wifiStandard || "Unknown"}</span>
-                                            <span className="block text-[10px] text-zinc-400">{(item.specs as any).mimoBandwidth || "Unknown"}</span>
+                                            <span className="text-zinc-700 dark:text-zinc-300 font-medium">{(item.specs as any).wifi_standard || (item.specs as any).wifiStandard || "Unknown"}</span>
+                                            <span className="block text-[10px] text-zinc-400">{(item.specs as any).spatialStreams || (item.specs as any).mimoBandwidth || "Unknown"}</span>
                                         </div>
                                     ) : (
                                         <div>
@@ -272,11 +272,21 @@ export default function EquipmentIngestion() {
                                                     <div><span className="text-green-500">U:</span> {(item.specs as any).uplinkPortCount || 0}</div>
                                                 </>
                                             )}
+                                            {getEquipmentRole(item) === 'WLAN' && (
+                                                <>
+                                                    {(item.specs as any).interfaces && <div><span className="text-blue-500">Intf:</span> {(item.specs as any).interfaces}</div>}
+                                                    {(item.specs as any).management && <div><span className="text-purple-500">Mgmt:</span> {(item.specs as any).management}</div>}
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                     <div>
-                                        <span className="block text-xs font-medium text-zinc-500 uppercase">PoE Budget</span>
-                                        <span className="text-zinc-700 dark:text-zinc-300">{(item as any).specs.poeBudgetWatts || (item as any).specs.poe_budget || 0}W</span>
+                                        <span className="block text-xs font-medium text-zinc-500 uppercase">{getEquipmentRole(item) === 'WLAN' ? 'Power Draw' : 'PoE Budget'}</span>
+                                        <span className="text-zinc-700 dark:text-zinc-300">
+                                            {getEquipmentRole(item) === 'WLAN'
+                                                ? (item.specs as any).power || (item.specs as any).powerDrawWatts || 'Unknown'
+                                                : ((item as any).specs.poeBudgetWatts || (item as any).specs.poe_budget || 0) + 'W'}
+                                        </span>
                                     </div>
                                 </div>
 
