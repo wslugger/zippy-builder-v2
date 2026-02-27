@@ -179,3 +179,9 @@
 - **Base Schema Hardening**: Updated the AI system prompt to explicitly request core attributes (`address`, `bandwidth`, `primaryCircuit`, `secondaryCircuit`, `redundancyModel`, `ports`, `APs`) in the mandatory JSON output.
 - **Dynamic Property Mapping**: Implemented a case-insensitive mapping layer in the site import modal that prioritizes these AI-extracted fields, falling back to manual column parsing only if the AI fails.
 - **Key Insight**: While LLMs are good at interpreting unstructured notes, explicitly defining "mandatory" extraction fields for core business logic prevents data loss and reduces the need for manual data entry after the import.
+## 26. Grouping Complex Configuration Options
+**Issue**: Long, flat lists of configuration options (e.g., in the Design Documentation or Features page) became difficult for users to navigate as the system grew.
+**Solution**: Implemented **Category-Based Grouping**.
+- **Schema Update**: Added a `category` field to the design options metadata.
+- **UI Refactoring**: Updated components to pre-process flat lists into grouped structures (e.g., `Record<string, Option[]>`) before rendering.
+- **Key Insight**: Grouping data by logical categories (Topology, Security, etc.) significantly reduces cognitive load and allows the UI to use header-based navigation, making complex configuration flows feel more manageable.
