@@ -20,6 +20,7 @@ interface SiteSidebarProps {
     onPackageChange: (pkgId: string) => Promise<void>;
     siteFilter: "all" | "flagged";
     setSiteFilter: (filter: "all" | "flagged") => void;
+    onViewPricing: () => void;
 }
 
 export function SiteSidebar({
@@ -36,7 +37,8 @@ export function SiteSidebar({
     allPackages,
     onPackageChange,
     siteFilter,
-    setSiteFilter
+    setSiteFilter,
+    onViewPricing
 }: SiteSidebarProps) {
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
@@ -51,6 +53,8 @@ export function SiteSidebar({
         return sites.map((site, index) => ({ site, index }))
             .filter((item) => {
                 if (siteFilter === "flagged") {
+                    // Align with ProjectSummaryDashboard logic
+                    if (item.site.uxRoute) return item.site.uxRoute === 'GUIDED_FLOW';
                     return !item.site.siteTypeId;
                 }
                 return true;
@@ -61,21 +65,39 @@ export function SiteSidebar({
         const groups: Record<string, { typeName: string, items: typeof filteredSites }> = {};
 
         filteredSites.forEach(item => {
-            const tId = item.site.siteTypeId || "unmapped";
-            if (!groups[tId]) {
-                const sType = siteTypes.find(t => t.id === tId);
-                groups[tId] = {
-                    typeName: sType ? sType.name : (tId === "unmapped" ? "Unmapped / Flagged" : "Generic Branch"),
+            // Determine the bucket ID
+            let bucketId = item.site.siteTypeId;
+            if (!bucketId) {
+                if (item.site.uxRoute === 'FAST_TRACK') bucketId = "fast_track_pending";
+                else bucketId = "flagged_unmapped";
+            }
+
+            if (!groups[bucketId]) {
+                const sType = siteTypes.find(t => t.id === bucketId);
+                let typeName = "Generic Branch";
+
+                if (sType) {
+                    typeName = sType.name;
+                } else if (bucketId === "fast_track_pending") {
+                    typeName = "Fast Track (Ready)";
+                } else if (bucketId === "flagged_unmapped") {
+                    typeName = "Flagged / Unmapped";
+                }
+
+                groups[bucketId] = {
+                    typeName,
                     items: []
                 };
             }
-            groups[tId].items.push(item);
+            groups[bucketId].items.push(item);
         });
 
-        // Ensure Unmapped is always at the top if it exists
+        // Ensure Flagged is always at the top, then Fast Track
         const sortedKeys = Object.keys(groups).sort((a, b) => {
-            if (a === "unmapped") return -1;
-            if (b === "unmapped") return 1;
+            if (a === "flagged_unmapped") return -1;
+            if (b === "flagged_unmapped") return 1;
+            if (a === "fast_track_pending") return -1;
+            if (b === "fast_track_pending") return 1;
             return groups[a].typeName.localeCompare(groups[b].typeName);
         });
 
@@ -170,12 +192,12 @@ export function SiteSidebar({
             </div>
 
             <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 relative">
-                <div className="p-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20">
+                <div className="p-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-20 space-y-1">
                     <button
                         onClick={() => onSelectSite(null)}
                         className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${selectedSiteIndex === null
-                                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                                : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-sm"
+                            ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                            : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-sm"
                             }`}
                     >
                         <div className="flex items-center gap-2">
@@ -187,6 +209,13 @@ export function SiteSidebar({
                         <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${selectedSiteIndex === null ? "bg-blue-500 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400"}`}>
                             Global
                         </span>
+                    </button>
+                    <button
+                        onClick={onViewPricing}
+                        className="w-full flex items-center gap-2 p-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group"
+                    >
+                        <span className="text-lg grayscale group-hover:grayscale-0 transition-all">💰</span>
+                        <span className="text-xs font-bold uppercase tracking-wider">Pricing Analysis</span>
                     </button>
                 </div>
 
@@ -244,7 +273,10 @@ export function SiteSidebar({
                                                         </div>
                                                     </div>
                                                     <div className="mt-1">
-                                                        <div className={`w-2 h-2 rounded-full ${!site.siteTypeId ? "bg-amber-400" : "bg-green-400"}`} />
+                                                        <div className={`w-2 h-2 rounded-full ${site.uxRoute === 'GUIDED_FLOW' || (!site.uxRoute && !site.siteTypeId)
+                                                            ? "bg-amber-400"
+                                                            : "bg-green-400"
+                                                            }`} />
                                                     </div>
                                                 </div>
                                             </button>

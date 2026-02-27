@@ -98,6 +98,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                 onPackageChange={handlePackageChange}
                 siteFilter={siteFilter}
                 setSiteFilter={setSiteFilter}
+                onViewPricing={() => setActiveTab("Pricing")}
             />
 
             {/* ── Main Content ── */}
@@ -272,7 +273,6 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                         <ProjectSummaryDashboard
                             sites={sites}
                             setSiteFilter={setSiteFilter}
-                            onViewPricing={() => setActiveTab("Pricing")}
                             onFinalize={handleFinalize}
                             isCompleted={project.status === "completed"}
                         />

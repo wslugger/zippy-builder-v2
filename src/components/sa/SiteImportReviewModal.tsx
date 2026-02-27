@@ -1,6 +1,5 @@
 import React from 'react';
 import { Site } from '@/src/lib/bom-types';
-import { SiteType } from '@/src/lib/site-types';
 import { TriagedSite } from '@/src/lib/types';
 
 interface SiteImportReviewModalProps {
@@ -33,7 +32,8 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
             outdoorAPs: 0,
             primaryCircuit: "Broadband",
             notes: s.rawNotes,
-            // Include dynamic attributes conceptually or store them in notes/metadata
+            uxRoute: s.uxRoute,
+            triageReason: s.triageReason,
         }));
         onConfirm(finalSites);
     };

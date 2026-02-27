@@ -4,18 +4,20 @@ import { Site } from "@/src/lib/bom-types";
 interface ProjectSummaryDashboardProps {
     sites: Site[];
     setSiteFilter: (filter: "all" | "flagged") => void;
-    onViewPricing?: () => void;
     onFinalize?: () => Promise<void>;
     isCompleted?: boolean;
 }
 
-export function ProjectSummaryDashboard({ sites, setSiteFilter, onViewPricing, onFinalize, isCompleted }: ProjectSummaryDashboardProps) {
+export function ProjectSummaryDashboard({ sites, setSiteFilter, onFinalize, isCompleted }: ProjectSummaryDashboardProps) {
     const [isFinalizing, setIsFinalizing] = React.useState(false);
     const totalSites = sites.length;
 
-    // A simple heuristic for "flagged" until we have more complex rules in state:
-    // If a site doesn't have a configured siteTypeId, it's flagged for review.
-    const flaggedSites = sites.filter((s) => !s.siteTypeId).length;
+    // Flagging logic: Favor AI triage classification if present, 
+    // otherwise fallback to missing site profile as the indicator.
+    const flaggedSites = sites.filter((s) => {
+        if (s.uxRoute) return s.uxRoute === 'GUIDED_FLOW';
+        return !s.siteTypeId;
+    }).length;
     const configuredSites = totalSites - flaggedSites;
 
     if (totalSites === 0) {
@@ -105,26 +107,7 @@ export function ProjectSummaryDashboard({ sites, setSiteFilter, onViewPricing, o
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-                <button
-                    onClick={onViewPricing}
-                    className="bg-blue-600 dark:bg-blue-700 rounded-xl p-8 shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all text-left text-white group"
-                >
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white">
-                            <span className="text-2xl">💰</span>
-                        </div>
-                        <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded tracking-widest uppercase">New Feature</span>
-                    </div>
-                    <div>
-                        <h3 className="text-2xl font-bold mb-2">Simulate Pricing & Swaps</h3>
-                        <p className="text-blue-50/80 text-sm max-w-sm">Adjust project-wide discounts and see the impact of hardware changes across all locations instantly.</p>
-                        <div className="mt-6 flex items-center gap-2 font-bold text-sm">
-                            Open Pricing Analysis <span>→</span>
-                        </div>
-                    </div>
-                </button>
-
+            <div className="mb-12">
                 {!isCompleted ? (
                     <button
                         onClick={async () => {
@@ -138,7 +121,7 @@ export function ProjectSummaryDashboard({ sites, setSiteFilter, onViewPricing, o
                             }
                         }}
                         disabled={isFinalizing || flaggedSites > 0}
-                        className={`rounded-xl p-8 shadow-sm border transition-all text-left flex flex-col justify-center relative overflow-hidden group ${flaggedSites > 0
+                        className={`w-full rounded-xl p-8 shadow-sm border transition-all text-left flex flex-col justify-center relative overflow-hidden group ${flaggedSites > 0
                             ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
                             : 'bg-indigo-50 border-indigo-200 hover:border-indigo-400 hover:shadow-md'}`}
                     >

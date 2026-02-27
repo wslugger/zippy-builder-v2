@@ -158,3 +158,9 @@
 - **Dual-Path UX Routing**: Sites are automatically classified into `FAST_TRACK` (automated generation) or `GUIDED_FLOW` (manual review requested) based on complexity and custom triggers.
 - **Integrated Admin Editor**: Built a tool for admins to manage these rules with a "Paste JSON" accelerator for expert-level efficiency.
 - **Key Insight**: Shifting from "parsing fixed columns" to "LLM-based feature extraction" allows the system to handle unstructured customer notes while maintaining structured downstream logic.
+## 23. AI Triage & Dashboard Logic Alignment
+**Issue**: The AI Triage modal correctly classified sites into `FAST_TRACK` vs. `GUIDED_FLOW`, but this classification was lost during the import to the main BOM Builder. The dashboard then used a naive "flagged" heuristic (missing profile) that ignored the AI's "Fast Track" status, causing a visual discrepancy where all imported sites appeared flagged.
+**Solution**: 
+- **Metadata Persistence**: Added `uxRoute` and `triageReason` to the core `Site` model.
+- **Unified Logic**: Updated both the `ProjectSummaryDashboard` and the `SiteSidebar` to respect the AI's classification as the primary source of truth for "Flagged" status. 
+- **Lesson**: Data boundaries between sub-features (like Triage vs. Builder) must explicitly pass and preserve critical "intent" metadata. Relying on re-calculating status from raw state (like missing profiles) often leads to inconsistent UI states.
