@@ -7,6 +7,10 @@ interface SpecsModalProps {
 }
 
 export function SpecsModal({ item, onClose }: SpecsModalProps) {
+    const poeBudget = (item as any).specs?.poeBudgetWatts || (item as any).specs?.poe_budget || (item as any).specs?.poeBudget || 0;
+    const poeStandard = (item as any).specs?.poeStandard;
+    const hasPoe = poeBudget > 0 || (poeStandard && poeStandard !== 'None');
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -44,14 +48,14 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                         <div className="flex justify-between text-sm">
                                             <dt className="text-slate-500 dark:text-slate-400">PoE Budget</dt>
                                             <dd className="font-semibold text-slate-900 dark:text-slate-100">
-                                                {(item as any).specs.poeStandard && (item as any).specs.poeStandard !== 'None' ? `${(item as any).specs.poeBudgetWatts || (item as any).specs.poe_budget || (item as any).specs.poeBudget || 0} W` : 'None'}
+                                                {hasPoe ? `${poeBudget} W` : 'None'}
                                             </dd>
                                         </div>
-                                        {(item as any).specs.poeStandard && (item as any).specs.poeStandard !== 'None' && (
+                                        {hasPoe && poeStandard && poeStandard !== 'None' && (
                                             <>
                                                 <div className="flex justify-between text-sm">
                                                     <dt className="text-slate-500 dark:text-slate-400">Standard</dt>
-                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.poeStandard}</dd>
+                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{poeStandard}</dd>
                                                 </div>
                                             </>
                                         )}
