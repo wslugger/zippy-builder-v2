@@ -1,5 +1,5 @@
 import { Site, BOMLineItem } from "@/src/lib/bom-types";
-import { Equipment } from "@/src/lib/types";
+import { Equipment, LANSpecs } from "@/src/lib/types";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
 import { useState, useEffect } from "react";
 
@@ -39,7 +39,21 @@ export function LANTab({
         }
     }, [lanItem?.itemId, lanItem?.quantity]);
 
-    const availableSwitches = catalog.filter(eq => eq.role === 'LAN' && eq.vendor_id === resolvedVendor);
+    const availableSwitches = catalog.filter(eq => {
+        if (eq.role !== 'LAN' || eq.vendor_id !== resolvedVendor) return false;
+
+        // If site requires PoE, only show PoE-capable switches
+        const siteRequiresPoe = (selectedSite.poePorts || 0) > 0 || (selectedSite.requiredPoePorts || 0) > 0;
+        if (siteRequiresPoe) {
+            const specs = eq.specs as LANSpecs;
+            // Use a fallback-safe check that avoids explicit 'any' for additional fields
+            const s = specs as Record<string, unknown>;
+            const poeBudget = specs.poeBudgetWatts || (s.poe_budget as number) || (s.poeBudget as number) || 0;
+            return poeBudget > 0;
+        }
+
+        return true;
+    });
 
     const selectionKey = `${selectedSite.name}:managed_lan`;
     const selectedOverride = manualSelections[selectionKey];
