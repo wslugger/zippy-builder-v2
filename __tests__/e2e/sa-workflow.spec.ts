@@ -17,18 +17,44 @@ test.describe('SA Workflow Critical Path', () => {
                 contentType: 'application/json',
                 body: JSON.stringify([
                     {
-                        siteIndex: 0,
-                        siteTypeId: 'large_office',
-                        lanSiteTypeId: '3_tier_campus',
-                        confidence: 95,
-                        reasoning: 'Mocked classification'
+                        siteName: 'SiteA',
+                        estimatedUsers: 50,
+                        sqFt: 10000,
+                        rawNotes: 'Mocked Site A requirements',
+                        dynamicAttributes: {
+                            address: '123 Main St',
+                            lanPorts: 48,
+                            poePorts: 24,
+                            indoorAPs: 10,
+                            outdoorAPs: 0,
+                            bandwidthDownMbps: 1000,
+                            bandwidthUpMbps: 1000,
+                            primaryCircuit: 'Fiber',
+                            wanLinks: 1,
+                            redundancyModel: 'Single CPE'
+                        },
+                        uxRoute: 'FAST_TRACK',
+                        triageReason: 'Auto-classified as Large Office'
                     },
                     {
-                        siteIndex: 1,
-                        siteTypeId: 'medium_office',
-                        lanSiteTypeId: '2_tier_collapsed',
-                        confidence: 90,
-                        reasoning: 'Mocked classification'
+                        siteName: 'SiteB',
+                        estimatedUsers: 10,
+                        sqFt: 2000,
+                        rawNotes: 'Mocked Site B requirements',
+                        dynamicAttributes: {
+                            address: '456 Side St',
+                            lanPorts: 12,
+                            poePorts: 0,
+                            indoorAPs: 2,
+                            outdoorAPs: 0,
+                            bandwidthDownMbps: 100,
+                            bandwidthUpMbps: 100,
+                            primaryCircuit: 'Broadband',
+                            wanLinks: 1,
+                            redundancyModel: 'Single CPE'
+                        },
+                        uxRoute: 'FAST_TRACK',
+                        triageReason: 'Auto-classified as Small Office'
                     }
                 ]),
             });
