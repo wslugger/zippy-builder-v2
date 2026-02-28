@@ -283,6 +283,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                     catalog={catalog}
                                     setSelectedSpecsItem={setSelectedSpecsItem}
                                     resolvedVendor={getVendorForService("managed_lan")}
+                                    handleSiteUpdate={state.handleSiteUpdate}
                                 />
                             )}
 

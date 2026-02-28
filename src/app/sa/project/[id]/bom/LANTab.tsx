@@ -13,6 +13,7 @@ interface LANTabProps {
     catalog: Equipment[];
     setSelectedSpecsItem: (eq: Equipment | null) => void;
     resolvedVendor: string;
+    handleSiteUpdate: (updates: Partial<Site>) => void;
 }
 
 export function LANTab({
@@ -22,7 +23,8 @@ export function LANTab({
     setManualSelections,
     catalog,
     setSelectedSpecsItem,
-    resolvedVendor
+    resolvedVendor,
+    handleSiteUpdate
 }: LANTabProps) {
     const [animatePulse, setAnimatePulse] = useState(false);
 
@@ -151,6 +153,66 @@ export function LANTab({
 
     return (
         <div className="space-y-6">
+            {/* Site Requirements Configuration */}
+            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Site Requirements Reference</h3>
+                    <div className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
+                        ⚠️ LOCAL OVERRIDE
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div>
+                        <label htmlFor="lan-ports-input" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">LAN Ports</label>
+                        <input
+                            id="lan-ports-input"
+                            type="number"
+                            min="0"
+                            className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
+                            value={selectedSite.lanPorts}
+                            onChange={(e) => handleSiteUpdate({ lanPorts: parseInt(e.target.value) || 0 })}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="poe-ports-input" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">PoE Ports</label>
+                        <input
+                            id="poe-ports-input"
+                            type="number"
+                            min="0"
+                            className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
+                            value={selectedSite.poePorts || selectedSite.requiredPoePorts || 0}
+                            onChange={(e) => handleSiteUpdate({ poePorts: parseInt(e.target.value) || 0 })}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="indoor-aps-input" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Indoor APs</label>
+                        <input
+                            id="indoor-aps-input"
+                            type="number"
+                            min="0"
+                            className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
+                            value={selectedSite.indoorAPs || 0}
+                            onChange={(e) => handleSiteUpdate({ indoorAPs: parseInt(e.target.value) || 0 })}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="outdoor-aps-input" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Outdoor APs</label>
+                        <input
+                            id="outdoor-aps-input"
+                            type="number"
+                            min="0"
+                            className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
+                            value={selectedSite.outdoorAPs || 0}
+                            onChange={(e) => handleSiteUpdate({ outdoorAPs: parseInt(e.target.value) || 0 })}
+                        />
+                    </div>
+                </div>
+                <p className="mt-4 text-[11px] text-slate-500 italic">
+                    Adjusting these values will update calculations for BOM validation instantly.
+                </p>
+            </div>
+
             <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Manual LAN Switch Selection</h3>

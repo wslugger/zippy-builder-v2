@@ -69,7 +69,8 @@ describe('LANTab Features', () => {
         setManualSelections: jest.fn(),
         catalog: mockCatalog,
         setSelectedSpecsItem: jest.fn(),
-        resolvedVendor: "meraki"
+        resolvedVendor: "meraki",
+        handleSiteUpdate: jest.fn()
     };
 
     it('shows all switches in alphabetical order if no PoE is required', () => {
@@ -116,5 +117,27 @@ describe('LANTab Features', () => {
         expect(screen.getByText('Non-PoE Switch')).toBeInTheDocument();
         expect(screen.getByText('2')).toBeInTheDocument();
         expect(screen.getByText('1')).toBeInTheDocument();
+    });
+
+    it('calls handleSiteUpdate when site attributes are changed', () => {
+        render(<LANTab {...defaultProps} />);
+
+        // Find the input for LAN Ports
+        const lanPortsInput = screen.getByLabelText(/LAN Ports/i);
+        fireEvent.change(lanPortsInput, { target: { value: '25' } });
+
+        expect(defaultProps.handleSiteUpdate).toHaveBeenCalledWith({ lanPorts: 25 });
+
+        // Find the input for PoE Ports
+        const poePortsInput = screen.getByLabelText(/PoE Ports/i);
+        fireEvent.change(poePortsInput, { target: { value: '15' } });
+
+        expect(defaultProps.handleSiteUpdate).toHaveBeenCalledWith({ poePorts: 15 });
+
+        // Find the input for Indoor APs
+        const indoorAPsInput = screen.getByLabelText(/Indoor APs/i);
+        fireEvent.change(indoorAPsInput, { target: { value: '10' } });
+
+        expect(defaultProps.handleSiteUpdate).toHaveBeenCalledWith({ indoorAPs: 10 });
     });
 });
