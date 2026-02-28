@@ -291,6 +291,13 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             {activeTab === "WLAN" && (
                                 <WLANTab
                                     selectedSite={selectedSite}
+                                    wlanItems={state.siteBOMItems.filter(i => i.serviceId === "managed_wifi" && i.itemType === "equipment")}
+                                    manualSelections={manualSelections}
+                                    setManualSelections={setManualSelections}
+                                    catalog={catalog}
+                                    setSelectedSpecsItem={setSelectedSpecsItem}
+                                    resolvedVendor={getVendorForService("managed_wifi")}
+                                    handleSiteUpdate={state.handleSiteUpdate}
                                 />
                             )}
 

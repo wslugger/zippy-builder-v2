@@ -278,12 +278,12 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
             const serviceId = normalizeServiceId(rawServiceId);
             const name = service.name.toLowerCase();
             const category = (service.metadata?.category || "").toLowerCase();
-            if (name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || category.includes("wan")) {
+            if (name.includes("wifi") || name.includes("wlan") || name.includes("wireless") || category.includes("wifi") || category.includes("wlan")) {
+                if (!buckets.WLAN.services.includes(serviceId)) buckets.WLAN.services.push(serviceId);
+            } else if (name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || category.includes("wan")) {
                 if (!buckets.WAN.services.includes(serviceId)) buckets.WAN.services.push(serviceId);
             } else if (name.includes("lan") || name.includes("switch") || category.includes("lan")) {
                 if (!buckets.LAN.services.includes(serviceId)) buckets.LAN.services.push(serviceId);
-            } else if (name.includes("wifi") || name.includes("wlan") || name.includes("wireless") || category.includes("wifi")) {
-                if (!buckets.WLAN.services.includes(serviceId)) buckets.WLAN.services.push(serviceId);
             } else {
                 if (!buckets.SERVICES.services.includes(serviceId)) buckets.SERVICES.services.push(serviceId);
             }
@@ -438,8 +438,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
         // Only count items from the canonical managed services that the site tabs render.
         // WAN tab: managed_sdwan, LAN tab: managed_lan
-        // TODO: Add "managed_wifi" here once WLAN features are built out.
-        const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan", "managed_circuit"]);
+        // include "managed_wifi" now that WLAN features are built out.
+        const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan", "managed_wifi", "managed_circuit"]);
         bom.items
             .filter(item => SITE_TAB_SERVICE_IDS.has(item.serviceId))
             .forEach(item => {

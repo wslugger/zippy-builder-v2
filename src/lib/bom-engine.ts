@@ -153,11 +153,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 selections = [{ itemId: overrideObj.itemId, quantity: overrideObj.quantity }];
             }
 
-            // TODO: Remove this guard once WLAN features and equipment catalog are built out.
-            // Currently managed_wifi service exists in packages but WLAN equipment/logic is incomplete.
-            if (canonicalServiceId === "managed_wifi") {
-                continue;
-            }
+
 
             if (canonicalServiceId === "managed_lan" && selections.length === 0) {
                 // Phase 1: STRICTLY require manual selection for LAN MVP

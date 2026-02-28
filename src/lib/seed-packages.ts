@@ -17,6 +17,11 @@ export const SEED_PACKAGES: Package[] = [
                 service_id: "managed_lan",
                 inclusion_type: "standard",
                 enabled_features: []
+            },
+            {
+                service_id: "managed_wifi",
+                inclusion_type: "standard",
+                enabled_features: []
             }
         ],
         throughput_basis: "sdwanCryptoThroughputMbps",
@@ -34,6 +39,11 @@ export const SEED_PACKAGES: Package[] = [
             {
                 service_id: "managed_sdwan",
                 inclusion_type: "required",
+                enabled_features: []
+            },
+            {
+                service_id: "managed_wifi",
+                inclusion_type: "standard",
                 enabled_features: []
             }
         ],
