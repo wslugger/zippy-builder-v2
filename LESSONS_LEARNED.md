@@ -227,3 +227,10 @@
 - **Variable Extraction**: Pulled complex condition calculations (`const poeBudget = ...`, `const hasPoe = ...`) out of the JSX return block and into the component body.
 - **Simplified Ternary**: Used the clean, descriptive booleans inside the JSX rendering (`{hasPoe ? \`\${poeBudget} W\` : None}`).
 - **Key Insight**: JSX should remain declarative and simple. Any data massaging or complex presence checks should happen before the `return` statement to enhance readability and prevent nested ternary bugs.
+
+## 33. Consolidating Redundant Equipment Attributes
+**Issue**: Having multiple fields representing the same semantic information (e.g., `poeStandard` and `poe_capabilities`) across different equipment schemas (LAN vs WAN) led to redundant UI inputs and confusion in the BOM data processing logic.
+**Solution**:
+- **Normalized Schema**: Deprecated the specific `poeStandard` field in favor of the more universally used `poe_capabilities` across all equipment types in the internal schemas.
+- **Unified UI Input**: Replaced static dropdowns that mapped to deprecated fields with versatile text inputs mapped to the canonical field (`poe_capabilities`), ensuring consistency.
+- **Key Insight**: When evolving database models, redundant fields must be forcefully consolidated. Keeping both "just in case" fractures the data mapping and creates persistent technical debt across querying, UI, and ML-extraction layers.
