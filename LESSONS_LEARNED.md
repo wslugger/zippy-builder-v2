@@ -234,3 +234,11 @@
 - **Normalized Schema**: Deprecated the specific `poeStandard` field in favor of the more universally used `poe_capabilities` across all equipment types in the internal schemas.
 - **Unified UI Input**: Replaced static dropdowns that mapped to deprecated fields with versatile text inputs mapped to the canonical field (`poe_capabilities`), ensuring consistency.
 - **Key Insight**: When evolving database models, redundant fields must be forcefully consolidated. Keeping both "just in case" fractures the data mapping and creates persistent technical debt across querying, UI, and ML-extraction layers.
+## 34. Supporting Multi-Select Equipment & Policy Overrides
+**Issue**: Initial LAN switch selection was restricted to a single model per site. This didn't account for complex site designs (e.g., needing both a high-port core switch and a smaller PoE edge switch) or scenarios where a user intentionally wanted to select non-PoE hardware despite the site having PoE requirements (e.g., for a non-PoE management segment).
+**Solution**:
+- **Array-Based State Management**: Refactored `manualSelections['managed_lan']` from a single string/object to an `Array<{itemId: string, quantity: number}>`. 
+- **Backward Compatibility Layer**: Implemented a normalization utility (`useMemo` in UI, `Array.isArray` check in `bom-engine.ts`) to seamlessly handle legacy single-selection data while enabling the new multi-select UI.
+- **Policy Override Toggle**: Introduced an "Override PoE Enforce" toggle that bypasses the site-requirement filtering logic in the catalog dropdown.
+- **Key Insight**: Rules engines should provide smart defaults and helpful filters (like PoE enforcement), but they must never *block* the expert user. Providing a clear "Override" path preserves the value of the guardrails while allowing for edge-case flexibility.
+- **Pattern**: Use a `useMemo` hook to normalize potentially polymorphic-state values (string, object, or array) into a single canonical format for the rendering logic to consume.

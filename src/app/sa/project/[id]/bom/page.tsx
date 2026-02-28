@@ -277,7 +277,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             {activeTab === "LAN" && (
                                 <LANTab
                                     selectedSite={selectedSite}
-                                    lanItem={state.siteBOMItems.find(i => i.serviceId === "managed_lan" && i.itemType === "equipment")}
+                                    lanItems={state.siteBOMItems.filter(i => i.serviceId === "managed_lan" && i.itemType === "equipment")}
                                     manualSelections={manualSelections}
                                     setManualSelections={setManualSelections}
                                     catalog={catalog}

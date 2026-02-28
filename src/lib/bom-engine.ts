@@ -140,15 +140,17 @@ export function calculateBOM(input: BOMEngineInput): BOM {
 
             const selectionKey = `${site.name}:${canonicalServiceId}`;
             const manualOverrideRaw = manualSelections[selectionKey];
-            let manualOverrideId: string | undefined;
-            let manualOverrideQty: number | undefined;
 
-            if (typeof manualOverrideRaw === 'string') {
-                manualOverrideId = manualOverrideRaw;
+            // Normalize manualOverrideRaw into an array of selections [{ itemId, quantity }]
+            let selections: Array<{ itemId: string; quantity?: number }> = [];
+
+            if (Array.isArray(manualOverrideRaw)) {
+                selections = manualOverrideRaw.map(s => (typeof s === 'string' ? { itemId: s } : s));
+            } else if (typeof manualOverrideRaw === 'string') {
+                selections = [{ itemId: manualOverrideRaw }];
             } else if (manualOverrideRaw && typeof manualOverrideRaw === 'object') {
                 const overrideObj = manualOverrideRaw as any;
-                manualOverrideId = overrideObj.itemId;
-                manualOverrideQty = typeof overrideObj.quantity === 'number' ? overrideObj.quantity : undefined;
+                selections = [{ itemId: overrideObj.itemId, quantity: overrideObj.quantity }];
             }
 
             // TODO: Remove this guard once WLAN features and equipment catalog are built out.
@@ -157,7 +159,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 continue;
             }
 
-            if (canonicalServiceId === "managed_lan" && !manualOverrideId) {
+            if (canonicalServiceId === "managed_lan" && selections.length === 0) {
                 // Phase 1: STRICTLY require manual selection for LAN MVP
                 continue;
             }
@@ -185,30 +187,34 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     siteParameters[a.targetId] = a.actionValue;
                 });
 
-            if (manualOverrideId) {
-                const equip = equipmentCatalog.find(e => e.id === manualOverrideId);
-                if (equip) {
-                    let quantity = manualOverrideQty ?? 1;
-                    if (canonicalServiceId === "managed_sdwan" && !manualOverrideQty) {
-                        quantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
-                    }
+            if (selections.length > 0) {
+                let processedAny = false;
+                for (const selection of selections) {
+                    const equip = equipmentCatalog.find(e => e.id === selection.itemId);
+                    if (equip) {
+                        let quantity = selection.quantity ?? 1;
+                        if (canonicalServiceId === "managed_sdwan" && !selection.quantity) {
+                            quantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
+                        }
 
-                    console.log(`[BOMEngine] Manual override found: ${equip.model}`);
-                    bomItems.push({
-                        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
-                        siteName: site.name,
-                        serviceId: canonicalServiceId,
-                        serviceName: service.name,
-                        itemId: equip.id,
-                        itemName: `${(VENDOR_LABELS as Record<string, string>)[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
-                        itemType: "equipment",
-                        quantity: quantity,
-                        reasoning: `Manual Selection`,
-                        matchedRules: [{ ruleId: 'manual', ruleName: 'Manual Override', description: 'User manually selected this equipment' }],
-                        pricing: makePricingSnapshot(equip),
-                    });
-                    continue;
+                        console.log(`[BOMEngine] Manual override found: ${equip.model}`);
+                        bomItems.push({
+                            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10),
+                            siteName: site.name,
+                            serviceId: canonicalServiceId,
+                            serviceName: service.name,
+                            itemId: equip.id,
+                            itemName: `${(VENDOR_LABELS as Record<string, string>)[equip.vendor_id] || equip.vendor_id} ${equip.model}`,
+                            itemType: "equipment",
+                            quantity: quantity,
+                            reasoning: `Manual Selection`,
+                            matchedRules: [{ ruleId: 'manual', ruleName: 'Manual Override', description: 'User manually selected this equipment' }],
+                            pricing: makePricingSnapshot(equip),
+                        });
+                        processedAny = true;
+                    }
                 }
+                if (processedAny) continue;
             }
 
             // C. Calculate Required Throughput (with possible rule override)
