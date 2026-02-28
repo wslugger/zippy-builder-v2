@@ -25,7 +25,6 @@ export function LANTab({
     resolvedVendor
 }: LANTabProps) {
     const [animatePulse, setAnimatePulse] = useState(false);
-    const [overridePoeFilter, setOverridePoeFilter] = useState(false);
 
     useEffect(() => {
         if (lanItems.length > 0) {
@@ -54,21 +53,25 @@ export function LANTab({
         return [];
     }, [rawValue]);
 
-    const availableSwitches = catalog.filter(eq => {
-        if (eq.role !== 'LAN' || eq.vendor_id !== resolvedVendor) return false;
-        if (overridePoeFilter) return true;
+    const siteRequiresPoe = (selectedSite.poePorts || 0) > 0 || (selectedSite.requiredPoePorts || 0) > 0;
 
-        // If site requires PoE, only show PoE-capable switches
-        const siteRequiresPoe = (selectedSite.poePorts || 0) > 0 || (selectedSite.requiredPoePorts || 0) > 0;
-        if (siteRequiresPoe) {
-            const specs = eq.specs as LANSpecs;
-            const s = specs as Record<string, unknown>;
-            const poeBudget = specs.poeBudgetWatts || (s.poe_budget as number) || (s.poeBudget as number) || 0;
-            return poeBudget > 0;
-        }
-
-        return true;
-    });
+    const availableSwitches = useMemo(() => {
+        return catalog
+            .filter(eq => eq.role === 'LAN' && eq.vendor_id === resolvedVendor)
+            .sort((a, b) => {
+                if (siteRequiresPoe) {
+                    const getPoeBudget = (eq: Equipment) => {
+                        const specs = eq.specs as LANSpecs;
+                        const s = specs as Record<string, unknown>;
+                        return (specs.poeBudgetWatts as number) || (s.poe_budget as number) || (s.poeBudget as number) || 0;
+                    };
+                    const aPoe = getPoeBudget(a) > 0 ? 1 : 0;
+                    const bPoe = getPoeBudget(b) > 0 ? 1 : 0;
+                    if (aPoe !== bPoe) return bPoe - aPoe; // 1 comes before 0
+                }
+                return a.model.localeCompare(b.model);
+            });
+    }, [catalog, resolvedVendor, siteRequiresPoe]);
 
     const updateSelections = (newSelections: Array<{ itemId: string; quantity: number }>) => {
         setManualSelections(prev => {
@@ -112,19 +115,6 @@ export function LANTab({
             <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Manual LAN Switch Selection</h3>
-
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                        <div className="text-[10px] font-bold text-slate-400 group-hover:text-slate-600 uppercase tracking-tight">Override PoE Enforce</div>
-                        <div className="relative inline-flex items-center">
-                            <input
-                                type="checkbox"
-                                className="sr-only peer"
-                                checked={overridePoeFilter}
-                                onChange={(e) => setOverridePoeFilter(e.target.checked)}
-                            />
-                            <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                        </div>
-                    </label>
                 </div>
 
                 <div className="space-y-6">

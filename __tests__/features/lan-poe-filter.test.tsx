@@ -72,7 +72,7 @@ describe('LANTab Features', () => {
         resolvedVendor: "meraki"
     };
 
-    it('shows all switches if no PoE is required', () => {
+    it('shows all switches in alphabetical order if no PoE is required', () => {
         // Need at least one selection to show the dropdown
         const props = {
             ...defaultProps,
@@ -82,11 +82,13 @@ describe('LANTab Features', () => {
         const dropdown = screen.getByRole('combobox');
         const options = Array.from(dropdown.querySelectorAll('option'));
         const labels = options.map(o => o.textContent);
-        expect(labels.some(l => l?.includes("PoE Switch"))).toBe(true);
-        expect(labels.some(l => l?.includes("Non-PoE Switch"))).toBe(true);
+
+        // Sorting: "Non-PoE Switch" (N) should be before "PoE Switch" (P) if no PoE requirement
+        expect(labels[0]).toContain("Non-PoE Switch");
+        expect(labels[1]).toContain("PoE Switch");
     });
 
-    it('shows only PoE switches if poePorts requirement is set', () => {
+    it('prioritizes PoE switches if poePorts requirement is set', () => {
         const poeSite = { ...mockSite, poePorts: 5 };
         const props = {
             ...defaultProps,
@@ -97,30 +99,10 @@ describe('LANTab Features', () => {
         const dropdown = screen.getByRole('combobox');
         const options = Array.from(dropdown.querySelectorAll('option'));
         const labels = options.map(o => o.textContent);
-        expect(labels.some(l => l?.includes("PoE Switch"))).toBe(true);
-        expect(labels.some(l => l?.includes("Non-PoE Switch"))).toBe(false);
-    });
 
-    it('shows all switches when override toggle is checked even if PoE is required', () => {
-        const poeSite = { ...mockSite, poePorts: 5 };
-        const props = {
-            ...defaultProps,
-            selectedSite: poeSite,
-            manualSelections: { "Test Site:managed_lan": [{ itemId: "poe_switch", quantity: 1 }] }
-        };
-        render(<LANTab {...props} />);
-
-        // Before override
-        expect(screen.queryByText(/Non-PoE Switch/i)).not.toBeInTheDocument();
-
-        // Check the override toggle
-        const checkbox = screen.getByLabelText(/Override PoE Enforce/i);
-        fireEvent.click(checkbox);
-
-        const dropdown = screen.getByRole('combobox');
-        const options = Array.from(dropdown.querySelectorAll('option'));
-        const labels = options.map(o => o.textContent);
-        expect(labels.some(l => l?.includes("Non-PoE Switch"))).toBe(true);
+        // Sorting: "PoE Switch" should be first because site requires PoE
+        expect(labels[0]).toContain("PoE Switch");
+        expect(labels[1]).toContain("Non-PoE Switch");
     });
 
     it('displays multiple selected switches in the BOM output', () => {
