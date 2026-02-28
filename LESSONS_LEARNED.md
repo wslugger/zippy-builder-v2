@@ -213,3 +213,10 @@
 - **Gutted Auto-Sizing**: Removed complex math for port packing, PoE requirement matching, and uplink speed normalization from the BOM engine.
 - **Enforced Manual UI Selection**: Shifted the LAN tab to a "Rich Switch Selector" that surfaces critical attributes (Vendor, Model, Ports, PoE Budget) to the SA, making them responsible for the explicit hardware choice.
 - **Key Insight**: While automation is great for baseline initial setups, for complex or highly variable physical configurations (like LAN topologies), empowering the human expert (SA) with clear data (manual selection) in a clean UI provides better outcomes and significantly simpler, less buggy code than trying to mathematically codify every port-packing edge case.
+
+## 31. Parent-Child Prop Synchronization
+**Issue**: Refactoring a component's interface (e.g., removing props from `LANTabProps`) without updating all parent callers leads to silent TypeScript failures in IDEs that might not be caught until a full production build (`next build`).
+**Solution**:
+- **Strict Build Enforcement**: Ensure `next build` (which runs `tsc`) is part of the local verification pipeline.
+- **Global Search for Callers**: When changing a component's prop signature, always perform a global search for the component name to update all instances where it is instantiated.
+- **Key Insight**: TypeScript successfully flags these errors, but they can be missed if the developer is only viewing the modified file. Continuous integration or frequent local full-builds are essential to catch these "orphan props" before they reach deployment.
