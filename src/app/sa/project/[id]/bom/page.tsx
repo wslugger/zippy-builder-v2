@@ -284,8 +284,7 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                     setManualSelections={setManualSelections}
                                     catalog={catalog}
                                     setSelectedSpecsItem={setSelectedSpecsItem}
-                                    updateLANPreference={state.updateLANPreference}
-                                    preferenceMismatchWarning={state.preferenceMismatchWarning}
+                                    resolvedVendor={getVendorForService("managed_lan")}
                                 />
                             )}
 

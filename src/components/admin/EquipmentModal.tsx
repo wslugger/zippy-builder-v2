@@ -670,8 +670,8 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                     </label>
                                                     <input
                                                         type="number"
-                                                        value={specs.poeBudgetWatts ?? 0}
-                                                        onChange={(e) => handleSpecChange('poeBudgetWatts', parseInt(e.target.value) || 0)}
+                                                        value={specs.poe_budget ?? specs.poeBudgetWatts ?? 0}
+                                                        onChange={(e) => handleSpecChange('poe_budget', parseInt(e.target.value) || 0)}
                                                         className={inputClass}
                                                         placeholder="Watts"
                                                     />
@@ -853,7 +853,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                     <div className="col-span-1">
                                         <label className={labelClass}>PoE Budget (W)</label>
                                         <div className="relative">
-                                            <input type="number" value={specs.poeBudgetWatts || 0} onChange={(e) => handleSpecChange("poeBudgetWatts", e.target.value)} className={`${inputClass} pr-10`} />
+                                            <input type="number" value={specs.poe_budget ?? specs.poeBudgetWatts ?? 0} onChange={(e) => handleSpecChange("poe_budget", parseInt(e.target.value) || 0)} className={`${inputClass} pr-10`} />
                                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
                                         </div>
                                     </div>

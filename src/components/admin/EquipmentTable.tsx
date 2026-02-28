@@ -37,7 +37,7 @@ function AttributeCell({ attributes, role }: { attributes: any, role: string }) 
         } else if (data.ports) {
             keyAttrs.push({ label: 'Ports', value: `${data.ports} Ports` });
         }
-        if (data.poeBudgetWatts || data.poe_budget) keyAttrs.push({ label: 'PoE', value: `${data.poeBudgetWatts || data.poe_budget}W` });
+        if (data.poeBudgetWatts !== undefined || data.poe_budget !== undefined) keyAttrs.push({ label: 'PoE', value: `${data.poeBudgetWatts ?? data.poe_budget}W` });
         if (data.isStackable || data.stackable) keyAttrs.push({ label: 'Stackable', value: 'Yes' });
     } else if (role === 'WLAN') {
         if (data.wifiStandard) keyAttrs.push({ label: 'Wi-Fi', value: data.wifiStandard });

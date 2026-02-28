@@ -42,9 +42,9 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Power Over Ethernet</h5>
                                     <dl className="space-y-2">
                                         <div className="flex justify-between text-sm">
-                                            <dt className="text-slate-500 dark:text-slate-400">PoE Supported</dt>
+                                            <dt className="text-slate-500 dark:text-slate-400">PoE Budget</dt>
                                             <dd className="font-semibold text-slate-900 dark:text-slate-100">
-                                                {(item as any).specs.poeStandard && (item as any).specs.poeStandard !== 'None' ? 'Yes' : 'No'}
+                                                {(item as any).specs.poeStandard && (item as any).specs.poeStandard !== 'None' ? `${(item as any).specs.poeBudgetWatts || (item as any).specs.poe_budget || (item as any).specs.poeBudget || 0} W` : 'None'}
                                             </dd>
                                         </div>
                                         {(item as any).specs.poeStandard && (item as any).specs.poeStandard !== 'None' && (
@@ -52,10 +52,6 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                                 <div className="flex justify-between text-sm">
                                                     <dt className="text-slate-500 dark:text-slate-400">Standard</dt>
                                                     <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.poeStandard}</dd>
-                                                </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="text-slate-500 dark:text-slate-400">Power Budget</dt>
-                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.poeBudgetWatts || 0} W</dd>
                                                 </div>
                                             </>
                                         )}

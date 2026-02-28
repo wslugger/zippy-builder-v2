@@ -88,55 +88,6 @@ function makePricingSnapshot(equip: Equipment): BOMLineItem['pricing'] | undefin
         effectiveDate: equip.pricingEffectiveDate,
     };
 }
-
-/**
- * PoE Standard hierarchy for comparison.
- * Higher number = more capable. A switch is compatible if its level >= the required level.
- */
-const POE_HIERARCHY: Record<string, number> = {
-    'none': 0,
-    'poe': 1,
-    'poe+': 2,
-    'poe++': 3,
-    'upoe': 3,
-    'upoe+': 4
-};
-
-function poeLevel(standard: string): number {
-    return POE_HIERARCHY[(standard || 'none').toLowerCase()] ?? 0;
-}
-
-/**
- * Normalizes port speed strings for comparison.
- * Handles variations: '1G' → '1g-copper', '10G-Copper' → '10g-copper', 'mGig' → 'mgig-copper'.
- * Returns lowercase canonical form for reliable matching.
- */
-function normalizePortSpeed(speed: string): string {
-    if (!speed) return '';
-    const s = speed.toLowerCase().trim();
-    // Already fully qualified (e.g., '1g-copper', '10g-fiber')
-    if (s.includes('-')) return s;
-    // Map common shorthand to canonical
-    if (s === 'mgig' || s === 'multigig') return 'mgig-copper';
-    // Pure speed values like '1g', '10g', '25g' — default to copper
-    if (/^\d+g$/.test(s)) return `${s}-copper`;
-    return s;
-}
-
-/**
- * Checks if equipment port type matches the required type.
- * Uses fuzzy matching to handle database inconsistencies.
- */
-function portSpeedMatches(equipmentPortType: string, requiredPortType: string): boolean {
-    // If no requirement specified, match everything
-    if (!requiredPortType) return true;
-    const normEquip = normalizePortSpeed(equipmentPortType);
-    const normRequired = normalizePortSpeed(requiredPortType);
-    // If equipment has no port type set, it should still match the default
-    if (!normEquip) return true;
-    return normEquip === normRequired;
-}
-
 export function calculateBOM(input: BOMEngineInput): BOM {
     const { projectId, sites, selectedPackage, services, siteTypes, equipmentCatalog, manualSelections = {}, globalParameters = {} } = input;
 
@@ -172,13 +123,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             siteParameters[param.id] = globalParameters[param.id] !== undefined ? globalParameters[param.id] : param.defaultValue;
         }
 
-        // 1. Process Services in Package (Sorted to ensure dependencies like WLAN are processed before LAN)
-        const sortedPackageItems = [...selectedPackage.items].sort((a, b) => {
-            const order = ["managed_wifi", "managed_lan", "managed_sdwan"];
-            const indexA = order.indexOf(normalizeServiceId(a.service_id));
-            const indexB = order.indexOf(normalizeServiceId(b.service_id));
-            return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
-        });
+        // 1. Process Services in Package
+        const sortedPackageItems = selectedPackage.items;
 
         const processedServices = new Set<string>();
         for (const pkgItem of sortedPackageItems) {
@@ -193,7 +139,17 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             processedServices.add(canonicalServiceId);
 
             const selectionKey = `${site.name}:${canonicalServiceId}`;
-            const manualOverrideId = manualSelections[selectionKey];
+            const manualOverrideRaw = manualSelections[selectionKey];
+            let manualOverrideId: string | undefined;
+            let manualOverrideQty: number | undefined;
+
+            if (typeof manualOverrideRaw === 'string') {
+                manualOverrideId = manualOverrideRaw;
+            } else if (manualOverrideRaw && typeof manualOverrideRaw === 'object') {
+                const overrideObj = manualOverrideRaw as any;
+                manualOverrideId = overrideObj.itemId;
+                manualOverrideQty = typeof overrideObj.quantity === 'number' ? overrideObj.quantity : undefined;
+            }
 
             // TODO: Remove this guard once WLAN features and equipment catalog are built out.
             // Currently managed_wifi service exists in packages but WLAN equipment/logic is incomplete.
@@ -201,13 +157,9 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 continue;
             }
 
-            // Guard: Skip LAN if site has no users, no APs, and no LAN ports
-            if (canonicalServiceId === "managed_lan") {
-                const totalEndpoints = (Number(site.userCount) || 0) + (Number(site.indoorAPs) || 0) + (Number(site.outdoorAPs) || 0) + (Number(site.lanPorts) || 0);
-                if (totalEndpoints === 0 && !manualOverrideId) {
-                    console.log(`[BOMEngine] Skipping managed_lan for ${site.name}: no endpoints configured`);
-                    continue;
-                }
+            if (canonicalServiceId === "managed_lan" && !manualOverrideId) {
+                // Phase 1: STRICTLY require manual selection for LAN MVP
+                continue;
             }
 
             // A. Evaluate Rules Engine for this service context
@@ -236,8 +188,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             if (manualOverrideId) {
                 const equip = equipmentCatalog.find(e => e.id === manualOverrideId);
                 if (equip) {
-                    let quantity = 1;
-                    if (canonicalServiceId === "managed_sdwan") {
+                    let quantity = manualOverrideQty ?? 1;
+                    if (canonicalServiceId === "managed_sdwan" && !manualOverrideQty) {
                         quantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
                     }
 
@@ -364,92 +316,12 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     }
                 }
 
-                if (requiredPurpose === "LAN" && role === 'LAN') {
-                    // --- LAN Preferences (data-driven from UI dropdowns) ---
-                    const lanPrefs = site.lanPreferences;
 
-                    // Extract WLAN requirements from already processed items for this site
-                    const wlanItem = bomItems.find(item => item.siteName === site.name && normalizeServiceId(item.serviceId) === 'managed_wifi');
-                    let requiredAccessPortType = siteParameters['defaultAccessSpeed'] || '1G-Copper';
-                    let totalRequiredPoEWatts = 0;
-                    let requiredPoeStandard = 'None';
-
-                    // LAN Preferences override defaults when set
-                    if (lanPrefs?.accessPortSpeedId) {
-                        requiredAccessPortType = lanPrefs.accessPortSpeedId;
-                    } else if (wlanItem) {
-                        const apEquip = equipmentCatalog.find(eq => eq.id === wlanItem.itemId);
-                        if (apEquip && getEquipmentRole(apEquip) === 'WLAN') {
-                            const apSpecs = apEquip.specs as any;
-                            requiredAccessPortType = apSpecs.uplinkType || siteParameters['defaultAccessSpeed'] || '1G-Copper';
-                            totalRequiredPoEWatts = (apSpecs.powerDrawWatts || 0) * ((site.indoorAPs || 0) + (site.outdoorAPs || 0));
-                        }
-                    }
-
-                    if (lanPrefs?.poeRequirementId) {
-                        requiredPoeStandard = lanPrefs.poeRequirementId;
-                    }
-
-
-
-                    // 1. Media Type Match – equipment accessPortType must match required speed (fuzzy)
-                    if (!portSpeedMatches(specs.accessPortType || '', requiredAccessPortType)) {
-                        return false;
-                    }
-
-                    // 2. PoE Standard Match – equipment must meet or exceed the required PoE level
-                    if (poeLevel(specs.poeStandard || 'None') < poeLevel(requiredPoeStandard)) {
-                        return false;
-                    }
-
-                    const portUtilization = (siteParameters['maxPortUtilization'] || 100) / 100;
-                    const portDensity = lanPrefs?.portDensity || 0;
-                    const totalRequiredPorts = portDensity > 0
-                        ? portDensity
-                        : (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0);
-                    const effectiveRequiredPorts = Math.ceil(totalRequiredPorts / portUtilization);
-
-                    // 3. Capacity Check (Non-stackable must meet requirements alone)
-                    if (!specs.isStackable) {
-                        if ((specs.accessPortCount || 0) < effectiveRequiredPorts) {
-                            return false;
-                        }
-                        if ((specs.poeBudgetWatts || 0) < totalRequiredPoEWatts) {
-                            return false;
-                        }
-                    }
-
-                    // 4. Stacking Limit Check (configurable max units per stack)
-                    if (specs.isStackable) {
-                        const maxStackSize = siteParameters['maxStackSize'] ?? 8;
-                        const maxStackPorts = (specs.accessPortCount || 0) * maxStackSize;
-                        const maxStackPoE = (specs.poeBudgetWatts || 0) * maxStackSize;
-                        if (maxStackPorts < effectiveRequiredPorts) return false;
-                        if (maxStackPoE < totalRequiredPoEWatts) return false;
-                    }
-
-                    console.log(`[BOMEngine:LAN] ACCEPTED ${e.model}`);
-                }
 
                 return true;
             });
 
             const sortedCandidates = candidates.sort((a, b) => {
-                // For LAN, prioritize minimizing the number of units (prefer one 48p over two 24p)
-                if (canonicalServiceId === "managed_lan") {
-                    const getPotentialQty = (equip: Equipment) => {
-                        const portUtilization = (siteParameters['maxPortUtilization'] || 100) / 100;
-                        const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0) || 48;
-                        const specs = equip.specs as any;
-                        const switchPorts = specs.accessPortCount || 48;
-                        const effectiveSwitchPorts = Math.floor(switchPorts * portUtilization);
-                        return Math.ceil(totalRequiredPorts / effectiveSwitchPorts);
-                    };
-                    const qtyA = getPotentialQty(a);
-                    const qtyB = getPotentialQty(b);
-                    if (qtyA !== qtyB) return qtyA - qtyB;
-                }
-
                 return getEquipmentPerformanceValue(a, activeThroughputField) - getEquipmentPerformanceValue(b, activeThroughputField);
             });
 
@@ -498,48 +370,6 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 let quantity = 1;
                 if (canonicalServiceId === "managed_sdwan") {
                     quantity = siteParameters['cpe_quantity'] ?? calculateCPEQuantity(site, siteDef);
-                } else if (canonicalServiceId === "managed_lan") {
-                    const quantityAction = matchingRules.flatMap(r => r.actions).find(a => a.type === "modify_quantity");
-
-                    if (quantityAction) {
-                        if (quantityAction.quantity) {
-                            quantity = quantityAction.quantity;
-                        } else if (quantityAction.quantityMultiplierField) {
-                            const multiplier = site[quantityAction.quantityMultiplierField as keyof Site] as number;
-                            if (typeof multiplier === 'number') {
-                                if (quantityAction.actionValue) {
-                                    quantity = Math.ceil(multiplier / Number(quantityAction.actionValue));
-                                } else {
-                                    quantity = Math.ceil(multiplier);
-                                }
-                            }
-                        }
-                    } else {
-                        // LAN Sizing Math: Max(Port-Count Sizing, PoE Budget Sizing)
-                        const portUtilization = (siteParameters['maxPortUtilization'] || 100) / 100;
-                        const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0) || 48;
-                        const wlanItem = bomItems.find(item => item.siteName === site.name && normalizeServiceId(item.serviceId) === 'managed_wifi');
-                        let totalRequiredPoEWatts = 0;
-                        if (wlanItem) {
-                            const apEquip = equipmentCatalog.find(eq => eq.id === wlanItem.itemId);
-                            if (apEquip && getEquipmentRole(apEquip) === 'WLAN') {
-                                totalRequiredPoEWatts = ((apEquip.specs as any).powerDrawWatts || 0) * ((site.indoorAPs || 0) + (site.outdoorAPs || 0));
-                            }
-                        }
-
-                        const switchSpecs = bestFit.specs as any;
-                        const switchPorts = bestFit.role === 'LAN' ? (switchSpecs.accessPortCount || 48) : 48;
-                        const switchPoE = bestFit.role === 'LAN' ? (switchSpecs.poeBudgetWatts || 0) : 0;
-
-                        // Effective switch capacity based on utilization factor
-                        const effectiveSwitchPorts = Math.floor(switchPorts * portUtilization);
-
-                        const qtyByPorts = Math.ceil(totalRequiredPorts / effectiveSwitchPorts);
-                        const qtyByPoE = (switchPoE > 0 && totalRequiredPoEWatts > 0) ? Math.ceil(totalRequiredPoEWatts / switchPoE) : 1;
-
-                        quantity = Math.max(qtyByPorts, qtyByPoE);
-                    }
-                    if (quantity === 0) quantity = 1;
                 }
 
                 const throughputField = activeThroughputField;

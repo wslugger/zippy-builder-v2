@@ -1,0 +1,94 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]: ZippyBuilder Architect
+    - main [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e8]:
+          - generic [ref=e9]:
+            - heading "Project Workflow" [level=2] [ref=e10]
+            - link "← Back to Dashboard" [ref=e11] [cursor=pointer]:
+              - /url: /sa/dashboard
+          - generic [ref=e15]:
+            - link "✓ 1. Package Selection" [ref=e16] [cursor=pointer]:
+              - /url: /sa/project/demo/package-selection
+              - generic [ref=e17]:
+                - generic [ref=e18]: ✓
+                - generic [ref=e19]: 1. Package Selection
+            - link "✓ 2. Review Package" [ref=e20] [cursor=pointer]:
+              - /url: /sa/project/demo/summary
+              - generic [ref=e21]:
+                - generic [ref=e22]: ✓
+                - generic [ref=e23]: 2. Review Package
+            - link "✓ 3. Customize" [ref=e24] [cursor=pointer]:
+              - /url: /sa/project/demo/customize
+              - generic [ref=e25]:
+                - generic [ref=e26]: ✓
+                - generic [ref=e27]: 3. Customize
+            - link "✓ 4. Design Doc" [ref=e28] [cursor=pointer]:
+              - /url: /sa/project/demo/design-doc
+              - generic [ref=e29]:
+                - generic [ref=e30]: ✓
+                - generic [ref=e31]: 4. Design Doc
+            - generic [ref=e33]:
+              - generic [ref=e34]: "5"
+              - generic [ref=e35]: 5. BOM Builder
+            - generic [ref=e37]:
+              - generic [ref=e38]: "6"
+              - generic [ref=e39]: 6. HLD
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - generic [ref=e43]:
+              - heading "Sites (0)" [level=2] [ref=e45]
+              - generic [ref=e46]:
+                - button "All" [ref=e47]
+                - button "Flagged" [ref=e48]
+              - button "Choose File" [ref=e50]
+              - generic [ref=e51]:
+                - generic [ref=e52]:
+                  - generic [ref=e53]: Test Package
+                  - combobox [ref=e54]:
+                    - option "Select Package..." [disabled]
+                    - option "Performance SASE" [selected]
+                    - option "Cost Centric"
+                - button "Load Sample Sites (Test)" [ref=e55]
+            - generic [ref=e57]:
+              - button "📊 Project Overview Global" [ref=e58]:
+                - generic [ref=e59]:
+                  - generic [ref=e60]: 📊
+                  - generic [ref=e61]: Project Overview
+                - generic [ref=e62]: Global
+              - button "💰 Pricing Analysis" [ref=e63]:
+                - generic [ref=e64]: 💰
+                - generic [ref=e65]: Pricing Analysis
+          - generic [ref=e66]:
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - generic [ref=e69]: 📊
+                - heading "No Sites Found" [level=2] [ref=e70]
+                - paragraph [ref=e71]: Upload a CSV or load sample data from the sidebar to begin building the BOM architecture.
+              - generic [ref=e72]:
+                - button "📥 Download Detailed BOM (.csv)" [ref=e73]
+                - button "🔍 View HLD \\u2192" [ref=e74]
+            - generic [ref=e76]:
+              - generic [ref=e77]:
+                - generic [ref=e78]:
+                  - heading "🌐 AI Triage Complete" [level=3] [ref=e79]
+                  - paragraph [ref=e80]: Analyzed 2 sites. 0 fast-tracked, 0 flagged for guided configuration.
+                - generic [ref=e81]:
+                  - button "Cancel" [ref=e82]
+                  - button "Continue to Builder" [ref=e83]
+              - table [ref=e85]:
+                - rowgroup [ref=e86]:
+                  - row "Site Detail Extracted Parameters UX Route Reasoning" [ref=e87]:
+                    - columnheader "Site Detail" [ref=e88]
+                    - columnheader "Extracted Parameters" [ref=e89]
+                    - columnheader "UX Route" [ref=e90]
+                    - columnheader "Reasoning" [ref=e91]
+                - rowgroup
+              - generic [ref=e93]: ⚡ Powered by Gemini 2.5 Flash Triage Engine
+  - alert [ref=e94]
+```

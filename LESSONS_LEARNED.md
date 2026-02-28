@@ -199,3 +199,17 @@
 - **Role-Aware Reasoning**: Refactored the reasoning generator to be context-sensitive. LAN equipment now correctly displays port counts, PoE standards, and uplink types instead of WAN throughput.
 - **PoE Hierarchy Logic**: Used a numerical hierarchy for PoE standards to allow "meets or exceeds" logic (e.g., a PoE++ switch correctly satisfies a PoE+ requirement).
 - **Key Insight**: Deep spec filtering depends on perfect data alignment. When data comes from external catalogs or AI extraction, the comparison logic must be "fuzzy" and normalizing to prevent false negatives that trigger unintended fallbacks.
+
+## 29. Falsy Check Pitfalls with Numerical 0 Values
+**Issue**: In the Equipment Catalog, the `poe_budget` attribute was hiding when the value was `0` because of a truthy check (`data.poeBudgetWatts || data.poe_budget`). This prevented users from seeing "0W" for non-PoE or specifically zero-budget switches.
+**Solution**:
+- **Strict Equality Checks**: Refactored the UI to use `!== undefined` or nullish coalescing `??` for numeric display values.
+- **Normalized Property Binding**: Consolidated UI inputs to bind primarily to the canonical `poe_budget` property while maintaining `poeBudgetWatts` as a legacy fallback.
+- **Key Insight**: Never use OR (`||`) logic for rendering numbers that can validly be `0`. Always use nullish coalescing or explicit undefined checks to ensure data presence is correctly interpreted.
+
+## 30. Auto-Sizing Fragility vs. Manual SA Selection (LAN)
+**Issue**: The backend engine attempted to automatically size LAN switches based on site parameters (user count, AP count, PoE requirements). This math was fragile, often resulted in "Best Effort" fallbacks, and frustrated Sales Associates (SAs) who wanted explicit control over which switch models to pitch.
+**Solution**:
+- **Gutted Auto-Sizing**: Removed complex math for port packing, PoE requirement matching, and uplink speed normalization from the BOM engine.
+- **Enforced Manual UI Selection**: Shifted the LAN tab to a "Rich Switch Selector" that surfaces critical attributes (Vendor, Model, Ports, PoE Budget) to the SA, making them responsible for the explicit hardware choice.
+- **Key Insight**: While automation is great for baseline initial setups, for complex or highly variable physical configurations (like LAN topologies), empowering the human expert (SA) with clear data (manual selection) in a clean UI provides better outcomes and significantly simpler, less buggy code than trying to mathematically codify every port-packing edge case.
