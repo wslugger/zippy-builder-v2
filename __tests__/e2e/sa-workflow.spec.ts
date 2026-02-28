@@ -57,12 +57,13 @@ test.describe('SA Workflow Critical Path', () => {
         // 5. Verify AI Classification Step
         // The SiteImportReviewModal should pop up next
         // Wait for the mocked AI data to appear on screen
+        await expect(page.getByText('AI Triage Complete')).toBeVisible();
         await expect(page.getByText('SiteA')).toBeVisible();
-        await expect(page.locator('table select').first()).toHaveValue('large_office');
 
-        await page.getByRole('button', { name: /Confirm & Generate BOM/i }).click();
+        // 6. Click Continue to Builder to populate the BOM
+        await page.getByRole('button', { name: /Continue to Builder/i }).click();
 
-        // 6. Verify BOM Generation
+        // 7. Verify BOM Generation
         // Wait for the modal to close and the sidebar to update with our sites
         await expect(page.getByRole('heading', { name: /Sites \(2\)/i }).first()).toBeVisible();
 
