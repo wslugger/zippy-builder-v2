@@ -112,10 +112,27 @@ export function LANTab({
         updateSelections(next);
     };
 
-    // Calculate provided ports and usage
-    const { providedLanPorts, providedPoePorts } = useMemo(() => {
+    // Calculate provided ports, usage, and oversubscription
+    const { providedLanPorts, providedPoePorts, totalAccessGbps, totalUplinkGbps } = useMemo(() => {
         let lanP = 0;
         let poeP = 0;
+        let accGbps = 0;
+        let upGbps = 0;
+
+        const getSpeedGbps = (type: string | undefined): number => {
+            if (!type) return 0;
+            const lower = type.toLowerCase();
+            if (lower.includes('100g')) return 100;
+            if (lower.includes('40g')) return 40;
+            if (lower.includes('25g')) return 25;
+            if (lower.includes('10g')) return 10;
+            if (lower.includes('5g')) return 5;
+            if (lower.includes('2.5g') || lower.includes('mgig')) return 2.5;
+            if (lower.includes('1g')) return 1;
+            if (lower.includes('100m')) return 0.1;
+            return 1; // Default to 1G for unknown
+        };
+
         selections.forEach(sel => {
             const eq = catalog.find(e => e.id === sel.itemId);
             if (eq && eq.specs) {
@@ -125,9 +142,22 @@ export function LANTab({
 
                 const poeBudgetVal = (s.poeBudgetWatts as number) || (s.poe_budget as number) || (s.poeBudget as number) || 0;
                 if (poeBudgetVal > 0) poeP += accessPorts * sel.quantity;
+
+                // Oversubscription speeds
+                const accessSpeedGbps = getSpeedGbps(s.accessPortType as string);
+                const uplinkSpeedGbps = getSpeedGbps(s.uplinkPortType as string);
+                const uplinkPorts = (s.uplinkPortCount as number) || 0;
+
+                accGbps += (accessPorts * accessSpeedGbps) * sel.quantity;
+                upGbps += (uplinkPorts * uplinkSpeedGbps) * sel.quantity;
             }
         });
-        return { providedLanPorts: lanP, providedPoePorts: poeP };
+        return {
+            providedLanPorts: lanP,
+            providedPoePorts: poeP,
+            totalAccessGbps: accGbps,
+            totalUplinkGbps: upGbps
+        };
     }, [selections, catalog]);
 
     const requiredLanPorts = selectedSite.lanPorts || 0;
@@ -219,7 +249,7 @@ export function LANTab({
                 </div>
 
                 {/* Port Usage Visuals */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                         <div>
                             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">LAN Port Usage</div>
@@ -251,6 +281,23 @@ export function LANTab({
                         </div>
                         <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm ${getUsageColor(poeUsagePct, providedPoePorts, requiredPoePorts)}`}>
                             ⚡
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Uplink Oversubscription</div>
+                            <div className="flex items-baseline space-x-2">
+                                <span className={`text-2xl font-black ${(totalAccessGbps / (totalUplinkGbps || 1)) > 20 ? 'text-amber-600 dark:text-amber-500' : 'text-slate-800 dark:text-slate-100'}`}>
+                                    {totalUplinkGbps === 0 ? 'N/A' : `${(totalAccessGbps / totalUplinkGbps).toFixed(1)} : 1`}
+                                </span>
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                                {totalAccessGbps.toFixed(0)}G edge / {totalUplinkGbps.toFixed(0)}G up
+                            </div>
+                        </div>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm ${totalUplinkGbps === 0 ? 'bg-slate-100 text-slate-400' : (totalAccessGbps / totalUplinkGbps) > 50 ? 'bg-red-100 text-red-600' : (totalAccessGbps / totalUplinkGbps) > 20 ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                            🚀
                         </div>
                     </div>
                 </div>
