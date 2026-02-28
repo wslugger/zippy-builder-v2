@@ -383,6 +383,22 @@ export interface AIPromptConfig {
 // Site Types (formerly site-types.ts)
 // ============================================================
 
+export interface LANPreferences {
+  poeRequirementId: string;
+  uplinkSpeedId: string;
+  accessPortSpeedId: string;
+  redundancyModeId: string;
+  portDensity: number;
+}
+
+export const LANPreferencesSchema = z.object({
+  poeRequirementId: z.string(),
+  uplinkSpeedId: z.string(),
+  accessPortSpeedId: z.string(),
+  redundancyModeId: z.string(),
+  portDensity: z.number(),
+});
+
 export interface SiteConstraint {
   id: string;
   description: string;
@@ -481,6 +497,7 @@ export const SiteSchema = z.object({
   uplinkPortType: z.string().optional(),
   poeStandard: z.string().optional(),
   requiredPoePorts: z.number().optional(),
+  lanPreferences: LANPreferencesSchema.optional(),
   embeddedEquipment: z.array(z.any()).optional(), // typed as EmbeddedEquipmentSnapshot[] in usage
   embeddedServices: z.array(z.any()).optional(),  // typed as EmbeddedServiceSnapshot[] in usage
   uxRoute: z.enum(['FAST_TRACK', 'GUIDED_FLOW']).optional(),
@@ -595,7 +612,27 @@ export interface BOMEngineInput {
   globalParameters?: Record<string, any>;
 }
 
+export interface InfrastructureOptions {
+  poeRequirements: string[];
+  uplinkSpeeds: string[];
+  accessPortSpeeds: string[];
+  redundancyModes: string[];
+}
+
 export const SystemConfigSchema = z.object({
+  validPoeTypes: z.string().default('None, PoE+, PoE++, UPoE'),
+  validRedundancyModes: z.string().default('Standalone, Stacking, Chassis, M-LAG'),
+  infrastructureOptions: z.object({
+    poeRequirements: z.array(z.string()).default([]),
+    uplinkSpeeds: z.array(z.string()).default([]),
+    accessPortSpeeds: z.array(z.string()).default([]),
+    redundancyModes: z.array(z.string()).default([]),
+  }).catchall(z.any()).default({
+    poeRequirements: ['None', 'PoE+', 'PoE++', 'UPoE'],
+    uplinkSpeeds: ['1G', '10G', '25G', '40G', '100G'],
+    accessPortSpeeds: ['1G', 'mGig', '10G'],
+    redundancyModes: ['Standalone', 'Stacking', 'Chassis', 'M-LAG'],
+  }),
   taxonomy: z.object({
     regions: z.array(z.string()).default([]),
     siteTypes: z.array(z.string()).default([]),
@@ -660,4 +697,5 @@ export interface ExtractedSiteRequirements {
 export interface TriagedSite extends ExtractedSiteRequirements {
   uxRoute: 'FAST_TRACK' | 'GUIDED_FLOW';
   triageReason: string;
+  lanPreferences?: LANPreferences;
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService } from "@/src/lib/firebase";
 import { ManagementPricingService } from "@/src/lib/firebase/management-pricing-service";
-import { Project, Package, Service, Equipment, ManagementPricingMatrix, TriagedSite } from "@/src/lib/types";
+import { Project, Package, Service, Equipment, ManagementPricingMatrix, TriagedSite, LANPreferences } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
@@ -117,6 +117,8 @@ export interface BOMBuilderState {
     handleSiteTypeChange: (siteTypeId: string) => void;
     /** Call to update any properties on the currently selected site */
     handleSiteUpdate: (updates: Partial<Site>) => void;
+    updateLANPreference: (siteId: string, key: keyof LANPreferences, value: string | number) => void;
+    preferenceMismatchWarning: boolean;
     projectId: string;
 
     // Pricing & Simulation
@@ -193,6 +195,10 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     const [projectManagementLevel, setProjectManagementLevel] = useState<string>('Watch & Alert');
     const [managementPricingMatrix, setManagementPricingMatrix] = useState<ManagementPricingMatrix | null>(null);
 
+    // ---- Reactive Settings State ----
+    const [preferenceMismatchWarning, setPreferenceMismatchWarning] = useState<boolean>(false);
+    const [lastAutoLANSelections] = useState<Record<string, string>>({});
+
     // -------------------------------------------------------
     // Data loading (real Firestore — skipped for demo mode)
     // -------------------------------------------------------
@@ -237,10 +243,31 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         }
 
         loadData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }, [projectId, isDemo]);
 
     // Engine instantiation removed in favor of pure functions
+
+    // -------------------------------------------------------
+    // Derived State: Preference Mismatch Warning
+    // -------------------------------------------------------
+    // Since LAN preferences now flow through calculateBOM (via site.lanPreferences),
+    // we only need to check if the user has manually overridden the engine's selection.
+    useEffect(() => {
+        let hasWarning = false;
+        sites.forEach(site => {
+            if (site.lanPreferences) {
+                const manualKey = `${site.name}:managed_lan`;
+                const currentSelection = manualSelections[manualKey];
+                const autoSelection = lastAutoLANSelections[manualKey];
+                // Warning if user has a manual override that differs from what the engine last auto-selected
+                if (currentSelection && autoSelection && currentSelection !== autoSelection) {
+                    hasWarning = true;
+                }
+            }
+        });
+        setPreferenceMismatchWarning(hasWarning);
+    }, [sites, manualSelections, lastAutoLANSelections]);
 
     // -------------------------------------------------------
     // Available tabs (derived from package + services)
@@ -593,6 +620,26 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         });
     }, [selectedSiteIndex]);
 
+    const updateLANPreference = useCallback((siteId: string, key: keyof LANPreferences, value: string | number) => {
+        setSites((prev) => prev.map((s) => {
+            if (s.id !== siteId && s.name !== siteId) return s;
+            const currentPrefs = s.lanPreferences || {
+                poeRequirementId: '',
+                uplinkSpeedId: '',
+                accessPortSpeedId: '',
+                redundancyModeId: '',
+                portDensity: 48,
+            };
+            return {
+                ...s,
+                lanPreferences: {
+                    ...currentPrefs,
+                    [key]: value
+                }
+            };
+        }));
+    }, []);
+
     // -------------------------------------------------------
     // AI Triage Pipeline
     // -------------------------------------------------------
@@ -677,6 +724,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         handlePackageChange,
         handleSiteTypeChange,
         handleSiteUpdate,
+        updateLANPreference,
+        preferenceMismatchWarning,
         projectId,
         globalDiscount,
         setGlobalDiscount,

@@ -192,3 +192,10 @@
 - **Tolerant Data Binding**: UI components consuming AI-extracted data should intelligently fall back across expected variations of a property name (`item.specs.wifi_standard || item.specs.wifiStandard`).
 - **Contextual Labelling**: Render labels dynamically based on the object's context/role, not just blindly reusing the same layout block. "PoE Budget" only makes sense for LAN; shift to "Power Draw" for WLAN while reading from the correct underlying extracted value.
 - **Key Insight**: AI pipelines are occasionally loose with snake_case vs camelCase unless heavily enforced. The consuming UI mapping layer must be defensively coded to handle slight deviations in property names and use contextual labels so users don't think the extraction failed.
+## 28. Robust LAN Equipment Selection & Reasoning
+**Issue**: The BOM engine's LAN hardware selection was inconsistently falling back to "Best Effort" and displaying irrelevant WAN throughput metrics (e.g., "SDWANCRYPTOTHROUGHPUTMBPS=48 Mbps") instead of switch specifications.
+**Solution**:
+- **Normalized Spec Comparison**: Implemented `normalizePortSpeed()` and `portSpeedMatches()` to handle variations in database strings (e.g., matching '1G' with '1G-Copper').
+- **Role-Aware Reasoning**: Refactored the reasoning generator to be context-sensitive. LAN equipment now correctly displays port counts, PoE standards, and uplink types instead of WAN throughput.
+- **PoE Hierarchy Logic**: Used a numerical hierarchy for PoE standards to allow "meets or exceeds" logic (e.g., a PoE++ switch correctly satisfies a PoE+ requirement).
+- **Key Insight**: Deep spec filtering depends on perfect data alignment. When data comes from external catalogs or AI extraction, the comparison logic must be "fuzzy" and normalizing to prevent false negatives that trigger unintended fallbacks.

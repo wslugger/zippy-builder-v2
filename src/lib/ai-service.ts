@@ -1,6 +1,4 @@
 import { Project, AIAnalysisResult, Package, Service, GeneratedHLD, TriageCriterion, TriagedSite } from "@/src/lib/types";
-import { Site } from "@/src/lib/bom-types";
-import { SiteType } from "@/src/lib/site-types";
 import { HLDPayload } from "./hld-generator";
 
 export const AIService = {
@@ -99,7 +97,7 @@ export const AIService = {
     generateHLDDocument: async (payload: HLDPayload): Promise<GeneratedHLD> => {
         try {
             // Strip detailedBom to save tokens as requested
-            const { detailedBom: _, ...aiPayload } = payload;
+            const { detailedBom: _detailedBom, ...aiPayload } = payload;
 
             const response = await fetch('/api/sa/generate-hld', {
                 method: 'POST',
@@ -109,7 +107,7 @@ export const AIService = {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                const message = errorData.details ? `${errorData.error}: ${errorData.details}` : (errorData.error || "HLD Generation failed");
+                const message = errorData.details ? `${errorData.error}: ${errorData.details} ` : (errorData.error || "HLD Generation failed");
                 throw new Error(message);
             }
 
@@ -138,7 +136,7 @@ export const AIService = {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                const message = errorData.details ? `${errorData.error}: ${errorData.details}` : (errorData.error || "HLD Audit failed");
+                const message = errorData.details ? `${errorData.error}: ${errorData.details} ` : (errorData.error || "HLD Audit failed");
                 throw new Error(message);
             }
 
@@ -154,7 +152,7 @@ export const AIService = {
      */
     buildDynamicTriagePrompt: (rawCustomerInput: string, activeCriteria: TriageCriterion[]): string => {
         const dynamicSchemaMap = activeCriteria.map(criterion => {
-            return `"${criterion.id}": <${criterion.type}> - ${criterion.promptInstruction}`;
+            return `"${criterion.id}": <${criterion.type} > - ${criterion.promptInstruction} `;
         }).join('\n  ');
 
         return `You are an Expert Network Solutions Architect AI.
@@ -162,24 +160,24 @@ Your objective is to read the unstructured customer input regarding their networ
 
 REQUIRED SCHEMA FORMAT FOR EACH SITE IN THE ARRAY:
 {
-  "siteName": <string> - The name or location of the site,
-  "estimatedUsers": <number> - The approximate number of users or employees at the site,
-  "sqFt": <number | null> - The square footage of the site, if provided (else null),
-  "rawNotes": <string> - A brief summary or raw copy of the notes for this site,
-  "dynamicAttributes": {
-    "address": <string> - The street address or city/state,
-    "bandwidthDownMbps": <number> - Download speed in Mbps,
-    "bandwidthUpMbps": <number> - Upload speed in Mbps,
-    "primaryCircuit": <string> - e.g. DIA, Broadband, LTE, Fiber,
-    "secondaryCircuit": <string | null> - Secondary circuit type if HA is required,
-    "redundancyModel": <string> - e.g. Single CPE, Dual CPE,
-    "wanLinks": <number> - Number of WAN links/circuits,
-    "lanPorts": <number> - Number of copper LAN ports needed,
-    "poePorts": <number> - Number of PoE ports needed,
-    "indoorAPs": <number> - Count of indoor access points,
-    "outdoorAPs": <number> - Count of outdoor access points,
-    ${dynamicSchemaMap}
-  }
+    "siteName": <string>- The name or location of the site,
+        "estimatedUsers": <number>- The approximate number of users or employees at the site,
+            "sqFt": <number | null>- The square footage of the site, if provided(else null),
+                "rawNotes": <string>- A brief summary or raw copy of the notes for this site,
+                    "dynamicAttributes": {
+                        "address": <string>- The street address or city / state,
+                            "bandwidthDownMbps": <number>- Download speed in Mbps,
+                                "bandwidthUpMbps": <number>- Upload speed in Mbps,
+                                    "primaryCircuit": <string>- e.g.DIA, Broadband, LTE, Fiber,
+                                        "secondaryCircuit": <string | null>- Secondary circuit type if HA is required,
+                                            "redundancyModel": <string>- e.g.Single CPE, Dual CPE,
+                                                "wanLinks": <number>- Number of WAN links / circuits,
+                                                    "lanPorts": <number>- Number of copper LAN ports needed,
+                                                        "poePorts": <number>- Number of PoE ports needed,
+                                                            "indoorAPs": <number>- Count of indoor access points,
+                                                                "outdoorAPs": <number>- Count of outdoor access points,
+                                                                    ${dynamicSchemaMap}
+                    }
 }
 
 You MUST output ONLY a valid JSON array matching the schema above.

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EQUIPMENT_STATUSES } from "@/src/lib/types";
+
 
 /**
  * Validates Firestore document data against a Zod schema.
@@ -147,11 +147,7 @@ export const CatalogMetadataSchema = z.object({
 });
 
 // --- BOM Logic Rule ---
-const LogicConditionSchema = z.object({
-    field: z.string(),
-    operator: z.enum(["equals", "not_equals", "greater_than", "less_than", "contains", "in_list"]),
-    value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
-});
+
 
 const BOMLogicActionSchema = z.object({
     type: z.enum(["select_equipment", "enable_feature", "set_configuration", "set_parameter", "modify_quantity"]),

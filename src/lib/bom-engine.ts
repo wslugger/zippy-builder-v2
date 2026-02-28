@@ -89,6 +89,54 @@ function makePricingSnapshot(equip: Equipment): BOMLineItem['pricing'] | undefin
     };
 }
 
+/**
+ * PoE Standard hierarchy for comparison.
+ * Higher number = more capable. A switch is compatible if its level >= the required level.
+ */
+const POE_HIERARCHY: Record<string, number> = {
+    'none': 0,
+    'poe': 1,
+    'poe+': 2,
+    'poe++': 3,
+    'upoe': 3,
+    'upoe+': 4
+};
+
+function poeLevel(standard: string): number {
+    return POE_HIERARCHY[(standard || 'none').toLowerCase()] ?? 0;
+}
+
+/**
+ * Normalizes port speed strings for comparison.
+ * Handles variations: '1G' → '1g-copper', '10G-Copper' → '10g-copper', 'mGig' → 'mgig-copper'.
+ * Returns lowercase canonical form for reliable matching.
+ */
+function normalizePortSpeed(speed: string): string {
+    if (!speed) return '';
+    const s = speed.toLowerCase().trim();
+    // Already fully qualified (e.g., '1g-copper', '10g-fiber')
+    if (s.includes('-')) return s;
+    // Map common shorthand to canonical
+    if (s === 'mgig' || s === 'multigig') return 'mgig-copper';
+    // Pure speed values like '1g', '10g', '25g' — default to copper
+    if (/^\d+g$/.test(s)) return `${s}-copper`;
+    return s;
+}
+
+/**
+ * Checks if equipment port type matches the required type.
+ * Uses fuzzy matching to handle database inconsistencies.
+ */
+function portSpeedMatches(equipmentPortType: string, requiredPortType: string): boolean {
+    // If no requirement specified, match everything
+    if (!requiredPortType) return true;
+    const normEquip = normalizePortSpeed(equipmentPortType);
+    const normRequired = normalizePortSpeed(requiredPortType);
+    // If equipment has no port type set, it should still match the default
+    if (!normEquip) return true;
+    return normEquip === normRequired;
+}
+
 export function calculateBOM(input: BOMEngineInput): BOM {
     const { projectId, sites, selectedPackage, services, siteTypes, equipmentCatalog, manualSelections = {}, globalParameters = {} } = input;
 
@@ -317,12 +365,19 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 }
 
                 if (requiredPurpose === "LAN" && role === 'LAN') {
+                    // --- LAN Preferences (data-driven from UI dropdowns) ---
+                    const lanPrefs = site.lanPreferences;
+
                     // Extract WLAN requirements from already processed items for this site
                     const wlanItem = bomItems.find(item => item.siteName === site.name && normalizeServiceId(item.serviceId) === 'managed_wifi');
                     let requiredAccessPortType = siteParameters['defaultAccessSpeed'] || '1G-Copper';
                     let totalRequiredPoEWatts = 0;
+                    let requiredPoeStandard = 'None';
 
-                    if (wlanItem) {
+                    // LAN Preferences override defaults when set
+                    if (lanPrefs?.accessPortSpeedId) {
+                        requiredAccessPortType = lanPrefs.accessPortSpeedId;
+                    } else if (wlanItem) {
                         const apEquip = equipmentCatalog.find(eq => eq.id === wlanItem.itemId);
                         if (apEquip && getEquipmentRole(apEquip) === 'WLAN') {
                             const apSpecs = apEquip.specs as any;
@@ -331,20 +386,44 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         }
                     }
 
-                    // 1. Media Type Match (APs dictate port speed)
-                    if (specs.accessPortType !== requiredAccessPortType) return false;
-
-                    const portUtilization = (siteParameters['maxPortUtilization'] || 100) / 100;
-                    const totalRequiredPorts = (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0);
-                    const effectiveRequiredPorts = Math.ceil(totalRequiredPorts / portUtilization);
-
-                    // 2. Capacity Check (Non-stackable must meet requirements alone)
-                    if (!specs.isStackable) {
-                        if ((specs.accessPortCount || 0) < effectiveRequiredPorts) return false;
-                        if ((specs.poeBudgetWatts || 0) < totalRequiredPoEWatts) return false;
+                    if (lanPrefs?.poeRequirementId) {
+                        requiredPoeStandard = lanPrefs.poeRequirementId;
                     }
 
-                    // 3. Stacking Limit Check (configurable max units per stack)
+                    console.log(`[BOMEngine:LAN] Evaluating ${e.model} (vendor=${e.vendor_id}, accessPortType=${specs.accessPortType} [normalized: ${normalizePortSpeed(specs.accessPortType || '')}], poeStandard=${specs.poeStandard}) against required: accessPortType=${requiredAccessPortType} [normalized: ${normalizePortSpeed(requiredAccessPortType)}], poeStandard=${requiredPoeStandard}`);
+
+                    // 1. Media Type Match – equipment accessPortType must match required speed (fuzzy)
+                    if (!portSpeedMatches(specs.accessPortType || '', requiredAccessPortType)) {
+                        console.log(`[BOMEngine:LAN] REJECTED ${e.model}: accessPortType mismatch '${specs.accessPortType}' (norm: ${normalizePortSpeed(specs.accessPortType || '')}) !== '${requiredAccessPortType}' (norm: ${normalizePortSpeed(requiredAccessPortType)})`);
+                        return false;
+                    }
+
+                    // 2. PoE Standard Match – equipment must meet or exceed the required PoE level
+                    if (poeLevel(specs.poeStandard || 'None') < poeLevel(requiredPoeStandard)) {
+                        console.log(`[BOMEngine:LAN] REJECTED ${e.model}: poeStandard '${specs.poeStandard}' (level ${poeLevel(specs.poeStandard || 'None')}) < required '${requiredPoeStandard}' (level ${poeLevel(requiredPoeStandard)})`);
+                        return false;
+                    }
+
+                    const portUtilization = (siteParameters['maxPortUtilization'] || 100) / 100;
+                    const portDensity = lanPrefs?.portDensity || 0;
+                    const totalRequiredPorts = portDensity > 0
+                        ? portDensity
+                        : (site.userCount || 0) + (site.indoorAPs || 0) + (site.outdoorAPs || 0);
+                    const effectiveRequiredPorts = Math.ceil(totalRequiredPorts / portUtilization);
+
+                    // 3. Capacity Check (Non-stackable must meet requirements alone)
+                    if (!specs.isStackable) {
+                        if ((specs.accessPortCount || 0) < effectiveRequiredPorts) {
+                            console.log(`[BOMEngine:LAN] REJECTED ${e.model}: non-stackable capacity ${specs.accessPortCount} < ${effectiveRequiredPorts} required ports`);
+                            return false;
+                        }
+                        if ((specs.poeBudgetWatts || 0) < totalRequiredPoEWatts) {
+                            console.log(`[BOMEngine:LAN] REJECTED ${e.model}: poeBudget ${specs.poeBudgetWatts} < ${totalRequiredPoEWatts}W required`);
+                            return false;
+                        }
+                    }
+
+                    // 4. Stacking Limit Check (configurable max units per stack)
                     if (specs.isStackable) {
                         const maxStackSize = siteParameters['maxStackSize'] ?? 8;
                         const maxStackPorts = (specs.accessPortCount || 0) * maxStackSize;
@@ -352,6 +431,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         if (maxStackPorts < effectiveRequiredPorts) return false;
                         if (maxStackPoE < totalRequiredPoEWatts) return false;
                     }
+
+                    console.log(`[BOMEngine:LAN] ACCEPTED ${e.model}`);
                 }
 
                 return true;
@@ -467,11 +548,27 @@ export function calculateBOM(input: BOMEngineInput): BOM {
 
                 const throughputField = activeThroughputField;
                 const deviceThroughput = getEquipmentPerformanceValue(bestFit, throughputField);
-                let reasoning = `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`;
 
-                // Add Transceiver note for Fiber uplinks (configurable via fiberTransceiverNote parameter)
-                if (siteParameters['fiberTransceiverNote'] !== false && bestFit.role === 'LAN' && (bestFit.specs as any).uplinkPortType?.toLowerCase().includes('fiber')) {
-                    reasoning += ` NOTE: Requires ${(bestFit.specs as any).uplinkPortCount || 0}x Fiber Transceivers for uplinks.`;
+                let reasoning: string;
+                if (canonicalServiceId === 'managed_lan' && bestFit.role === 'LAN') {
+                    // LAN-specific reasoning based on catalog specs
+                    const lanSpecs = bestFit.specs as any;
+                    const specParts: string[] = [];
+                    if (lanSpecs.accessPortType) specParts.push(`Access: ${lanSpecs.accessPortType}`);
+                    if (lanSpecs.poeStandard && lanSpecs.poeStandard !== 'None') specParts.push(`PoE: ${lanSpecs.poeStandard} (${lanSpecs.poeBudgetWatts || 0}W)`);
+                    if (lanSpecs.poeStandard === 'None' || !lanSpecs.poeStandard) specParts.push('PoE: None');
+                    if (lanSpecs.accessPortCount) specParts.push(`${lanSpecs.accessPortCount} Ports`);
+                    if (lanSpecs.uplinkPortType) specParts.push(`Uplink: ${lanSpecs.uplinkPortCount || 0}x ${lanSpecs.uplinkPortType}`);
+                    if (lanSpecs.isStackable) specParts.push('Stackable');
+                    reasoning = `${matchType}: ${specParts.join(', ')}.`;
+
+                    // Add Transceiver note for Fiber uplinks
+                    if (siteParameters['fiberTransceiverNote'] !== false && lanSpecs.uplinkPortType?.toLowerCase().includes('fiber')) {
+                        reasoning += ` NOTE: Requires ${lanSpecs.uplinkPortCount || 0}x Fiber Transceivers for uplinks.`;
+                    }
+                } else {
+                    // WAN/other reasoning (throughput-based)
+                    reasoning = `${matchType}: Vendor=${vendorId}, ${throughputField.replace(/_/g, ' ').toUpperCase()}=${deviceThroughput} Mbps. ${deviceThroughput < requiredThroughput ? 'Warning: Load exceeds capacity.' : ''}`;
                 }
 
                 bomItems.push({
@@ -568,4 +665,10 @@ function getEquipmentSpecSummary(e: Equipment): string {
         if (specs.wanPortCount) parts.push(`${specs.wanPortCount} WAN`);
     }
     return parts.join(", ");
+}
+
+export interface HardwareSKU {
+    sku: string;
+    quantity: number;
+    reasoning?: string;
 }

@@ -314,6 +314,31 @@ export default function AdminSettingsPage() {
                         {/* TAXONOMY TAB */}
                         {activeTab === 'taxonomy' && (
                             <>
+                                <div className="mb-8 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                                    <h2 className="text-lg font-bold text-blue-800 mb-4">LAN Infrastructure Taxonomy</h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Valid PoE Types</label>
+                                            <input
+                                                type="text"
+                                                value={draftConfig.validPoeTypes || ''}
+                                                onChange={(e) => setDraftConfig({ ...draftConfig, validPoeTypes: e.target.value })}
+                                                className="w-full px-4 py-2 bg-white border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            />
+                                            <p className="text-xs text-slate-500 mt-1">Enter values separated by commas (e.g., &apos;None, PoE+, UPoE&apos;)</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Valid Redundancy Modes</label>
+                                            <input
+                                                type="text"
+                                                value={draftConfig.validRedundancyModes || ''}
+                                                onChange={(e) => setDraftConfig({ ...draftConfig, validRedundancyModes: e.target.value })}
+                                                className="w-full px-4 py-2 bg-white border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            />
+                                            <p className="text-xs text-slate-500 mt-1">Enter values separated by commas (e.g., &apos;None, PoE+, UPoE&apos;)</p>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Regions (Comma separated)</label>
                                     <textarea
