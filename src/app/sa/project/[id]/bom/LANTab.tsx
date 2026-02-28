@@ -110,11 +110,87 @@ export function LANTab({
         updateSelections(next);
     };
 
+    // Calculate provided ports and usage
+    const { providedLanPorts, providedPoePorts } = useMemo(() => {
+        let lanP = 0;
+        let poeP = 0;
+        selections.forEach(sel => {
+            const eq = catalog.find(e => e.id === sel.itemId);
+            if (eq && eq.specs) {
+                const s = eq.specs as Record<string, unknown>;
+                const accessPorts = (s.accessPortCount as number) || 0;
+                lanP += accessPorts * sel.quantity;
+
+                const poeBudgetVal = (s.poeBudgetWatts as number) || (s.poe_budget as number) || (s.poeBudget as number) || 0;
+                if (poeBudgetVal > 0) poeP += accessPorts * sel.quantity;
+            }
+        });
+        return { providedLanPorts: lanP, providedPoePorts: poeP };
+    }, [selections, catalog]);
+
+    const requiredLanPorts = selectedSite.lanPorts || 0;
+    const requiredPoePorts = selectedSite.poePorts || selectedSite.requiredPoePorts || 0;
+
+    const calculateUsage = (req: number, prov: number) => {
+        if (req === 0 && prov === 0) return 0;
+        if (prov === 0) return 0;
+        return Math.round((req / prov) * 100);
+    };
+
+    const lanUsagePct = calculateUsage(requiredLanPorts, providedLanPorts);
+    const poeUsagePct = calculateUsage(requiredPoePorts, providedPoePorts);
+
+    const getUsageColor = (pct: number, prov: number, req: number) => {
+        if (req === 0 && prov === 0) return 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500';
+        if (prov > 0 && req === 0) return 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500';
+        if (prov === 0 && req > 0) return 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400';
+        if (pct > 100) return 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400';
+        if (pct >= 80) return 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400';
+        return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400';
+    };
+
     return (
         <div className="space-y-6">
             <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Manual LAN Switch Selection</h3>
+                </div>
+
+                {/* Port Usage Visuals */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">LAN Port Usage</div>
+                            <div className="flex items-baseline space-x-2">
+                                <span className={`text-2xl font-black ${lanUsagePct > 100 ? 'text-red-600 dark:text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>
+                                    {providedLanPorts === 0 && requiredLanPorts > 0 ? '⚠️' : `${lanUsagePct}%`}
+                                </span>
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                                {requiredLanPorts} req / {providedLanPorts} prov
+                            </div>
+                        </div>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm ${getUsageColor(lanUsagePct, providedLanPorts, requiredLanPorts)}`}>
+                            🔌
+                        </div>
+                    </div>
+
+                    <div className={`flex items-center justify-between p-4 rounded-xl border transition-opacity ${(requiredPoePorts === 0 && providedPoePorts === 0) ? 'opacity-50 grayscale bg-slate-50 dark:bg-slate-800/20 border-slate-100 dark:border-slate-800/50' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800'}`}>
+                        <div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">PoE Port Usage</div>
+                            <div className="flex items-baseline space-x-2">
+                                <span className={`text-2xl font-black ${poeUsagePct > 100 ? 'text-red-600 dark:text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>
+                                    {providedPoePorts === 0 && requiredPoePorts > 0 ? '⚠️' : `${poeUsagePct}%`}
+                                </span>
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                                {requiredPoePorts} req / {providedPoePorts} prov
+                            </div>
+                        </div>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-sm ${getUsageColor(poeUsagePct, providedPoePorts, requiredPoePorts)}`}>
+                            ⚡
+                        </div>
+                    </div>
                 </div>
 
                 <div className="space-y-6">
