@@ -242,3 +242,10 @@
 - **Policy Override Toggle**: Introduced an "Override PoE Enforce" toggle that bypasses the site-requirement filtering logic in the catalog dropdown.
 - **Key Insight**: Rules engines should provide smart defaults and helpful filters (like PoE enforcement), but they must never *block* the expert user. Providing a clear "Override" path preserves the value of the guardrails while allowing for edge-case flexibility.
 - **Pattern**: Use a `useMemo` hook to normalize potentially polymorphic-state values (string, object, or array) into a single canonical format for the rendering logic to consume.
+
+## 35. E2E Test Flow Robustness Against New Interstitial UI
+**Issue**: A Playwright E2E test designed to trace the critical path (Upload CSV -> Classify -> Generate BOM) failed consistently after a new feature (AI Triage Pipeline) introduced an intermediate "Completion Modal" before navigating to the BOM. The test timed out waiting for an element that would only render after a user clicked "Continue".
+**Solution**:
+- **Test-UI Synchronization**: Always update the core E2E smoke tests immediately alongside any PR that introduces new interstitial modals or blocking dialogs in the happy path.
+- **Explicit Waits and Action Triggers**: Updated the Playwright test to explicitly look for the new modal (`await expect(page.getByText('AI Triage Complete')).toBeVisible()`) and click the appropriate continuation button before asserting the final page state.
+- **Key Insight**: Automated "happy path" tests are brittle to UX improvements. Introducing a new step (even a helpful summary modal) breaks the automation assumption. E2E tests should be treated as living documentation of the *current* exact user flow, not just abstract technical checkpoints.

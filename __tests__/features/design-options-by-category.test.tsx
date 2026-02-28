@@ -17,14 +17,14 @@ describe('Design Option category grouping logic', () => {
         { id: 'uncategorized', name: 'Mystery Option', category: undefined, short_description: '', detailed_description: '', caveats: [], assumptions: [] },
     ];
 
-    it('groups design options by category correctly', () => {
-        const grouped = designOptions.reduce<Record<string, DesignOption[]>>((acc, design) => {
-            const cat = design.category || 'Other';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(design);
-            return acc;
-        }, {});
+    const grouped = designOptions.reduce<Record<string, DesignOption[]>>((acc, design) => {
+        const cat = design.category || 'Other';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(design);
+        return acc;
+    }, {});
 
+    it('groups design options by category correctly', () => {
         expect(Object.keys(grouped)).toEqual(expect.arrayContaining(['Topology', 'East-West Security', 'Internet Breakout', 'Other']));
         expect(grouped['Topology']).toHaveLength(2);
         expect(grouped['East-West Security']).toHaveLength(1);
@@ -33,24 +33,10 @@ describe('Design Option category grouping logic', () => {
     });
 
     it('places options without a category into the Other group', () => {
-        const grouped = designOptions.reduce<Record<string, DesignOption[]>>((acc, design) => {
-            const cat = design.category || 'Other';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(design);
-            return acc;
-        }, {});
-
         expect(grouped['Other'][0].id).toBe('uncategorized');
     });
 
     it('preserves the order of options within each category', () => {
-        const grouped = designOptions.reduce<Record<string, DesignOption[]>>((acc, design) => {
-            const cat = design.category || 'Other';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(design);
-            return acc;
-        }, {});
-
         expect(grouped['Internet Breakout'].map(d => d.id)).toEqual(['local_breakout', 'cloud_security']);
     });
 });
