@@ -51,7 +51,10 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
         isLoading,
         projectId,
         hasProject: !!project,
-        siteTypesCount: siteTypes.length
+        status: project?.status,
+        packageId: project?.selectedPackageId,
+        siteTypesCount: siteTypes.length,
+        availableTabs: availableTabs.map(t => t.id)
     });
 
     if (isLoading) {

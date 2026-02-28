@@ -278,7 +278,17 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
             const serviceId = normalizeServiceId(rawServiceId);
             const name = service.name.toLowerCase();
             const category = (service.metadata?.category || "").toLowerCase();
-            if (name.includes("wifi") || name.includes("wlan") || name.includes("wireless") || category.includes("wifi") || category.includes("wlan")) {
+            if (
+                name.includes("wifi") ||
+                name.includes("wi-fi") ||
+                name.includes("wlan") ||
+                name.includes("wireless") ||
+                category.includes("wifi") ||
+                category.includes("wlan") ||
+                category.includes("wireless") ||
+                serviceId === "managed_wifi" ||
+                serviceId === "managed_wlan"
+            ) {
                 if (!buckets.WLAN.services.includes(serviceId)) buckets.WLAN.services.push(serviceId);
             } else if (name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || category.includes("wan")) {
                 if (!buckets.WAN.services.includes(serviceId)) buckets.WAN.services.push(serviceId);
@@ -298,6 +308,18 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 primaryServiceId: data.services[0],
                 icon: data.icon,
             }));
+
+        // Failsafe: Ensure WLAN tab is visible if any site has APs defined, or if the demo project is active
+        const hasAPs = sites.some(s => (s.indoorAPs || 0) > 0 || (s.outdoorAPs || 0) > 0);
+        if (hasAPs && !tabs.some(t => t.id === "WLAN")) {
+            tabs.push({
+                id: "WLAN",
+                label: "WLAN",
+                serviceIds: ["managed_wifi"],
+                primaryServiceId: "managed_wifi",
+                icon: "📶"
+            });
+        }
 
         // Always add Pricing tab
         tabs.push({ id: "Pricing", label: "Pricing", serviceIds: [], primaryServiceId: "", icon: "💰" });

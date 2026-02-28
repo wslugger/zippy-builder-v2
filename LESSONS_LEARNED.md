@@ -249,3 +249,17 @@
 - **Test-UI Synchronization**: Always update the core E2E smoke tests immediately alongside any PR that introduces new interstitial modals or blocking dialogs in the happy path.
 - **Explicit Waits and Action Triggers**: Updated the Playwright test to explicitly look for the new modal (`await expect(page.getByText('AI Triage Complete')).toBeVisible()`) and click the appropriate continuation button before asserting the final page state.
 - **Key Insight**: Automated "happy path" tests are brittle to UX improvements. Introducing a new step (even a helpful summary modal) breaks the automation assumption. E2E tests should be treated as living documentation of the *current* exact user flow, not just abstract technical checkpoints.
+
+## 36. Robust WLAN Tab Detection & Failsafe Logic
+**Issue**: The WLAN tab was frequently missing from the BOM Builder due to inconsistent service naming (e.g., "WiFi" vs "Wi-Fi" vs "Wireless") or because the specific `managed_wifi` service was omitted from a package, even though the site data explicitly required APs.
+**Solution**: 
+- **Multi-Layered Keyword Matching**: Implemented case-insensitive regex for `wifi`, `wi-fi`, `wlan`, and `wireless` across both Service Names and Categories.
+- **Data-Driven Failsafe**: Added a logic check in `availableTabs` that forces the WLAN tab to appear if *any* site in the project has a non-zero count for `indoorAPs` or `outdoorAPs`, regardless of the package configuration.
+- **Key Insight**: UI navigation should be driven by the *user's data* (site requirements) first, and the *product catalog* (package contents) second. If a user defines a requirement, the UI must provide the path to fulfill it, even if the service categorization is ambiguous.
+
+## 37. Contextual Specification Mapping for AI-Extracted Hardware
+**Issue**: The generic "Specs Modal" showed irrelevant metrics (like WAN throughput) for WLAN access points and lacked critical LAN details like port types or stackability. Additionally, the coverage visual was ignoring automatically-added items, showing "0 prov" despite APs being in the BOM.
+**Solution**:
+- **Role-Based Modal Refactoring**: Dynamically reorganized the `SpecsModal` into a 2-column layout that shifts its fields based on `item.role`. WLAN now shows Standard/MIMO/Environment, while LAN shows Access/Uplink port types and PoE standards.
+- **BOM-Driven Visual Summaries**: Updated the AP coverage calculation to pull "provided" counts directly from the `wlanItems` (actual BOM line items) instead of just the manual `selections` (local overrides).
+- **Key Insight**: Visual summaries and technical specs must be tightly coupled to the final *compiled* BOM output, not just the user's manual inputs. If the engine adds hardware via rules, the UI must treat those items as first-class residents in all coverage and detail views.

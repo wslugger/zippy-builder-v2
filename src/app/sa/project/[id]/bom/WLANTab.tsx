@@ -101,15 +101,15 @@ export function WLANTab({
         let indAPs = 0;
         let outAPs = 0;
 
-        selections.forEach(sel => {
-            const eq = catalog.find(e => e.id === sel.itemId);
+        wlanItems.forEach(item => {
+            const eq = catalog.find(e => e.id === item.itemId);
             if (eq && eq.specs) {
                 const s = eq.specs as Record<string, unknown>;
                 const env = (s.environment as string) || 'Indoor';
                 if (env.toLowerCase() === 'outdoor') {
-                    outAPs += sel.quantity;
+                    outAPs += item.quantity;
                 } else {
-                    indAPs += sel.quantity;
+                    indAPs += item.quantity;
                 }
             }
         });
@@ -117,7 +117,7 @@ export function WLANTab({
             providedIndoorAPs: indAPs,
             providedOutdoorAPs: outAPs,
         };
-    }, [selections, catalog]);
+    }, [wlanItems, catalog]);
 
     const requiredIndoorAPs = selectedSite.indoorAPs || 0;
     const requiredOutdoorAPs = selectedSite.outdoorAPs || 0;

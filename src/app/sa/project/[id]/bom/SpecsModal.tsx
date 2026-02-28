@@ -39,12 +39,17 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+                    <div className="grid grid-cols-2 gap-8 pb-6 border-b border-slate-100 dark:border-slate-800">
+                        {/* Column 1: Core Performance/Capabilities */}
                         <div>
-                            {item.role === 'LAN' ? (
+                            {item.role === 'LAN' && (
                                 <>
-                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Power Over Ethernet</h5>
+                                    <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Switching Capabilities</h5>
                                     <dl className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Stackable</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).isStackable ? 'Yes' : 'No'}</dd>
+                                        </div>
                                         <div className="flex justify-between text-sm">
                                             <dt className="text-slate-500 dark:text-slate-400">PoE Budget</dt>
                                             <dd className="font-semibold text-slate-900 dark:text-slate-100">
@@ -52,66 +57,103 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                             </dd>
                                         </div>
                                         {hasPoe && poeCapabilities && poeCapabilities !== 'None' && (
-                                            <>
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="text-slate-500 dark:text-slate-400">Capabilities</dt>
-                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{poeCapabilities}</dd>
-                                                </div>
-                                            </>
-                                        )}
-                                    </dl>
-                                </>
-                            ) : (
-                                <>
-                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Performance</h5>
-                                    <dl className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <dt className="text-slate-500 dark:text-slate-400">VPN Throughput</dt>
-                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.sdwanCryptoThroughputMbps || 0} Mbps</dd>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <dt className="text-slate-500 dark:text-slate-400">Firewall Throughput</dt>
-                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.rawFirewallThroughputMbps || 0} Mbps</dd>
-                                        </div>
-                                        {(item as any).specs.advancedSecurityThroughputMbps && (
                                             <div className="flex justify-between text-sm">
-                                                <dt className="text-slate-500 dark:text-slate-400">AdvSec Throughput</dt>
-                                                <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item as any).specs.advancedSecurityThroughputMbps} Mbps</dd>
+                                                <dt className="text-slate-500 dark:text-slate-400">PoE Standard</dt>
+                                                <dd className="font-semibold text-slate-900 dark:text-slate-100">{poeCapabilities}</dd>
                                             </div>
                                         )}
                                     </dl>
                                 </>
                             )}
+                            {item.role === 'WLAN' && (
+                                <>
+                                    <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Wireless Specs</h5>
+                                    <dl className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Standard</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).wifiStandard || "Wi-Fi 6"}</dd>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">MIMO</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).mimoBandwidth || "2x2"}</dd>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Environment</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).environment || "Indoor"}</dd>
+                                        </div>
+                                    </dl>
+                                </>
+                            )}
+
+                            {item.role === 'WAN' && (
+                                <>
+                                    <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Performance</h5>
+                                    <dl className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">VPN Throughput</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).sdwanCryptoThroughputMbps || 0} Mbps</dd>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Firewall Throughput</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).rawFirewallThroughputMbps || 0} Mbps</dd>
+                                        </div>
+                                    </dl>
+                                </>
+                            )}
                         </div>
+
+                        {/* Column 2: Hardware Details */}
                         <div>
-                            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Hardware</h5>
+                            <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Hardware Details</h5>
                             <dl className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <dt className="text-slate-500 dark:text-slate-400">
-                                        {item.role === 'WAN' ? 'WAN/LAN Ports' : item.role === 'LAN' ? 'Access Ports' : 'Total Ports'}
-                                    </dt>
-                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">
-                                        {item.role === 'WAN'
-                                            ? `${(item.specs as any).wanPortCount || 0}W / ${(item.specs as any).lanPortCount || 0}L`
-                                            : item.role === 'LAN'
-                                                ? (item.specs as any).accessPortCount || 0
-                                                : (item.specs as any).ports || "N/A"}
-                                    </dd>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <dt className="text-slate-500 dark:text-slate-400">Uplink / SFP</dt>
-                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">
-                                        {item.role === 'WAN'
-                                            ? (item.specs as any).sfpPortCount || 0
-                                            : item.role === 'LAN'
-                                                ? (item.specs as any).uplinkPortCount || 0
-                                                : "N/A"}
-                                    </dd>
-                                </div>
+                                {item.role === 'LAN' && (
+                                    <>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Access Ports</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">
+                                                {(item.specs as any).accessPortCount || 0}x {(item.specs as any).accessPortType || "1G-Copper"}
+                                            </dd>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Uplink Ports</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">
+                                                {(item.specs as any).uplinkPortCount || 0}x {(item.specs as any).uplinkPortType || "10G-Fiber"}
+                                            </dd>
+                                        </div>
+                                    </>
+                                )}
+
+                                {item.role === 'WLAN' && (
+                                    <>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Uplink Interface</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).uplinkType || "1G-Copper"}</dd>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Max Power Draw</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).powerDrawWatts || 15} W</dd>
+                                        </div>
+                                    </>
+                                )}
+
+                                {item.role === 'WAN' && (
+                                    <>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">WAN/LAN Ports</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">
+                                                {(item.specs as any).wanPortCount || 0}W / {(item.specs as any).lanPortCount || 0}L
+                                            </dd>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <dt className="text-slate-500 dark:text-slate-400">Uplink / SFP</dt>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).sfpPortCount || 0}</dd>
+                                        </div>
+                                    </>
+                                )}
                                 <div className="flex justify-between text-sm">
                                     <dt className="text-slate-500 dark:text-slate-400">Form Factor</dt>
-                                    <dd className="font-semibold text-slate-900 dark:text-slate-100 uppercase text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                                        {item.formFactor || "Desktop / Rack"}
+                                    <dd className="font-semibold text-slate-900 dark:text-slate-100 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md text-[10px] uppercase">
+                                        {item.formFactor || "Standard"}
                                     </dd>
                                 </div>
                             </dl>
