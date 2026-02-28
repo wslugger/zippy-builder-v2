@@ -390,17 +390,15 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         requiredPoeStandard = lanPrefs.poeRequirementId;
                     }
 
-                    console.log(`[BOMEngine:LAN] Evaluating ${e.model} (vendor=${e.vendor_id}, accessPortType=${specs.accessPortType} [normalized: ${normalizePortSpeed(specs.accessPortType || '')}], poeStandard=${specs.poeStandard}) against required: accessPortType=${requiredAccessPortType} [normalized: ${normalizePortSpeed(requiredAccessPortType)}], poeStandard=${requiredPoeStandard}`);
+
 
                     // 1. Media Type Match – equipment accessPortType must match required speed (fuzzy)
                     if (!portSpeedMatches(specs.accessPortType || '', requiredAccessPortType)) {
-                        console.log(`[BOMEngine:LAN] REJECTED ${e.model}: accessPortType mismatch '${specs.accessPortType}' (norm: ${normalizePortSpeed(specs.accessPortType || '')}) !== '${requiredAccessPortType}' (norm: ${normalizePortSpeed(requiredAccessPortType)})`);
                         return false;
                     }
 
                     // 2. PoE Standard Match – equipment must meet or exceed the required PoE level
                     if (poeLevel(specs.poeStandard || 'None') < poeLevel(requiredPoeStandard)) {
-                        console.log(`[BOMEngine:LAN] REJECTED ${e.model}: poeStandard '${specs.poeStandard}' (level ${poeLevel(specs.poeStandard || 'None')}) < required '${requiredPoeStandard}' (level ${poeLevel(requiredPoeStandard)})`);
                         return false;
                     }
 
@@ -414,11 +412,9 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     // 3. Capacity Check (Non-stackable must meet requirements alone)
                     if (!specs.isStackable) {
                         if ((specs.accessPortCount || 0) < effectiveRequiredPorts) {
-                            console.log(`[BOMEngine:LAN] REJECTED ${e.model}: non-stackable capacity ${specs.accessPortCount} < ${effectiveRequiredPorts} required ports`);
                             return false;
                         }
                         if ((specs.poeBudgetWatts || 0) < totalRequiredPoEWatts) {
-                            console.log(`[BOMEngine:LAN] REJECTED ${e.model}: poeBudget ${specs.poeBudgetWatts} < ${totalRequiredPoEWatts}W required`);
                             return false;
                         }
                     }
