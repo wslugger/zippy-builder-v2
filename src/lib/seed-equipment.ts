@@ -131,7 +131,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
             accessPortCount: 24,
             accessPortType: '1G-Copper',
             poeBudgetWatts: 370,
-            poeStandard: 'PoE+',
+            poe_capabilities: 'PoE+',
             uplinkPortCount: 4,
             uplinkPortType: '1G-Fiber',
             isStackable: true
@@ -149,7 +149,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
             accessPortCount: 48,
             accessPortType: '1G-Copper',
             poeBudgetWatts: 740,
-            poeStandard: 'PoE+',
+            poe_capabilities: 'PoE+',
             uplinkPortCount: 4,
             uplinkPortType: '1G-Fiber',
             isStackable: true

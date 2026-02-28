@@ -60,12 +60,12 @@ describe("BOM Parameters Feature", () => {
             {
                 id: "eq2", model: "Switch 24", vendor_id: "meraki", primary_purpose: "LAN", additional_purposes: [], active: true, status: "Supported",
                 role: "LAN",
-                specs: { accessPortCount: 24, accessPortType: "1G-Copper", poeBudgetWatts: 370, poeStandard: "PoE+", uplinkPortCount: 4, uplinkPortType: "10G-Fiber", isStackable: true }
+                specs: { accessPortCount: 24, accessPortType: "1G-Copper", poeBudgetWatts: 370, poe_capabilities: "PoE+", uplinkPortCount: 4, uplinkPortType: "10G-Fiber", isStackable: true }
             },
             {
                 id: "eq3", model: "Switch 48", vendor_id: "meraki", primary_purpose: "LAN", additional_purposes: [], active: true, status: "Supported",
                 role: "LAN",
-                specs: { accessPortCount: 48, accessPortType: "1G-Copper", poeBudgetWatts: 740, poeStandard: "PoE+", uplinkPortCount: 4, uplinkPortType: "10G-Fiber", isStackable: true }
+                specs: { accessPortCount: 48, accessPortType: "1G-Copper", poeBudgetWatts: 740, poe_capabilities: "PoE+", uplinkPortCount: 4, uplinkPortType: "10G-Fiber", isStackable: true }
             }
         ];
 

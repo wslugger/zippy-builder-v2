@@ -70,7 +70,7 @@ export const LANSpecsSchema = z.object({
   accessPortCount: z.number().catch(24),
   accessPortType: z.string().catch('1G-Copper'),
   poeBudgetWatts: z.number().catch(0),
-  poeStandard: z.string().catch('None'),
+  poe_capabilities: z.string().catch('None'),
   uplinkPortCount: z.number().catch(4),
   uplinkPortType: z.string().catch('10G-Fiber'),
   isStackable: z.boolean().catch(false),

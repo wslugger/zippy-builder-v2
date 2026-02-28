@@ -678,19 +678,16 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 </div>
                                                 <div className="col-span-1">
                                                     <label className={labelClass}>
-                                                        PoE Standard
+                                                        PoE Capabilities
                                                         <span className="invisible block normal-case tracking-normal">Spacer</span>
                                                     </label>
-                                                    <select
-                                                        value={specs.poeStandard || ""}
-                                                        onChange={(e) => handleSpecChange('poeStandard', e.target.value)}
-                                                        className={selectClass}
-                                                    >
-                                                        <option value="">Select Standard...</option>
-                                                        <option value="None">None</option>
-                                                        <option value="PoE+">PoE+</option>
-                                                        <option value="PoE++">PoE++</option>
-                                                    </select>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. PoE+, UPOE"
+                                                        value={specs.poe_capabilities || ""}
+                                                        onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)}
+                                                        className={inputClass}
+                                                    />
                                                 </div>
                                             </>
                                         )}
@@ -895,10 +892,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Gbps</span>
                                             </div>
                                         </div>
-                                        <div className="col-span-1">
-                                            <label className={labelClass}>PoE Capabilities</label>
-                                            <input type="text" placeholder="e.g. PoE+, UPOE" value={specs.poe_capabilities || ""} onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)} className={inputClass} />
-                                        </div>
+
                                     </div>
                                 </section>
                             )}

@@ -381,8 +381,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     const lanSpecs = bestFit.specs as any;
                     const specParts: string[] = [];
                     if (lanSpecs.accessPortType) specParts.push(`Access: ${lanSpecs.accessPortType}`);
-                    if (lanSpecs.poeStandard && lanSpecs.poeStandard !== 'None') specParts.push(`PoE: ${lanSpecs.poeStandard} (${lanSpecs.poeBudgetWatts || 0}W)`);
-                    if (lanSpecs.poeStandard === 'None' || !lanSpecs.poeStandard) specParts.push('PoE: None');
+                    if (lanSpecs.poe_capabilities && lanSpecs.poe_capabilities !== 'None') specParts.push(`PoE: ${lanSpecs.poe_capabilities} (${lanSpecs.poeBudgetWatts || 0}W)`);
+                    if (lanSpecs.poe_capabilities === 'None' || !lanSpecs.poe_capabilities) specParts.push('PoE: None');
                     if (lanSpecs.accessPortCount) specParts.push(`${lanSpecs.accessPortCount} Ports`);
                     if (lanSpecs.uplinkPortType) specParts.push(`Uplink: ${lanSpecs.uplinkPortCount || 0}x ${lanSpecs.uplinkPortType}`);
                     if (lanSpecs.isStackable) specParts.push('Stackable');

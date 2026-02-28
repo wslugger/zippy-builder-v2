@@ -18,7 +18,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 uplinkPortCount: 4,
                 accessPortType: '1G-Copper',
                 poeBudgetWatts: 370,
-                poeStandard: 'PoE+',
+                poe_capabilities: 'PoE+',
                 uplinkPortType: '10G-Fiber'
             },
         },
@@ -35,7 +35,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 uplinkPortCount: 2,
                 accessPortType: '10G-Copper',
                 poeBudgetWatts: 0,
-                poeStandard: 'None',
+                poe_capabilities: 'None',
                 uplinkPortType: '10G-Fiber'
             },
         }

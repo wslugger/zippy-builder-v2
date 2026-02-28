@@ -8,8 +8,8 @@ interface SpecsModalProps {
 
 export function SpecsModal({ item, onClose }: SpecsModalProps) {
     const poeBudget = (item as any).specs?.poeBudgetWatts || (item as any).specs?.poe_budget || (item as any).specs?.poeBudget || 0;
-    const poeStandard = (item as any).specs?.poeStandard;
-    const hasPoe = poeBudget > 0 || (poeStandard && poeStandard !== 'None');
+    const poeCapabilities = (item as any).specs?.poe_capabilities;
+    const hasPoe = poeBudget > 0 || (poeCapabilities && poeCapabilities !== 'None');
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -51,11 +51,11 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                                 {hasPoe ? `${poeBudget} W` : 'None'}
                                             </dd>
                                         </div>
-                                        {hasPoe && poeStandard && poeStandard !== 'None' && (
+                                        {hasPoe && poeCapabilities && poeCapabilities !== 'None' && (
                                             <>
                                                 <div className="flex justify-between text-sm">
-                                                    <dt className="text-slate-500 dark:text-slate-400">Standard</dt>
-                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{poeStandard}</dd>
+                                                    <dt className="text-slate-500 dark:text-slate-400">Capabilities</dt>
+                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{poeCapabilities}</dd>
                                                 </div>
                                             </>
                                         )}
