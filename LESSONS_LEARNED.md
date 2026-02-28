@@ -220,3 +220,10 @@
 - **Strict Build Enforcement**: Ensure `next build` (which runs `tsc`) is part of the local verification pipeline.
 - **Global Search for Callers**: When changing a component's prop signature, always perform a global search for the component name to update all instances where it is instantiated.
 - **Key Insight**: TypeScript successfully flags these errors, but they can be missed if the developer is only viewing the modified file. Continuous integration or frequent local full-builds are essential to catch these "orphan props" before they reach deployment.
+
+## 32. Conditional Rendering for Optional Equipment Specs
+**Issue**: Complex boolean logic for rendering hardware specifications (like PoE Budget) became unreadable and error-prone when forced entirely onto a single line `{(item as any).specs.poeStandard && ... ? ... : ...}` in the JSX, leading to bugs where valid, non-zero budgets were hidden if an optional standard string was missing.
+**Solution**:
+- **Variable Extraction**: Pulled complex condition calculations (`const poeBudget = ...`, `const hasPoe = ...`) out of the JSX return block and into the component body.
+- **Simplified Ternary**: Used the clean, descriptive booleans inside the JSX rendering (`{hasPoe ? \`\${poeBudget} W\` : None}`).
+- **Key Insight**: JSX should remain declarative and simple. Any data massaging or complex presence checks should happen before the `return` statement to enhance readability and prevent nested ternary bugs.
