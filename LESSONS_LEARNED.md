@@ -304,3 +304,12 @@
   if (purpose === "LAN") return calculateLANBOM(moduleInput);
   ```
 - **Benefit**: Improved testability (can test LAN logic in isolation) and clearer "Reasoning" strings tailored to the specific domain metrics.
+
+## 43. Decoupling Site Types from LAN and WLAN Logic
+**Issue**: The "Small Branch" classification heuristic (based on user count) was being used as a gateway for LAN/WLAN auto-defaults. This caused issues for low-user sites with high port requirements (like Data Centers), which were being incorrectly auto-defaulted or blocked. Additionally, `siteDef.constraints` were being applied to LAN/WLAN hardware, unnecessarily restricting the available equipment pool based on WAN-centric site types.
+**Solution**: 
+- **Universal LAN Defaults**: Removed the `isSmallBranch` check from `applySmartLANDefaults`. The engine now applies baseline LAN topology requirements to *all* sites, primarily driven by their raw port and PoE needs rather than arbitrary user count thresholds.
+- **Constraint Decoupling**: Removed all `siteDef.constraints` checks from `lan-logic.ts` and `wlan-logic.ts`. Site Types and their associated constraints (budget, throughput) are now strictly a WAN/Edge concern.
+- **Improved Fallback Scaling**: Updated the LAN fallback algorithm to account for port capacity. If a perfectly matching switch isn't found, the engine now prefers the most suitable candidate and scales the `quantity` to meet the site's total port requirement.
+- **Key Insight**: Site "Types" are often a business-level or WAN-topology construct. LAN and WLAN requirements are physical and scaling-based. Forcing LAN logic to adhere to WAN-centric site definitions creates fragile edge cases and limits hardware selection flexibility.
+- **UI Alignment**: Updated UI banners and alerts to remove language about "complexity" for large sites, shifting the focus to manual requirement confirmation where necessary.
