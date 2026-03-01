@@ -245,6 +245,32 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
         });
 
         const sortedFallbackCandidates = allPurposeCandidates.sort((a, b) => {
+            const minPorts = siteParameters['minAccessPorts'] || site.lanPorts || 0;
+            const reqPoe = (site.lanRequirements?.poeCapabilities || 'None') !== 'None';
+
+            const aSpecs = a.specs as any;
+            const bSpecs = b.specs as any;
+
+            const aPorts = Number(aSpecs.accessPortCount || 0);
+            const bPorts = Number(bSpecs.accessPortCount || 0);
+
+            const aHasPoe = Number(aSpecs.poeBudgetWatts || 0) > 0;
+            const bHasPoe = Number(bSpecs.poeBudgetWatts || 0) > 0;
+
+            if (reqPoe && aHasPoe !== bHasPoe) {
+                return bHasPoe ? 1 : -1;
+            }
+
+            const aEnoughPorts = aPorts >= minPorts;
+            const bEnoughPorts = bPorts >= minPorts;
+            if (aEnoughPorts !== bEnoughPorts) {
+                return bEnoughPorts ? 1 : -1;
+            }
+
+            if (!aEnoughPorts && !bEnoughPorts && aPorts !== bPorts) {
+                return bPorts - aPorts; // Prefer the one with more ports
+            }
+
             return getEquipmentPerformanceValue(b, activeThroughputField) - getEquipmentPerformanceValue(a, activeThroughputField);
         });
 
@@ -272,6 +298,14 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
     }
 
     if (bestFit) {
+        let finalQuantity = 1;
+        const requiredPorts = siteParameters['minAccessPorts'] || site.lanPorts || 0;
+        const switchPorts = (bestFit.specs as any).accessPortCount || 0;
+
+        if (requiredPorts > 0 && switchPorts > 0) {
+            finalQuantity = Math.max(1, Math.ceil(requiredPorts / switchPorts));
+        }
+
         const lanSpecs = bestFit.specs as any;
         const specParts: string[] = [];
         if (lanSpecs.accessPortType) specParts.push(`Access: ${lanSpecs.accessPortType}`);
@@ -296,7 +330,7 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
             itemId: bestFit.id,
             itemName: `${(VENDOR_LABELS as Record<string, string>)[bestFit.vendor_id] || bestFit.vendor_id} ${bestFit.model}`,
             itemType: "equipment",
-            quantity: 1, // Start with 1 switch as baseline
+            quantity: finalQuantity,
             reasoning: reasoning,
             matchedRules: matchingRules.length > 0 ? matchingRules.map(r => ({
                 ruleId: r.id,

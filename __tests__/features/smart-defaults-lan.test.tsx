@@ -87,8 +87,8 @@ const services: Service[] = [
 // ─── Test suite ──────────────────────────────────────────────────────────────
 
 describe('Smart Defaults Engine', () => {
-    it('auto-fills LAN requirements for a small branch (userCount <= 15)', () => {
-        const site = baseSite({ userCount: 10 });
+    it('auto-fills LAN requirements for a small branch (userCount <= 25, ports <= 12)', () => {
+        const site = baseSite({ userCount: 10, poePorts: 5 });
         const result = evaluateSiteComplexity(site, [], basePackage);
 
         expect(result.lanRequirements).toBeDefined();

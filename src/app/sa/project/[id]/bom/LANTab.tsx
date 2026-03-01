@@ -72,16 +72,23 @@ export function LANTab({
         return catalog
             .filter(eq => eq.role === 'LAN' && eq.vendor_id === resolvedVendor)
             .sort((a, b) => {
+                const aSpecs = a.specs as Record<string, unknown>;
+                const bSpecs = b.specs as Record<string, unknown>;
+
                 if (siteRequiresPoe) {
-                    const getPoeBudget = (eq: Equipment) => {
-                        const specs = eq.specs as LANSpecs;
-                        const s = specs as Record<string, unknown>;
-                        return (specs.poeBudgetWatts as number) || (s.poe_budget as number) || (s.poeBudget as number) || 0;
+                    const getPoeBudget = (eqSpecs: Record<string, unknown>) => {
+                        return (eqSpecs.poeBudgetWatts as number) || (eqSpecs.poe_budget as number) || (eqSpecs.poeBudget as number) || 0;
                     };
-                    const aPoe = getPoeBudget(a) > 0 ? 1 : 0;
-                    const bPoe = getPoeBudget(b) > 0 ? 1 : 0;
+                    const aPoe = getPoeBudget(aSpecs) > 0 ? 1 : 0;
+                    const bPoe = getPoeBudget(bSpecs) > 0 ? 1 : 0;
                     if (aPoe !== bPoe) return bPoe - aPoe; // 1 comes before 0
                 }
+
+                // Sort by access port count next
+                const aPorts = (aSpecs.accessPortCount as number) || 0;
+                const bPorts = (bSpecs.accessPortCount as number) || 0;
+                if (aPorts !== bPorts) return aPorts - bPorts;
+
                 return a.model.localeCompare(b.model);
             });
     }, [catalog, resolvedVendor, siteRequiresPoe]);
