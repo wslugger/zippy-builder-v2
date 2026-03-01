@@ -119,25 +119,25 @@ describe('LANTab Features', () => {
         expect(screen.getByText('1')).toBeInTheDocument();
     });
 
-    it('calls handleSiteUpdate when site attributes are changed', () => {
-        render(<LANTab {...defaultProps} />);
+    it('shows a review banner for sites where lanRequirements.needsManualReview is true', () => {
+        const reviewSite = { ...mockSite, lanRequirements: { needsManualReview: true as const } };
+        render(<LANTab {...defaultProps} selectedSite={reviewSite} />);
+        expect(screen.getByText(/LAN Requirements Need Review/i)).toBeInTheDocument();
+        expect(screen.getByText(/Review Now/i)).toBeInTheDocument();
+    });
 
-        // Find the input for LAN Ports
-        const lanPortsInput = screen.getByLabelText(/LAN Ports/i);
-        fireEvent.change(lanPortsInput, { target: { value: '25' } });
-
-        expect(defaultProps.handleSiteUpdate).toHaveBeenCalledWith({ lanPorts: 25 });
-
-        // Find the input for PoE Ports
-        const poePortsInput = screen.getByLabelText(/PoE Ports/i);
-        fireEvent.change(poePortsInput, { target: { value: '15' } });
-
-        expect(defaultProps.handleSiteUpdate).toHaveBeenCalledWith({ poePorts: 15 });
-
-        // Find the input for Indoor APs
-        const indoorAPsInput = screen.getByLabelText(/Indoor APs/i);
-        fireEvent.change(indoorAPsInput, { target: { value: '10' } });
-
-        expect(defaultProps.handleSiteUpdate).toHaveBeenCalledWith({ indoorAPs: 10 });
+    it('shows a green requirements badge for sites with auto-filled lanRequirements', () => {
+        const autoSite = {
+            ...mockSite,
+            lanRequirements: {
+                accessPortType: '1G-Copper',
+                uplinkPortType: '10G-Fiber',
+                poeCapabilities: 'PoE+',
+                needsManualReview: false as const,
+            },
+        };
+        render(<LANTab {...defaultProps} selectedSite={autoSite} />);
+        expect(screen.getByText(/LAN Requirements Set/i)).toBeInTheDocument();
+        expect(screen.getByText(/1G-Copper/i)).toBeInTheDocument();
     });
 });

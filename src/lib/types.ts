@@ -455,6 +455,29 @@ export interface EmbeddedEquipmentSnapshot {
   addedAt: string; // ISO string of when it was attached to the site
 }
 
+/**
+ * LAN topology requirements for a site.
+ * Fields map 1:1 with keys inside Equipment.specs for LAN role equipment.
+ * Auto-populated by the Smart Defaults Engine for simple sites;
+ * left partially undefined for complex sites (needsManualReview === true).
+ */
+export interface SiteLANRequirements {
+  /** Access port media type, e.g. '1G-Copper', 'mGig-Copper', '10G-Copper' */
+  accessPortType?: string;
+  /** Uplink port media type, e.g. '10G-Fiber', '1G-Fiber' */
+  uplinkPortType?: string;
+  /** PoE capability level, e.g. 'PoE+', 'PoE++', 'None' */
+  poeCapabilities?: string;
+  /** Whether the switch must support stacking */
+  isStackable?: boolean;
+  /** Whether the switch must be rated for rugged/industrial environments */
+  isRugged?: boolean;
+  /** Minimum total PoE budget required across all switches in watts */
+  totalPoeBudgetWatts?: number;
+  /** True when the site requires manual SA review before BOM can be generated */
+  needsManualReview: boolean;
+}
+
 export interface EmbeddedServiceSnapshot {
   id: string; // The original Service document ID
   name: string;
@@ -498,11 +521,22 @@ export const SiteSchema = z.object({
     resolutionPaths: z.array(z.string())
   })).optional(),
   isReviewed: z.boolean().optional(),
+  /** Data-driven LAN requirements. Auto-filled by Smart Defaults Engine or set via GuidedLANReview. */
+  lanRequirements: z.object({
+    accessPortType: z.string().optional(),
+    uplinkPortType: z.string().optional(),
+    poeCapabilities: z.string().optional(),
+    isStackable: z.boolean().optional(),
+    isRugged: z.boolean().optional(),
+    totalPoeBudgetWatts: z.number().optional(),
+    needsManualReview: z.boolean(),
+  }).optional(),
 });
 
-export type Site = Omit<z.infer<typeof SiteSchema>, 'embeddedEquipment' | 'embeddedServices'> & {
+export type Site = Omit<z.infer<typeof SiteSchema>, 'embeddedEquipment' | 'embeddedServices' | 'lanRequirements'> & {
   embeddedEquipment?: EmbeddedEquipmentSnapshot[];
   embeddedServices?: EmbeddedServiceSnapshot[];
+  lanRequirements?: SiteLANRequirements;
 };
 
 // --- BOM Logic ---

@@ -216,6 +216,48 @@ export function getEquipmentPerformanceValue(equip: Equipment, throughputBasis?:
     return 0;
 }
 
+// ============================================================
+// LAN Taxonomy Extraction
+// ============================================================
+
+/**
+ * Derives the available LAN filter options directly from the active equipment catalog.
+ * All dropdown options in GuidedLANReview are populated from this function to ensure
+ * they always reflect what's actually selectable — no hardcoded enums.
+ */
+export interface LANTaxonomy {
+    accessPortTypes: string[];
+    uplinkPortTypes: string[];
+    poeCapabilities: string[];
+}
+
+export function extractLANTaxonomy(catalog: Equipment[]): LANTaxonomy {
+    const accessPortTypes = new Set<string>();
+    const uplinkPortTypes = new Set<string>();
+    const poeCapabilities = new Set<string>();
+
+    catalog
+        .filter(e => e.role === 'LAN' && e.active !== false)
+        .forEach(e => {
+            const specs = e.specs as Record<string, unknown>;
+            if (typeof specs.accessPortType === 'string' && specs.accessPortType) {
+                accessPortTypes.add(specs.accessPortType);
+            }
+            if (typeof specs.uplinkPortType === 'string' && specs.uplinkPortType) {
+                uplinkPortTypes.add(specs.uplinkPortType);
+            }
+            if (typeof specs.poe_capabilities === 'string' && specs.poe_capabilities) {
+                poeCapabilities.add(specs.poe_capabilities);
+            }
+        });
+
+    return {
+        accessPortTypes: [...accessPortTypes].sort(),
+        uplinkPortTypes: [...uplinkPortTypes].sort(),
+        poeCapabilities: [...poeCapabilities].sort(),
+    };
+}
+
 import { BOMLineItem } from "./types";
 
 /**

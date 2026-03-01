@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import jsonLogic from "json-logic-js";
-import { Site, BOM, BOMLineItem, BOMEngineInput, Package, BOMLogicRule } from "./types";
+import { Site, BOM, BOMLineItem, BOMEngineInput, Package, BOMLogicRule, SiteLANRequirements } from "./types";
 import { Equipment } from "./types";
 import { VENDOR_LABELS } from "./types";
 import { SiteType } from "./site-types";
@@ -37,6 +37,8 @@ jsonLogic.add_operation("min", (...args) => Math.min(...args));
 
 /**
  * Evaluates the complexity of a site to determine the UX route using the JSON rules engine.
+ * Also applies the Smart Defaults Engine: simple sites (userCount <= 15) receive
+ * auto-filled LAN requirements; complex sites are flagged for manual SA review.
  */
 export function evaluateSiteComplexity(
     site: Site,
@@ -74,7 +76,38 @@ export function evaluateSiteComplexity(
         }
     }
 
+    // --- Smart Defaults Engine ---
+    // Preserve any previously set SA overrides; only auto-fill when not already defined.
+    if (!result.lanRequirements) {
+        result.lanRequirements = applySmartLANDefaults(site);
+    }
+
     return result;
+}
+
+/**
+ * Applies safe LAN topology defaults for simple sites.
+ * - Small branch (userCount <= 15): auto-fill 1G-Copper access, 10G-Fiber uplink, PoE+ capabilities.
+ * - Complex site: flag for manual SA review via GuidedLANReview.
+ */
+function applySmartLANDefaults(site: Site): SiteLANRequirements {
+    const isSmallBranch = (site.userCount || 0) <= 15;
+
+    if (isSmallBranch) {
+        return {
+            accessPortType: '1G-Copper',
+            uplinkPortType: '10G-Fiber',
+            poeCapabilities: 'PoE+',
+            isStackable: false,
+            isRugged: false,
+            needsManualReview: false,
+        };
+    }
+
+    // Complex site — leave topology fields undefined; SA must review via GuidedLANReview
+    return {
+        needsManualReview: true,
+    };
 }
 
 /**
@@ -162,9 +195,8 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             }
 
 
-
-            if (canonicalServiceId === "managed_lan" && selections.length === 0) {
-                // Phase 1: STRICTLY require manual selection for LAN MVP
+            if (canonicalServiceId === "managed_lan" && selections.length === 0 && site.lanRequirements?.needsManualReview === true) {
+                // Site is flagged for manual LAN review — skip auto-selection until the SA resolves it
                 continue;
             }
 
@@ -350,6 +382,19 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     // Filter out switches that don't meet port density or PoE budget
                     if ((specs.accessPortCount || 0) < minPorts) return false;
                     if ((specs.poeBudgetWatts || 0) < minPoe) return false;
+
+                    // Strict matching against SiteLANRequirements (data-driven, from catalog taxonomy)
+                    const req = site.lanRequirements;
+                    if (req && !req.needsManualReview) {
+                        if (req.accessPortType && specs.accessPortType !== req.accessPortType) return false;
+                        if (req.uplinkPortType && specs.uplinkPortType !== req.uplinkPortType) return false;
+                        if (req.poeCapabilities && req.poeCapabilities !== 'None') {
+                            // Require PoE capability to be present if non-None is requested
+                            if (!specs.poe_capabilities || specs.poe_capabilities === 'None') return false;
+                        }
+                        if (req.totalPoeBudgetWatts && (specs.poeBudgetWatts || 0) < req.totalPoeBudgetWatts) return false;
+                        if (req.isStackable === true && !specs.isStackable) return false;
+                    }
                 }
 
 

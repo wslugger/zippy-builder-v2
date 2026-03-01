@@ -1,7 +1,9 @@
 import { Site, BOMLineItem } from "@/src/lib/bom-types";
 import { Equipment, LANSpecs } from "@/src/lib/types";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
+import { GuidedLANReview } from "@/src/components/sa/GuidedLANReview";
 import { useState, useEffect, useMemo } from "react";
+import { SiteLANRequirements } from "@/src/lib/types";
 
 interface LANTabProps {
     selectedSite: Site;
@@ -27,6 +29,7 @@ export function LANTab({
     handleSiteUpdate
 }: LANTabProps) {
     const [animatePulse, setAnimatePulse] = useState(false);
+    const [showGuidedReview, setShowGuidedReview] = useState(false);
 
     useEffect(() => {
         if (lanItems.length > 0) {
@@ -40,6 +43,14 @@ export function LANTab({
             };
         }
     }, [lanItems.length, lanItems.map(i => i.itemId + i.quantity).join(',')]);
+
+    const lanReq = selectedSite.lanRequirements;
+    const needsReview = lanReq?.needsManualReview === true;
+
+    const handleGuidedConfirm = (requirements: SiteLANRequirements) => {
+        handleSiteUpdate({ lanRequirements: requirements });
+        setShowGuidedReview(false);
+    };
 
     const selectionKey = `${selectedSite.name}:managed_lan`;
     const rawValue = manualSelections[selectionKey];
@@ -183,65 +194,56 @@ export function LANTab({
 
     return (
         <div className="space-y-6">
-            {/* Site Requirements Configuration */}
-            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Site Requirements Reference</h3>
-                    <div className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
-                        ⚠️ LOCAL OVERRIDE
+            {/* LAN Requirements Status Banner */}
+            {needsReview ? (
+                /* Manual review required — prompt the SA */
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-start gap-4">
+                    <span className="text-2xl">⚠️</span>
+                    <div className="flex-1">
+                        <p className="font-bold text-amber-900 dark:text-amber-200 text-sm">LAN Requirements Need Review</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                            This site is too complex for Smart Defaults. Confirm the LAN topology requirements to enable automatic BOM generation.
+                        </p>
                     </div>
+                    <button
+                        onClick={() => setShowGuidedReview(true)}
+                        className="shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-lg shadow-sm transition-all active:scale-[0.98]"
+                    >
+                        Review Now →
+                    </button>
                 </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div>
-                        <label htmlFor="lan-ports-input" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">LAN Ports</label>
-                        <input
-                            id="lan-ports-input"
-                            type="number"
-                            min="0"
-                            className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
-                            value={selectedSite.lanPorts}
-                            onChange={(e) => handleSiteUpdate({ lanPorts: parseInt(e.target.value) || 0 })}
-                        />
+            ) : lanReq ? (
+                /* Smart defaults applied — show summary badge */
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-xl p-4 flex items-center gap-4">
+                    <span className="text-xl">✅</span>
+                    <div className="flex-1">
+                        <p className="font-bold text-emerald-900 dark:text-emerald-200 text-sm">LAN Requirements Set</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            {lanReq.accessPortType && (
+                                <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400">
+                                    Access: {lanReq.accessPortType}
+                                </span>
+                            )}
+                            {lanReq.uplinkPortType && (
+                                <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400">
+                                    Uplink: {lanReq.uplinkPortType}
+                                </span>
+                            )}
+                            {lanReq.poeCapabilities && (
+                                <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400">
+                                    PoE: {lanReq.poeCapabilities}
+                                </span>
+                            )}
+                        </div>
                     </div>
-                    <div>
-                        <label htmlFor="poe-ports-input" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">PoE Ports</label>
-                        <input
-                            id="poe-ports-input"
-                            type="number"
-                            min="0"
-                            className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
-                            value={selectedSite.poePorts || selectedSite.requiredPoePorts || 0}
-                            onChange={(e) => handleSiteUpdate({ poePorts: parseInt(e.target.value) || 0 })}
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="indoor-aps-input" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Indoor APs</label>
-                        <input
-                            id="indoor-aps-input"
-                            type="number"
-                            min="0"
-                            className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
-                            value={selectedSite.indoorAPs || 0}
-                            onChange={(e) => handleSiteUpdate({ indoorAPs: parseInt(e.target.value) || 0 })}
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="outdoor-aps-input" className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Outdoor APs</label>
-                        <input
-                            id="outdoor-aps-input"
-                            type="number"
-                            min="0"
-                            className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
-                            value={selectedSite.outdoorAPs || 0}
-                            onChange={(e) => handleSiteUpdate({ outdoorAPs: parseInt(e.target.value) || 0 })}
-                        />
-                    </div>
+                    <button
+                        onClick={() => setShowGuidedReview(true)}
+                        className="shrink-0 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 underline"
+                    >
+                        Edit
+                    </button>
                 </div>
-                <p className="mt-4 text-[11px] text-slate-500 italic">
-                    Adjusting these values will update calculations for BOM validation instantly.
-                </p>
-            </div>
+            ) : null}
 
             <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
@@ -435,6 +437,15 @@ export function LANTab({
                         ))}
                     </div>
                 </div>
+            )}
+            {/* GuidedLANReview slide-out panel */}
+            {showGuidedReview && (
+                <GuidedLANReview
+                    site={selectedSite}
+                    catalog={catalog}
+                    onConfirm={handleGuidedConfirm}
+                    onDismiss={() => setShowGuidedReview(false)}
+                />
             )}
         </div>
     );
