@@ -183,6 +183,10 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 ...s,
                 uxRoute: triageInfo.uxRoute,
                 triageFlags: triageInfo.triageFlags,
+                // Propagate Smart Defaults — only set if not already overridden by SA
+                ...(triageInfo.lanRequirements && !s.lanRequirements
+                    ? { lanRequirements: triageInfo.lanRequirements }
+                    : {}),
             };
         });
     }, [rawSites, pkg]);
@@ -335,6 +339,18 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 icon: data.icon,
             }));
 
+        // Failsafe: Ensure WAN tab is visible if the package includes sdwan
+        const hasSDWAN = pkg.items.some(i => normalizeServiceId(i.service_id) === 'managed_sdwan');
+        if (hasSDWAN && !tabs.some(t => t.id === "WAN")) {
+            tabs.unshift({
+                id: "WAN",
+                label: "WAN",
+                serviceIds: ["managed_sdwan"],
+                primaryServiceId: "managed_sdwan",
+                icon: "🌐"
+            });
+        }
+
         // Failsafe: Ensure WLAN tab is visible if any site has APs defined, or if the demo project is active
         const hasAPs = sites.some(s => (s.indoorAPs || 0) > 0 || (s.outdoorAPs || 0) > 0);
         if (hasAPs && !tabs.some(t => t.id === "WLAN")) {
@@ -344,6 +360,18 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 serviceIds: ["managed_wifi"],
                 primaryServiceId: "managed_wifi",
                 icon: "📶"
+            });
+        }
+
+        // Failsafe: Ensure LAN tab is visible if the package includes managed_lan
+        const hasLAN = pkg.items.some(i => normalizeServiceId(i.service_id) === 'managed_lan');
+        if (hasLAN && !tabs.some(t => t.id === "LAN")) {
+            tabs.splice(1, 0, {
+                id: "LAN",
+                label: "LAN",
+                serviceIds: ["managed_lan"],
+                primaryServiceId: "managed_lan",
+                icon: "🔌"
             });
         }
 
