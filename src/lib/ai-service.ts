@@ -170,6 +170,28 @@ export const AIService = {
     },
 
     /**
+     * AI-assisted triage criterion generation via the copilot-suggest API.
+     */
+    generateTriageCriterion: async (instruction: string): Promise<Partial<TriageCriterion>> => {
+        try {
+            const response = await fetch('/api/copilot-suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contextType: 'triage_criterion',
+                    promptData: { instruction }
+                })
+            });
+
+            if (!response.ok) throw new Error("Failed to generate extraction rule");
+            return await response.json();
+        } catch (error) {
+            console.error("Triage Copilot Error:", error);
+            throw error;
+        }
+    },
+
+    /**
      * Builds a dynamic system prompt for the AI Triage "Schema as Data" pipeline.
      */
     buildDynamicTriagePrompt: (rawCustomerInput: string, activeCriteria: TriageCriterion[]): string => {

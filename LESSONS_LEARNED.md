@@ -276,3 +276,10 @@
 - **Auto-Anchoring Context**: Added a logic layer in the frontend that automatically detects the current service context (e.g., LAN) and wraps any AI-generated condition in an `AND` block with the mandatory `serviceId` filter if it's missing.
 - **Human Translation Persistence**: Added a `description` field to the database schema for rules. The AI generates this "plain English" translation during creation, and it is persisted to the record, acting as a living summary in the Rule List row.
 - **Key Insight**: AI tools shouldn't just be "prompt and save." They require a strict technical boundary that enforces system-level constraints (like filtering) while providing a transparent verification gate for the human administrator.
+
+## 40. Scaling the Copilot Pattern (AI Extraction Rules)
+**Issue**: The success of the "Rule Copilot" for logic rules created demand for a similar experience in the "AI Extraction" (Triage) settings. However, extraction rules follow a completely different schema (`TriageCriterion`) than logic rules (`BOMLogicRule`). 
+**Solution**:
+- **Contextual Copilot API**: Instead of creating a new API, we extended the `/api/copilot-suggest` endpoint to handle multiple `contextType` values. This allowed us to reuse the prompt cleaning and JSON parsing infrastructure while swapping the system instructions and schema definitions based on the request.
+- **Form-Aware Interaction**: In `AITriageRuleEditor.tsx`, the copilot was designed to be "Form-Aware," specifically disabling itself during "Edit" mode to prevent accidental overwrites of existing production IDs, while serving as an accelerator for creating "New" rules.
+- **Key Insight**: Once a "Verify -> Accept" UI pattern is established for AI interactions, it should be reused across the application to maintain a consistent admin experience. Centralizing the backend suggestions into a single polymorphic API endpoint reduces technical debt as more "Copilots" are added to different features.

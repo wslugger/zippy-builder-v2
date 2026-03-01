@@ -99,6 +99,51 @@ Ensure there is no markdown code block surrounding the JSON, or if there is, I w
             });
         }
 
+        if (contextType === "triage_criterion") {
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const instruction = promptData?.instruction || "Create an extraction rule";
+
+            const schemaPrompt = `
+You are an expert Solutions Architect and Data Engineer.
+Your task is to take a natural language instruction for an "AI Extraction Rule" (TriageCriterion) and convert it into a valid JSON object.
+
+Extraction rules define what parameters our AI should look for in unstructured customer notes during site triage.
+
+**Data Schema to follow (TriageCriterion):**
+{
+    "id": string (A camelCase unique identifier, e.g., "requiresLTE", "isOutdoor", "highTrafficCount"),
+    "label": string (Friendly display name, e.g., "Outdoor Rated", "High Density"),
+    "type": "boolean" | "string" | "number",
+    "promptInstruction": string (Detailed instructions for the AI on how to identify this value in notes),
+    "forcesGuidedFlow": boolean (True if finding this requirement should force a manual human review)
+}
+
+**Input Instruction:**
+"${instruction}"
+
+Output strictly a JSON object matching the TriageCriterion schema.
+Ensure there is no markdown code block surrounding the JSON. Output ONLY valid JSON.
+            `;
+
+            const result = await model.generateContent(schemaPrompt);
+            const text = result.response.text();
+
+            let jsonString = text.trim();
+            if (jsonString.startsWith("\`\`\`json")) {
+                jsonString = jsonString.replace(/^\`\`\`json\s*/, '').replace(/\s*\`\`\`$/, '');
+            } else if (jsonString.startsWith("\`\`\`")) {
+                jsonString = jsonString.replace(/^\`\`\`\s*/, '').replace(/\s*\`\`\`$/, '');
+            }
+            try {
+                const generatedCriterion = JSON.parse(jsonString);
+                return NextResponse.json(generatedCriterion);
+            } catch (_err) {
+                console.error("Failed to parse Gemini triage criterion JSON:", jsonString);
+                return NextResponse.json({ error: "Gemini produced invalid JSON" }, { status: 500 });
+            }
+        }
+
         return NextResponse.json(
             { error: "Unknown context type" },
             { status: 400 }

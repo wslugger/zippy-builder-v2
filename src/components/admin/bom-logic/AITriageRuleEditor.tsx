@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BOMService } from '@/src/lib/firebase/bom-service';
+import { AIService } from '@/src/lib/ai-service';
 import { TriageCriterion } from '@/src/lib/types';
 
 export const AITriageRuleEditor: React.FC = () => {
@@ -17,6 +18,11 @@ export const AITriageRuleEditor: React.FC = () => {
     const [type, setType] = useState<'boolean' | 'string' | 'number'>('boolean');
     const [promptInstruction, setPromptInstruction] = useState('');
     const [forcesGuidedFlow, setForcesGuidedFlow] = useState(false);
+
+    // AI Assistant state
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [verificationCriterion, setVerificationCriterion] = useState<Partial<TriageCriterion> | null>(null);
 
     // JSON Import state
     const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
@@ -47,6 +53,8 @@ export const AITriageRuleEditor: React.FC = () => {
     const handleOpenModal = (criterion?: TriageCriterion) => {
         setIsJsonImportOpen(false);
         setJsonImportValue('');
+        setVerificationCriterion(null);
+        setAiPrompt('');
         if (criterion) {
             setEditingCriterion(criterion);
             setId(criterion.id);
@@ -105,6 +113,35 @@ export const AITriageRuleEditor: React.FC = () => {
             const errorMsg = error instanceof Error ? error.message : "Invalid JSON format";
             showToast(errorMsg, 'error');
         }
+    };
+
+    const handleAIGenerate = async () => {
+        if (!aiPrompt.trim()) return;
+        try {
+            setIsGenerating(true);
+            const generated = await AIService.generateTriageCriterion(aiPrompt);
+            setVerificationCriterion(generated);
+        } catch (error) {
+            console.error("AI Generation Error:", error);
+            showToast("Failed to generate rule with AI", 'error');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const acceptVerificationCriterion = () => {
+        if (!verificationCriterion) return;
+
+        setId(verificationCriterion.id || '');
+        setLabel(verificationCriterion.label || '');
+        if (verificationCriterion.type && ['boolean', 'string', 'number'].includes(verificationCriterion.type)) {
+            setType(verificationCriterion.type as 'boolean' | 'string' | 'number');
+        }
+        setPromptInstruction(verificationCriterion.promptInstruction || '');
+        setForcesGuidedFlow(!!verificationCriterion.forcesGuidedFlow);
+
+        setVerificationCriterion(null);
+        setAiPrompt('');
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -288,7 +325,84 @@ export const AITriageRuleEditor: React.FC = () => {
                             </div>
                         )}
 
+                        {verificationCriterion && (
+                            <div className="p-6 bg-indigo-50 border-b border-indigo-100 animate-in slide-in-from-top duration-300">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h4 className="text-indigo-900 font-bold flex items-center gap-2">
+                                            <span className="text-xl">🛡️</span> Verify AI Suggestion
+                                        </h4>
+                                        <p className="text-indigo-700 text-xs mt-1">Review the generated rule before applying it to the form.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setVerificationCriterion(null)}
+                                        className="text-indigo-400 hover:text-indigo-600 p-1"
+                                    >
+                                        &times;
+                                    </button>
+                                </div>
+
+                                <div className="bg-white border border-indigo-200 rounded-lg overflow-hidden shadow-sm">
+                                    <div className="p-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proposed JSON Payload</span>
+                                        <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded uppercase">{verificationCriterion.type}</span>
+                                    </div>
+                                    <pre className="p-4 text-[12px] font-mono text-slate-700 overflow-x-auto bg-white max-h-[200px]">
+                                        {JSON.stringify(verificationCriterion, null, 2)}
+                                    </pre>
+                                </div>
+
+                                <div className="mt-4 flex gap-3">
+                                    <button
+                                        onClick={acceptVerificationCriterion}
+                                        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <span>Check</span> Accept & Populate Form
+                                    </button>
+                                    <button
+                                        onClick={() => setVerificationCriterion(null)}
+                                        className="px-6 py-2.5 bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold rounded-lg transition-colors"
+                                    >
+                                        Discard
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSave} className="p-6 space-y-5">
+                            {/* AI Assistant Section */}
+                            {!editingCriterion && !verificationCriterion && (
+                                <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-5 shadow-sm">
+                                    <h3 className="text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                                        <span>✨ Rule Copilot</span>
+                                    </h3>
+                                    <div className="flex gap-3 relative">
+                                        <textarea
+                                            value={aiPrompt}
+                                            onChange={(e) => setAiPrompt(e.target.value)}
+                                            placeholder="Describe your extraction intent (e.g., 'Extract if the site requires a backup LTE connection as a boolean')"
+                                            className="flex-1 border border-indigo-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 bg-white resize-none shadow-sm"
+                                            rows={2}
+                                            disabled={isGenerating}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAIGenerate}
+                                            disabled={isGenerating || !aiPrompt.trim()}
+                                            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+                                        >
+                                            {isGenerating ? (
+                                                <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            ) : "Generate Rule"}
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-indigo-400 mt-2 italic">Gemini will suggest ID, Label, Type, and Instructions based on your prompt.</p>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-5">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Rule ID (JSON Key)</label>
