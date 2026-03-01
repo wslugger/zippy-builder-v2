@@ -263,3 +263,10 @@
 - **Role-Based Modal Refactoring**: Dynamically reorganized the `SpecsModal` into a 2-column layout that shifts its fields based on `item.role`. WLAN now shows Standard/MIMO/Environment, while LAN shows Access/Uplink port types and PoE standards.
 - **BOM-Driven Visual Summaries**: Updated the AP coverage calculation to pull "provided" counts directly from the `wlanItems` (actual BOM line items) instead of just the manual `selections` (local overrides).
 - **Key Insight**: Visual summaries and technical specs must be tightly coupled to the final *compiled* BOM output, not just the user's manual inputs. If the engine adds hardware via rules, the UI must treat those items as first-class residents in all coverage and detail views.
+
+## 38. Environment-Specific Hardware Filtering & Dynamic Seed Merging
+**Issue**: Separating the AP selection into "Indoor" and "Outdoor" blocks introduced a rigid dependency on the database catalog accurately reflecting those specialized tags. If a vendor had no outdoor models synced in the live database, the "Add Outdoor AP" button failed silently because its filtered list was empty, completely confusing the user.
+**Solution**:
+- **Graceful Degradation**: Buttons now explicitly check their filtered lists (`availableOutdoorAPs.length === 0`) and disable themselves with a clear reason ("No Outdoor Models Available") instead of failing to render a dropdown.
+- **Dynamic Seed Injection**: Updated `useBOMBuilder` to intercept the Firestore catalog fetch and natively merge any hardcoded items from `SEED_EQUIPMENT` that aren't yet in the database. 
+- **Key Insight**: When introducing highly specific UI filters (like Environment: Outdoor), the application must natively handle the "Zero Results" state at the point of interaction (the button). Furthermore, local code (seeds) should fluidly patch live database queries during active development so new features don't require forcing database wipe-and-reloads on users.

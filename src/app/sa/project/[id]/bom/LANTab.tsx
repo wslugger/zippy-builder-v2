@@ -306,9 +306,9 @@ export function LANTab({
                     {selections.map((sel, idx) => (
                         <div key={idx} className="flex flex-col md:flex-row gap-4 p-4 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 relative group">
                             <div className="flex-1">
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Select Switch</label>
+                                <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1.5 tracking-wider">Select Switch</label>
                                 <select
-                                    className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
+                                    className="block w-full rounded-lg border-blue-100 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm py-2.5 transition-all duration-200"
                                     value={sel.itemId}
                                     onChange={(e) => handleSelectionChange(idx, e.target.value)}
                                 >
@@ -346,11 +346,11 @@ export function LANTab({
                             </div>
 
                             <div className="w-full md:w-32">
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantity</label>
+                                <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1.5 tracking-wider">Quantity</label>
                                 <input
                                     type="number"
                                     min="1"
-                                    className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
+                                    className="block w-full rounded-lg border-blue-100 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm py-2.5 transition-all duration-200"
                                     value={sel.quantity}
                                     onChange={(e) => handleQuantityChange(idx, e.target.value)}
                                 />

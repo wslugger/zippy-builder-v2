@@ -227,7 +227,15 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 if (p?.status === "completed" && p?.embeddedEquipment?.length) {
                     setCatalog(p.embeddedEquipment);
                 } else if (eq.length > 0) {
-                    setCatalog(eq);
+                    const fullCatalog = [...eq];
+                    for (const seedEq of SEED_EQUIPMENT) {
+                        if (!fullCatalog.some(e => e.id === seedEq.id)) {
+                            fullCatalog.push(seedEq);
+                        }
+                    }
+                    setCatalog(fullCatalog);
+                } else {
+                    setCatalog(SEED_EQUIPMENT);
                 }
                 setGlobalParameters(globalParams);
                 setManagementPricingMatrix(mgmtMatrix);
@@ -593,8 +601,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     // Helpers
     // -------------------------------------------------------
     const getVendorForService = useCallback(
-        (serviceId: string) => (pkg ? resolveVendorForService(pkg, serviceId) : "meraki"),
-        [pkg]
+        (serviceId: string) => (pkg ? resolveVendorForService(pkg, serviceId, services) : "meraki"),
+        [pkg, services]
     );
 
     const handlePackageChange = useCallback(async (pkgId: string) => {

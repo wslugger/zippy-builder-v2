@@ -60,6 +60,30 @@ export function WLANTab({
             .sort((a, b) => a.model.localeCompare(b.model));
     }, [catalog, resolvedVendor]);
 
+    const { availableIndoorAPs, availableOutdoorAPs } = useMemo(() => {
+        const indoor = availableAPs.filter(eq => {
+            const env = ((eq.specs as Record<string, unknown>)?.environment as string) || '';
+            return !env.toLowerCase().includes('outdoor');
+        });
+        const outdoor = availableAPs.filter(eq => {
+            const env = ((eq.specs as Record<string, unknown>)?.environment as string) || '';
+            return env.toLowerCase().includes('outdoor');
+        });
+        return { availableIndoorAPs: indoor, availableOutdoorAPs: outdoor };
+    }, [availableAPs]);
+
+    const selectionsWithMeta = useMemo(() => {
+        return selections.map((sel, originalIndex) => {
+            const eq = catalog.find(e => e.id === sel.itemId);
+            const envStr = ((eq?.specs as Record<string, unknown>)?.environment as string) || 'Indoor';
+            const env = envStr.toLowerCase().includes('outdoor') ? 'Outdoor' : 'Indoor';
+            return { ...sel, originalIndex, environment: env };
+        });
+    }, [selections, catalog]);
+
+    const indoorSelections = selectionsWithMeta.filter(s => s.environment !== 'Outdoor');
+    const outdoorSelections = selectionsWithMeta.filter(s => s.environment === 'Outdoor');
+
     const updateSelections = (newSelections: Array<{ itemId: string; quantity: number }>) => {
         setManualSelections(prev => {
             const next = { ...prev };
@@ -72,8 +96,9 @@ export function WLANTab({
         });
     };
 
-    const handleAddAP = () => {
-        const firstAvailable = availableAPs[0];
+    const handleAddAP = (env: 'Indoor' | 'Outdoor') => {
+        const list = env === 'Indoor' ? availableIndoorAPs : availableOutdoorAPs;
+        const firstAvailable = list[0];
         if (!firstAvailable) return;
         updateSelections([...selections, { itemId: firstAvailable.id, quantity: 1 }]);
     };
@@ -139,6 +164,64 @@ export function WLANTab({
         if (pct >= 80) return 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400';
         return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400';
     };
+
+    const renderAPSelection = (sel: typeof selectionsWithMeta[0]) => (
+        <div key={sel.originalIndex} className="flex flex-col md:flex-row gap-4 p-4 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 relative group transition-all hover:border-blue-200 dark:hover:border-blue-900/50">
+            <div className="flex-1">
+                <label htmlFor={`select-ap-${sel.originalIndex}`} className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1.5 tracking-wider">Select AP Model</label>
+                <select
+                    id={`select-ap-${sel.originalIndex}`}
+                    className="block w-full rounded-lg border-blue-100 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm py-2.5 transition-all duration-200"
+                    value={sel.itemId}
+                    onChange={(e) => handleSelectionChange(sel.originalIndex, e.target.value)}
+                >
+                    {(() => {
+                        const baseOptions = sel.environment === 'Outdoor' ? availableOutdoorAPs : availableIndoorAPs;
+                        const options = [...baseOptions];
+                        if (!options.find(o => o.id === sel.itemId)) {
+                            const selectedEquip = catalog.find(e => e.id === sel.itemId);
+                            if (selectedEquip) options.push(selectedEquip);
+                        }
+
+                        return options.map((eq) => {
+                            const s = eq.specs as Record<string, unknown>;
+                            const wifiStd = (s.wifiStandard as string) ? s.wifiStandard : '';
+                            const labelParts = [eq.model, wifiStd].filter(Boolean).join(' | ');
+
+                            return (
+                                <option key={eq.id} value={eq.id}>
+                                    {labelParts}
+                                </option>
+                            );
+                        });
+                    })()}
+                </select>
+            </div>
+
+            <div className="w-full md:w-32">
+                <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1.5 tracking-wider">Quantity</label>
+                <input
+                    type="number"
+                    min="1"
+                    className="block w-full rounded-lg border-blue-100 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm py-2.5 transition-all duration-200"
+                    value={sel.quantity}
+                    onChange={(e) => handleQuantityChange(sel.originalIndex, e.target.value)}
+                />
+            </div>
+
+            <div className="flex items-end">
+                <button
+                    onClick={() => handleRemoveAP(sel.originalIndex)}
+                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                    title="Remove AP"
+                >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    );
 
     return (
         <div className="space-y-6">
@@ -222,83 +305,66 @@ export function WLANTab({
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    {selections.map((sel, idx) => (
-                        <div key={idx} className="flex flex-col md:flex-row gap-4 p-4 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 relative group">
-                            <div className="flex-1">
-                                <label htmlFor={`select-ap-${idx}`} className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Select AP</label>
-                                <select
-                                    id={`select-ap-${idx}`}
-                                    className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
-                                    value={sel.itemId}
-                                    onChange={(e) => handleSelectionChange(idx, e.target.value)}
-                                >
-                                    {(() => {
-                                        const options = [...availableAPs];
-                                        if (!options.find(o => o.id === sel.itemId)) {
-                                            const selectedEquip = catalog.find(e => e.id === sel.itemId);
-                                            if (selectedEquip) options.push(selectedEquip);
-                                        }
+                <div className="space-y-10">
+                    {/* Indoor Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Indoor Configurations</h4>
+                            <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800 mx-4" />
+                        </div>
 
-                                        return options.map((eq) => {
-                                            const s = eq.specs as Record<string, unknown>;
-                                            const wifiStd = (s.wifiStandard as string) ? s.wifiStandard : '';
-                                            const env = (s.environment as string) ? s.environment : '';
+                        <div className="space-y-4">
+                            {indoorSelections.map(sel => renderAPSelection(sel))}
 
-                                            const labelParts = [
-                                                eq.model,
-                                                wifiStd,
-                                                env
-                                            ].filter(Boolean).join(' | ');
+                            {indoorSelections.length === 0 && (
+                                <div className="text-center py-6 bg-slate-50/50 dark:bg-slate-800/10 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                                    <p className="text-xs text-slate-400">No indoor APs defined.</p>
+                                </div>
+                            )}
 
-                                            return (
-                                                <option key={eq.id} value={eq.id}>
-                                                    {labelParts}
-                                                </option>
-                                            );
-                                        });
-                                    })()}
-                                </select>
+                            <button
+                                onClick={() => handleAddAP('Indoor')}
+                                disabled={availableIndoorAPs.length === 0}
+                                className={`w-full py-2.5 px-4 border-2 border-dashed rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 mt-2 ${availableIndoorAPs.length === 0
+                                    ? 'border-slate-200 dark:border-slate-800 text-slate-400 bg-slate-50 dark:bg-slate-800/10 cursor-not-allowed'
+                                    : 'border-blue-100 dark:border-blue-900/30 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10'
+                                    }`}
+                            >
+                                <span>➕</span> {availableIndoorAPs.length === 0 ? "No Indoor Models Available" : "Add Indoor AP"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Outdoor Section - Shown if required OR if user has already added outdoor APs */}
+                    {(requiredOutdoorAPs > 0 || outdoorSelections.length > 0) && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em]">Outdoor Configurations</h4>
+                                <div className="h-px flex-1 bg-amber-50 dark:bg-amber-900/20 mx-4" />
                             </div>
 
-                            <div className="w-full md:w-32">
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantity</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    className="block w-full rounded-md border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm focus:border-blue-500 text-sm"
-                                    value={sel.quantity}
-                                    onChange={(e) => handleQuantityChange(idx, e.target.value)}
-                                />
-                            </div>
+                            <div className="space-y-4">
+                                {outdoorSelections.map(sel => renderAPSelection(sel))}
 
-                            <div className="flex items-end">
+                                {outdoorSelections.length === 0 && (
+                                    <div className="text-center py-6 bg-amber-50/20 dark:bg-amber-900/5 rounded-xl border border-dashed border-amber-100 dark:border-amber-900/30">
+                                        <p className="text-xs text-amber-600/60 font-medium">Site requires {requiredOutdoorAPs} outdoor APs.</p>
+                                    </div>
+                                )}
+
                                 <button
-                                    onClick={() => handleRemoveAP(idx)}
-                                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                                    title="Remove AP"
+                                    onClick={() => handleAddAP('Outdoor')}
+                                    disabled={availableOutdoorAPs.length === 0}
+                                    className={`w-full py-2.5 px-4 border-2 border-dashed rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 mt-2 ${availableOutdoorAPs.length === 0
+                                        ? 'border-slate-200 dark:border-slate-800 text-slate-400 bg-slate-50 dark:bg-slate-800/10 cursor-not-allowed'
+                                        : 'border-amber-200 dark:border-amber-800/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10'
+                                        }`}
                                 >
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
+                                    <span>☀️</span> {availableOutdoorAPs.length === 0 ? "No Outdoor Models Available" : "Add Outdoor AP"}
                                 </button>
                             </div>
                         </div>
-                    ))}
-
-                    {selections.length === 0 && (
-                        <div className="text-center py-8 bg-slate-50 dark:bg-slate-800/20 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-                            <p className="text-sm text-slate-500">No manual APs selected.</p>
-                            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Please add an AP to see BOM output</p>
-                        </div>
                     )}
-
-                    <button
-                        onClick={handleAddAP}
-                        className="w-full py-3 px-4 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-xl text-blue-600 dark:text-blue-400 font-bold text-xs uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center justify-center gap-2"
-                    >
-                        <span>➕</span> Add AP Model
-                    </button>
                 </div>
             </div>
 
@@ -354,4 +420,5 @@ export function WLANTab({
             )}
         </div>
     );
+
 }

@@ -40,6 +40,12 @@ export async function GET() {
             await BOMService.saveRule(rule);
         }
 
+        // 9. Seed Equipment
+        console.log("Seeding Equipment...");
+        const { EquipmentService } = await import("@/src/lib/firebase/equipment-service");
+        const { SEED_EQUIPMENT } = await import("@/src/lib/seed-equipment");
+        await EquipmentService.saveEquipmentBatch(SEED_EQUIPMENT);
+
         return NextResponse.json({ success: true, message: "Database seeded successfully! Catalog populated with Services, Features, Packages, and Site Definitions." });
     } catch (error) {
         console.error("Seeding error:", error);

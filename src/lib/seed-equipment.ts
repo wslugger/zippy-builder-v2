@@ -172,5 +172,103 @@ export const SEED_EQUIPMENT: Equipment[] = [
             uplinkType: "1G-Copper",
             environment: "Indoor"
         }
+    },
+    {
+        id: "meraki_mr76",
+        vendor_id: "meraki",
+        model: "MR76",
+        active: true,
+        status: "Supported",
+        primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Meraki MR",
+        description: "Wi-Fi 6 Outdoor Access Point",
+        specs: {
+            wifiStandard: "Wi-Fi 6",
+            mimoBandwidth: "2x2",
+            powerDrawWatts: 11,
+            uplinkType: "1G-Copper",
+            environment: "Outdoor"
+        }
+    },
+    {
+        id: "meraki_mr78",
+        vendor_id: "meraki",
+        model: "MR78",
+        active: true,
+        status: "Supported",
+        primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Meraki MR",
+        description: "Wi-Fi 6 Outdoor Access Point",
+        specs: {
+            wifiStandard: "Wi-Fi 6",
+            mimoBandwidth: "2x2",
+            powerDrawWatts: 15,
+            uplinkType: "1G-Copper",
+            environment: "Outdoor"
+        }
+    },
+    // --- Cisco Wireless ---
+    {
+        id: "cisco_cw9164",
+        vendor_id: "cisco_catalyst",
+        model: "CW9164I",
+        active: true,
+        status: "Supported",
+        primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Catalyst Wireless",
+        description: "Wi-Fi 6E Indoor Access Point",
+        specs: {
+            wifiStandard: "Wi-Fi 6E",
+            mimoBandwidth: "4x4",
+            powerDrawWatts: 30,
+            uplinkType: "2.5G-Copper",
+            environment: "Indoor"
+        }
+    },
+    {
+        id: "cisco_cw9166",
+        vendor_id: "cisco_catalyst",
+        model: "CW9166D1",
+        active: true,
+        status: "Supported",
+        primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Catalyst Wireless",
+        description: "Wi-Fi 6E Outdoor Access Point",
+        specs: {
+            wifiStandard: "Wi-Fi 6E",
+            mimoBandwidth: "4x4",
+            powerDrawWatts: 30,
+            uplinkType: "2.5G-Copper",
+            environment: "Outdoor"
+        }
+    },
+    // --- Fortinet Wireless ---
+    {
+        id: "forti_ap431f",
+        vendor_id: "fortinet",
+        model: "FAP-431F",
+        active: true,
+        status: "Supported",
+        primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "FortiAP",
+        description: "Wi-Fi 6 Indoor Access Point",
+        specs: {
+            wifiStandard: "Wi-Fi 6",
+            mimoBandwidth: "4x4",
+            powerDrawWatts: 24,
+            uplinkType: "1G-Copper",
+            environment: "Indoor"
+        }
+    },
+    {
+        id: "forti_ap433f",
+        vendor_id: "fortinet",
+        model: "FAP-433F",
+        active: true,
+        status: "Supported",
+        primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "FortiAP",
+        description: "Wi-Fi 6 Outdoor Access Point",
+        specs: {
+            wifiStandard: "Wi-Fi 6",
+            mimoBandwidth: "4x4",
+            powerDrawWatts: 25,
+            uplinkType: "1G-Copper",
+            environment: "Outdoor"
+        }
     }
 ];
