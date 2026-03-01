@@ -1,4 +1,4 @@
-import { Project, AIAnalysisResult, Package, Service, GeneratedHLD, TriageCriterion, TriagedSite } from "@/src/lib/types";
+import { Project, AIAnalysisResult, Package, Service, GeneratedHLD, TriageCriterion, TriagedSite, BOMLogicRule } from "@/src/lib/types";
 import { HLDPayload } from "./hld-generator";
 
 export const AIService = {
@@ -143,6 +143,28 @@ export const AIService = {
             return await response.json();
         } catch (error) {
             console.error("HLD Document Audit Failed:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * AI-assisted rule generation via the copilot-suggest API.
+     */
+    generateBOMLogicRule: async (instruction: string, serviceCategory: string): Promise<Partial<BOMLogicRule>> => {
+        try {
+            const response = await fetch('/api/copilot-suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contextType: 'bom_logic_rule',
+                    promptData: { instruction, serviceCategory }
+                })
+            });
+
+            if (!response.ok) throw new Error("Failed to generate rule logic");
+            return await response.json();
+        } catch (error) {
+            console.error("Rule Copilot Error:", error);
             throw error;
         }
     },

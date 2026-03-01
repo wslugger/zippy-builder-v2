@@ -5,6 +5,7 @@ import { useBOMRules } from "@/src/hooks/useBOMRules";
 import RuleList from "@/src/components/admin/bom-logic/RuleList";
 import RuleEditorModal from "@/src/components/admin/bom-logic/RuleEditorModal";
 import { AITriageRuleEditor } from "@/src/components/admin/bom-logic/AITriageRuleEditor";
+import { GlobalTriageParameters } from "@/src/components/admin/bom-logic/GlobalTriageParameters";
 import { BOMLogicRule } from "@/src/lib/types";
 import { BOMService } from "@/src/lib/firebase/bom-service";
 
@@ -72,7 +73,7 @@ export default function BOMRulesListPage() {
     if (loading) return <div className="p-8">Loading...</div>;
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-8 space-y-8">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">BOM Logic Settings</h1>
@@ -83,7 +84,7 @@ export default function BOMRulesListPage() {
                         <button
                             onClick={handleSeed}
                             disabled={seeding}
-                            className="px-4 py-2 text-sm text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50"
+                            className="px-4 py-2 text-sm text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50 shadow-sm"
                         >
                             {seeding ? "Seeding..." : "Reset Verified Defaults"}
                         </button>
@@ -97,43 +98,52 @@ export default function BOMRulesListPage() {
                 )}
             </div>
 
-            {/* Tabs */}
-            <div className="flex space-x-1 border-b">
-                {[
-                    { id: "managed_sdwan", label: "SD-WAN Rules" },
-                    { id: "managed_lan", label: "LAN Rules" },
-                    { id: "managed_wifi", label: "WLAN Rules" },
-                    { id: "ai_triage", label: "AI Extraction Rules" }
-                ].map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as TabValues)}
-                        className={`px-4 py-2 font-medium text-sm transition-colors rounded-t-lg
-                            ${activeTab === tab.id
-                                ? "bg-white border-t border-l border-r text-blue-600 mb-[-1px]"
-                                : "text-slate-500 hover:text-slate-700 bg-slate-50 border-t border-l border-r border-transparent hover:border-slate-200 mb-[-1px]"}
-                        `}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
+            {/* Global Engine Parameters section rendered at the top */}
+            <GlobalTriageParameters />
 
-            {/* Content Area */}
-            {activeTab === "ai_triage" ? (
-                <AITriageRuleEditor />
-            ) : (
-                <>
-                    <RuleList rules={filteredRules} onEdit={openEditModal} onDelete={handleDeleteRule} />
-                    <RuleEditorModal
-                        isOpen={isModalOpen}
-                        ruleToEdit={ruleToEdit}
-                        serviceCategory={activeTab}
-                        onClose={closeAndRefresh}
-                        onSave={handleSaveRule}
-                    />
-                </>
-            )}
+            {/* Tabs Section */}
+            <div className="space-y-6 pt-4 border-t border-slate-100">
+                <div className="flex justify-between items-end">
+                    <h2 className="text-xl font-bold text-slate-900">Logic & AI Rules</h2>
+                </div>
+
+                <div className="flex space-x-1 border-b">
+                    {[
+                        { id: "managed_sdwan", label: "SD-WAN Rules" },
+                        { id: "managed_lan", label: "LAN Rules" },
+                        { id: "managed_wifi", label: "WLAN Rules" },
+                        { id: "ai_triage", label: "AI Extraction Rules" }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as TabValues)}
+                            className={`px-4 py-2 font-medium text-sm transition-colors rounded-t-lg
+                                ${activeTab === tab.id
+                                    ? "bg-white border-t border-l border-r text-blue-600 mb-[-1px] shadow-[0_-2px_4px_rgba(0,0,0,0.02)]"
+                                    : "text-slate-500 hover:text-slate-700 bg-slate-50 border-t border-l border-r border-transparent hover:border-slate-200 mb-[-1px]"}
+                            `}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Content Area */}
+                {activeTab === "ai_triage" ? (
+                    <AITriageRuleEditor />
+                ) : (
+                    <>
+                        <RuleList rules={filteredRules} onEdit={openEditModal} onDelete={handleDeleteRule} />
+                        <RuleEditorModal
+                            isOpen={isModalOpen}
+                            ruleToEdit={ruleToEdit}
+                            serviceCategory={activeTab}
+                            onClose={closeAndRefresh}
+                            onSave={handleSaveRule}
+                        />
+                    </>
+                )}
+            </div>
         </div>
     );
 }

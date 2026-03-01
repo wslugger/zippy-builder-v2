@@ -34,8 +34,13 @@ export default function RuleList({ rules, onEdit, onDelete }: RuleListProps) {
                                 {rule.priority}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="font-medium text-slate-900">{rule.name}</div>
-                                <div className="text-xs text-slate-500 font-mono">{rule.id}</div>
+                                <div className="font-bold text-slate-900">{rule.name}</div>
+                                {rule.description && (
+                                    <div className="text-xs text-blue-600 italic max-w-sm truncate" title={rule.description}>
+                                        {rule.description}
+                                    </div>
+                                )}
+                                <div className="text-[10px] text-slate-400 font-mono">{rule.id}</div>
                             </td>
                             <td className="px-6 py-4">
                                 <div className="text-[10px] font-mono whitespace-pre text-zinc-600 max-w-xs overflow-hidden text-ellipsis h-12">
@@ -44,11 +49,21 @@ export default function RuleList({ rules, onEdit, onDelete }: RuleListProps) {
                             </td>
                             <td className="px-6 py-4">
                                 <div className="flex flex-wrap gap-1">
-                                    {rule.actions.map((a, i) => (
-                                        <span key={i} className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] border border-blue-100 font-medium">
-                                            {a.type}: {a.targetId} {a.actionValue !== undefined ? `= ${a.actionValue}` : ""} {a.quantity ? `(x${a.quantity})` : ''} {a.quantityMultiplierField ? `(* ${a.quantityMultiplierField})` : ''}
-                                        </span>
-                                    ))}
+                                    {rule.actions.map((a, i) => {
+                                        if (a.type === 'require_triage') {
+                                            const severityColor = a.severity === 'high' ? 'bg-red-100 text-red-800 border-red-200' : 'bg-amber-100 text-amber-800 border-amber-200';
+                                            return (
+                                                <span key={i} className={`px-2 py-0.5 rounded text-[10px] border font-medium ${severityColor}`} title={a.reason}>
+                                                    ⚠️ Guardrail: {a.reason?.substring(0, 30)}{a.reason && a.reason.length > 30 ? '...' : ''}
+                                                </span>
+                                            );
+                                        }
+                                        return (
+                                            <span key={i} className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] border border-blue-100 font-medium">
+                                                {a.type}: {a.targetId} {a.actionValue !== undefined ? (typeof a.actionValue === 'object' ? 'f(x)' : `= ${a.actionValue}`) : ""} {a.quantity ? `(x${a.quantity})` : ''} {a.quantityMultiplierField ? `(* ${a.quantityMultiplierField})` : ''}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

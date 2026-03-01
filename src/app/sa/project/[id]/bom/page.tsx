@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ProjectService } from "@/src/lib/firebase";
-import { SiteImportReviewModal } from "@/src/components/sa/SiteImportReviewModal";
 import { exportBomToCsv } from "@/src/lib/bom-utils";
 import { useBOMBuilder } from "./useBOMBuilder";
 import { SiteSidebar } from "./SiteSidebar";
@@ -15,11 +14,7 @@ import { PricingTab } from "./PricingTab";
 import { ProjectSummaryDashboard } from "./ProjectSummaryDashboard";
 import { Tooltip } from "@/src/components/common/Tooltip";
 import { GlobalPricingView } from "./GlobalPricingView";
-
-// ─────────────────────────────────────────────
-// Small local icons (trivial, kept in page file)
-// ─────────────────────────────────────────────
-
+import { TriageDashboard } from "@/src/components/sa/TriageDashboard";
 
 // ─────────────────────────────────────────────
 // Main content (needs useSearchParams → Suspense wrapper below)
@@ -27,6 +22,7 @@ import { GlobalPricingView } from "./GlobalPricingView";
 function BOMBuilderContent({ projectId }: { projectId: string }) {
     const router = useRouter();
     const [isSaving, setIsSaving] = useState(false);
+    const [isSavingWIP, setIsSavingWIP] = useState(false);
 
     const state = useBOMBuilder(projectId);
     const {
@@ -36,26 +32,16 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
         bom,
         manualSelections, setManualSelections,
         selectedSpecsItem, setSelectedSpecsItem,
-        isClassifying, triagedSites, setTriagedSites,
-        utilization, totalLoad, poeWarnings,
+        utilization, totalLoad,
         currentSDWANEquipment, currentSDWANItem,
         handleFileUpload, loadSampleData, getVendorForService,
-        handlePackageChange, handleSiteTypeChange, handleSiteUpdate,
+        handlePackageChange, handleSiteTypeChange,
         siteFilter, setSiteFilter,
-        handleFinalize
+        handleFinalize,
+        pendingTriageSites, handleBulkAcknowledge
     } = state;
 
     const isLoading = !project || siteTypes.length === 0;
-
-    console.log("BOMBuilderContent Render:", {
-        isLoading,
-        projectId,
-        hasProject: !!project,
-        status: project?.status,
-        packageId: project?.selectedPackageId,
-        siteTypesCount: siteTypes.length,
-        availableTabs: availableTabs.map(t => t.id)
-    });
 
     if (isLoading) {
         return (
@@ -80,18 +66,27 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
         }
     };
 
-    const reviewItems = [];
-    if (selectedSite) {
-        if (selectedSite.uxRoute === 'GUIDED_FLOW') {
-            reviewItems.push(selectedSite.triageReason || "Guided Flow: AI flagged this site for manual review.");
+    const handleSaveWIP = async () => {
+        if (!project || isSavingWIP) return;
+        setIsSavingWIP(true);
+        try {
+            await ProjectService.saveSites(projectId, sites);
+            await ProjectService.updateProject(projectId, {
+                bomState: {
+                    manualSelections,
+                    globalDiscount: state.globalDiscount,
+                    acquisitionModel: state.acquisitionModel,
+                    projectManagementLevel: state.projectManagementLevel,
+                }
+            });
+            alert("Work in Progress saved successfully!");
+        } catch (error) {
+            console.error("Failed to save BOM WIP state:", error);
+            alert("Failed to save work in progress. Please try again.");
+        } finally {
+            setIsSavingWIP(false);
         }
-        if (!selectedSite.siteTypeId) {
-            reviewItems.push("Missing Profile: Please select a site configuration profile.");
-        }
-        reviewItems.push(...poeWarnings);
-    }
-    const hasReviewItems = reviewItems.length > 0;
-    const isReviewed = !!selectedSite?.isReviewed;
+    };
 
     return (
         <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
@@ -173,6 +168,15 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                         >
                                             Download BOM (.csv)
                                         </button>
+                                        {project.status !== "completed" && (
+                                            <button
+                                                onClick={handleSaveWIP}
+                                                disabled={isSavingWIP}
+                                                className="text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1 disabled:opacity-50"
+                                            >
+                                                {isSavingWIP ? "Saving..." : "Save WIP"}
+                                            </button>
+                                        )}
                                         {project.status !== "completed" ? (
                                             <button
                                                 onClick={handleNext}
@@ -192,49 +196,6 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                     </div>
                                 </div>
                             </div>
-
-                            {hasReviewItems && (
-                                <div className={`mt-4 border rounded-xl p-4 flex items-start justify-between gap-4 transition-all ${isReviewed
-                                    ? "bg-slate-50 border-slate-200 opacity-75"
-                                    : "bg-amber-50 border-amber-200 shadow-sm"
-                                    }`}>
-                                    <div className="flex items-start gap-3">
-                                        <div className={`mt-0.5 ${isReviewed ? "text-slate-400" : "text-amber-500"}`}>
-                                            {isReviewed ? (
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                            ) : (
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className={`text-sm font-bold uppercase tracking-wider mb-2 ${isReviewed ? "text-slate-500" : "text-amber-800"}`}>
-                                                {isReviewed ? "Review Acknowledged" : "Action Required"}
-                                            </h3>
-                                            <ul className={`text-sm space-y-1 ${isReviewed ? "text-slate-400" : "text-amber-700"}`}>
-                                                {reviewItems.map((item, idx) => (
-                                                    <li key={idx} className="flex items-start gap-2">
-                                                        <span className="opacity-50 mt-1.5 w-1 h-1 rounded-full bg-current shrink-0" />
-                                                        {item}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleSiteUpdate({ isReviewed: !isReviewed })}
-                                        className={`shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isReviewed
-                                            ? "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                                            : "bg-amber-600 text-white shadow-lg shadow-amber-600/20 hover:bg-amber-700"
-                                            }`}
-                                    >
-                                        {isReviewed ? "Mark Unresolved" : "Confirm Review"}
-                                    </button>
-                                </div>
-                            )}
                         </div>
 
                         {/* Tabs */}
@@ -256,7 +217,6 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
 
                         {/* Tab Content */}
                         <div className="p-6">
-                            {/* ── WAN Tab ── */}
                             {activeTab === "WAN" && (
                                 <WANTab
                                     selectedSite={selectedSite}
@@ -276,7 +236,6 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                 />
                             )}
 
-                            {/* ── LAN Tab ── */}
                             {activeTab === "LAN" && (
                                 <LANTab
                                     selectedSite={selectedSite}
@@ -290,7 +249,6 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                 />
                             )}
 
-                            {/* ── WLAN Tab ── */}
                             {activeTab === "WLAN" && (
                                 <WLANTab
                                     selectedSite={selectedSite}
@@ -304,7 +262,6 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                 />
                             )}
 
-                            {/* ── Pricing Tab ── */}
                             {activeTab === "Pricing" && (
                                 <PricingTab state={state} selectedSite={selectedSite} />
                             )}
@@ -318,18 +275,34 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                                     <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Project Pricing Analysis</h1>
                                     <p className="text-sm text-slate-500 mt-1">Aggregate discounts, hardware simulators, and integrations for all {sites.length} sites.</p>
                                 </div>
-                                <button
-                                    onClick={() => { setActiveTab("WAN"); setSelectedSiteIndex(0); }}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-700 transition-all"
-                                >
-                                    Review Site Configurations
-                                </button>
+                                <div className="flex gap-3">
+                                    {project.status !== "completed" && (
+                                        <button
+                                            onClick={handleSaveWIP}
+                                            disabled={isSavingWIP}
+                                            className="bg-white text-slate-700 px-6 py-2 rounded-xl font-bold text-sm shadow-md border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            💾 {isSavingWIP ? "Saving..." : "Save WIP"}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => { setActiveTab("WAN"); setSelectedSiteIndex(0); }}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-700 transition-all"
+                                    >
+                                        Review Site Configurations
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div className="p-6">
                             <GlobalPricingView state={state} />
                         </div>
                     </>
+                ) : pendingTriageSites.length > 0 ? (
+                    <TriageDashboard
+                        pendingTriageSites={pendingTriageSites}
+                        handleBulkAcknowledge={handleBulkAcknowledge}
+                    />
                 ) : (
                     <div className="flex-1 flex flex-col relative">
                         <ProjectSummaryDashboard
@@ -345,6 +318,15 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             >
                                 📥 Download Detailed BOM (.csv)
                             </button>
+                            {project.status !== "completed" && (
+                                <button
+                                    onClick={handleSaveWIP}
+                                    disabled={isSavingWIP}
+                                    className="bg-white text-slate-700 px-6 py-2 rounded-full font-bold shadow-md border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    💾 {isSavingWIP ? "Saving..." : "Save WIP"}
+                                </button>
+                            )}
                             {project.status === "completed" ? (
                                 <button
                                     onClick={() => router.push(`/sa/project/${projectId}/hld`)}
@@ -377,33 +359,8 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                     <SpecsModal item={selectedSpecsItem} onClose={() => setSelectedSpecsItem(null)} />
                 )}
 
-                {isClassifying && (
-                    <div className="fixed inset-0 z-[110] bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center">
-                        <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center space-y-4 max-w-xs text-center border border-slate-100">
-                            <div className="relative">
-                                <div className="w-16 h-16 border-4 border-blue-50 border-t-blue-600 rounded-full animate-spin" />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-xl">🤖</span>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-slate-900 text-lg">Classifying Sites...</h4>
-                                <p className="text-xs text-slate-500 mt-1">Gemini AI is analyzing your data to match the best deployment profiles.</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
-                {triagedSites && (
-                    <SiteImportReviewModal
-                        sites={triagedSites}
-                        onCancel={() => setTriagedSites(null)}
-                        onConfirm={(finalSites) => {
-                            setSites(finalSites);
-                            setTriagedSites(null);
-                        }}
-                    />
-                )}
+
             </div>
         </div>
     );

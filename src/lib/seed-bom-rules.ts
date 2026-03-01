@@ -125,15 +125,6 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
     // --- Rule Set 2: Managed LAN Switch Calculation ---
 
     {
-        id: "rule_lan_dynamic_quantity",
-        name: "Managed LAN - Dynamic Switch Quantity Math",
-        priority: 55,
-        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
-        actions: [
-            { type: "modify_quantity", targetId: "any_switch", quantityMultiplierField: "lanPorts", actionValue: 48 }
-        ]
-    },
-    {
         id: "rule_lan_utilization_limit",
         name: "Managed LAN - 60% Port Utilization Limit",
         priority: 70,
@@ -152,6 +143,49 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         ]
     },
     {
+        id: "rule_lan_poe_calc",
+        name: "LAN PoE Calculator",
+        priority: 100,
+        condition: {
+            "and": [
+                { "==": [{ "var": "serviceId" }, "managed_lan"] },
+                { ">": [{ "var": "site.indoorAPs" }, 0] }
+            ]
+        },
+        actions: [
+            {
+                type: "set_parameter",
+                targetId: "required_poe_watts",
+                actionValue: {
+                    "*": [
+                        { "+": [{ "var": "site.indoorAPs" }, { "var": "site.outdoorAPs" }] },
+                        30
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        id: "rule_lan_high_density",
+        name: "LAN High-Density Guardrail",
+        priority: 90,
+        condition: {
+            "and": [
+                { "==": [{ "var": "serviceId" }, "managed_lan"] },
+                { ">": [{ "var": "site.lanPorts" }, 48] }
+            ]
+        },
+        actions: [
+            {
+                type: "require_triage",
+                targetId: "site",
+                severity: "high",
+                reason: "LAN port count exceeds single switch maximum (48)",
+                resolutionPaths: ["Configure Switch Stack", "Split into multiple IDF site profiles"]
+            }
+        ]
+    },
+    {
         id: "rule_lan_fiber_transceiver_note",
         name: "Managed LAN - Fiber Transceiver Note",
         priority: 50,
@@ -163,13 +197,53 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
 
     // --- Rule Set 3: Managed Wi-Fi ---
     {
-        id: "rule_wifi_aps",
-        name: "Managed Wifi - AP Allocation",
-        priority: 50,
-        condition: { "==": [{ "var": "serviceId" }, "managed_wifi"] },
+        id: "rule_wlan_capacity_overload",
+        name: "WLAN Capacity Overload",
+        priority: 90,
+        condition: {
+            "and": [
+                { "==": [{ "var": "serviceId" }, "managed_wifi"] },
+                {
+                    ">": [
+                        {
+                            "/": [
+                                { "var": "site.userCount" },
+                                { "max": [{ "+": [{ "var": "site.indoorAPs" }, { "var": "site.outdoorAPs" }] }, 1] }
+                            ]
+                        },
+                        40
+                    ]
+                }
+            ]
+        },
         actions: [
-            // Give 1 AP per 'indoorAPs' count from CSV
-            { type: "select_equipment", targetId: "meraki_mr44", quantity: 1, quantityMultiplierField: "indoorAPs" }
+            {
+                type: "require_triage",
+                targetId: "site",
+                severity: "high",
+                reason: "User density exceeds 40 users per Access Point.",
+                resolutionPaths: ["Increase AP Quantity", "Upgrade to HD AP Models"]
+            }
+        ]
+    },
+    {
+        id: "rule_wlan_missing_infrastructure",
+        name: "WLAN Missing Infrastructure",
+        priority: 95,
+        condition: {
+            "and": [
+                { "==": [{ "var": "serviceId" }, "managed_wifi"] },
+                { "==": [{ "+": [{ "var": "site.indoorAPs" }, { "var": "site.outdoorAPs" }] }, 0] }
+            ]
+        },
+        actions: [
+            {
+                type: "require_triage",
+                targetId: "site",
+                severity: "medium",
+                reason: "Managed Wi-Fi is selected, but site has 0 Access Points.",
+                resolutionPaths: ["Remove Managed Wi-Fi Service", "Estimate APs based on user count"]
+            }
         ]
     },
 

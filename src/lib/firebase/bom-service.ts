@@ -24,6 +24,12 @@ export const BOMService = {
             .sort((a, b) => b.priority - a.priority);
     },
 
+    clearAllRules: async () => {
+        const snapshot = await getDocs(collection(db, BOM_RULES_COLLECTION));
+        const deletePromises = snapshot.docs.map(docSnapshot => deleteDoc(doc(db, BOM_RULES_COLLECTION, docSnapshot.id)));
+        await Promise.all(deletePromises);
+    },
+
     getRuleById: async (id: string): Promise<BOMLogicRule | null> => {
         const docRef = doc(db, BOM_RULES_COLLECTION, id);
         const snapshot = await getDoc(docRef);

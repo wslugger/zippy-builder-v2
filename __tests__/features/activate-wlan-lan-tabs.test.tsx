@@ -17,7 +17,7 @@ describe('WLAN Tab Feature', () => {
         fireEvent.click(loadButton);
 
         // Click on the first loaded site (NY-HQ) to show the tabs
-        const firstSite = await screen.findByText('NY-HQ');
+        const firstSite = await screen.findByRole('button', { name: /NY-HQ/i });
         fireEvent.click(firstSite);
 
         // Now the tabs should appear

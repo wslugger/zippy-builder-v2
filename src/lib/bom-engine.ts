@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import jsonLogic from "json-logic-js";
-import { Site, BOM, BOMLineItem, BOMEngineInput } from "./types";
+import { Site, BOM, BOMLineItem, BOMEngineInput, Package, BOMLogicRule } from "./types";
 import { Equipment } from "./types";
 import { VENDOR_LABELS } from "./types";
 import { SiteType } from "./site-types";
@@ -14,8 +14,6 @@ import {
     getEquipmentRole
 } from "./bom-utils";
 import {
-    ExtractedSiteRequirements,
-    TriageCriterion,
     TriagedSite
 } from "./types";
 
@@ -34,38 +32,48 @@ jsonLogic.add_operation("includes", (array, value) => {
     return array.includes(value);
 });
 
+jsonLogic.add_operation("max", (...args) => Math.max(...args));
+jsonLogic.add_operation("min", (...args) => Math.min(...args));
+
 /**
- * Evaluates the complexity of a site to determine the UX route.
+ * Evaluates the complexity of a site to determine the UX route using the JSON rules engine.
  */
-export function evaluateSiteComplexity(site: ExtractedSiteRequirements, activeCriteria: TriageCriterion[]): TriagedSite {
-    const defaultRoute: 'FAST_TRACK' | 'GUIDED_FLOW' = 'FAST_TRACK';
+export function evaluateSiteComplexity(
+    site: Site,
+    rules: BOMLogicRule[],
+    selectedPackage: Package
+): TriagedSite {
     const result: TriagedSite = {
         ...site,
-        uxRoute: defaultRoute,
-        triageReason: '',
+        uxRoute: 'FAST_TRACK',
+        triageFlags: [],
     };
 
-    if (site.estimatedUsers > 15) {
-        result.uxRoute = 'GUIDED_FLOW';
-        result.triageReason = 'User count exceeds standard branch limit';
-        return result;
-    }
+    // Evaluation context for triage rules
+    const context = {
+        site: site,
+        packageId: selectedPackage.id
+    };
 
-    for (const criterion of activeCriteria) {
-        if (criterion.forcesGuidedFlow) {
-            const hasAttribute = site.dynamicAttributes && site.dynamicAttributes[criterion.id];
+    // Sort rules by priority descending
+    const sortedRules = [...rules].sort((a, b) => b.priority - a.priority);
 
-            // Evaluates to true if boolean true, string 'true', or non-zero positive numeric conditions.
-            // Simplified here per instruction: "evaluates to true".
-            if (hasAttribute === true || (typeof hasAttribute === 'string' && hasAttribute.toLowerCase() === 'true')) {
+    for (const rule of sortedRules) {
+        if (jsonLogic.apply(rule.condition, context)) {
+            const triageActions = rule.actions.filter(a => a.type === 'require_triage');
+            if (triageActions.length > 0) {
                 result.uxRoute = 'GUIDED_FLOW';
-                result.triageReason = `Requires custom handling for: ${criterion.label}`;
-                return result;
+                triageActions.forEach(action => {
+                    result.triageFlags.push({
+                        ruleName: rule.name,
+                        reason: action.reason || 'Manual review required',
+                        resolutionPaths: action.resolutionPaths || []
+                    });
+                });
             }
         }
     }
 
-    result.triageReason = 'Standard site complexity';
     return result;
 }
 
@@ -180,7 +188,23 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             matchingRules.flatMap(r => r.actions)
                 .filter(a => a.type === "set_parameter")
                 .forEach(a => {
-                    siteParameters[a.targetId] = a.actionValue;
+                    const throughputOverhead = siteParameters['throughput_overhead_mbps'] ?? selectedPackage.throughput_overhead_mbps ?? 0;
+                    const aggregateThroughput = (Number(site.bandwidthDownMbps) || 0) + (Number(site.bandwidthUpMbps) || 0) + (Number(throughputOverhead) || 0);
+
+                    const context = {
+                        site: {
+                            ...site,
+                            bandwidthDownMbps: aggregateThroughput
+                        },
+                        packageId: selectedPackage.id,
+                        serviceId: canonicalServiceId
+                    };
+
+                    const val = (a.actionValue && typeof a.actionValue === 'object')
+                        ? jsonLogic.apply(a.actionValue as any, context)
+                        : a.actionValue;
+
+                    siteParameters[a.targetId] = val;
                 });
 
             if (selections.length > 0) {
@@ -316,6 +340,16 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                     if (cpeQuantity > 1 && (specs.lanPortCount || 0) < haLanPortMinimum) {
                         return false;
                     }
+                }
+
+                if (requiredPurpose === "LAN" && role === 'LAN') {
+                    const minPorts = siteParameters['minAccessPorts'] || site.lanPorts || 0;
+                    const minPoe = siteParameters['required_poe_watts'] || 0;
+                    const specs = e.specs as any;
+
+                    // Filter out switches that don't meet port density or PoE budget
+                    if ((specs.accessPortCount || 0) < minPorts) return false;
+                    if ((specs.poeBudgetWatts || 0) < minPoe) return false;
                 }
 
 

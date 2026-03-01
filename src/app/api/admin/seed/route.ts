@@ -36,6 +36,7 @@ export async function GET() {
 
         // 8. Seed BOM Rules
         console.log("Seeding BOM rules...");
+        await BOMService.clearAllRules();
         for (const rule of SEED_BOM_RULES) {
             await BOMService.saveRule(rule);
         }

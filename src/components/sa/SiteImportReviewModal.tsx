@@ -19,34 +19,10 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
     const handleConfirm = () => {
         // Map TriagedSite to the standard Site format for the BOM Engine
         const finalSites: Site[] = sites.map(s => {
-            const attrs = s.dynamicAttributes || {};
-
-            // Helper to get attribute by case-insensitive key or common variations
-            const getAttr = (keys: string[], fallback: unknown) => {
-                const foundKey = Object.keys(attrs).find(k =>
-                    keys.some(key => k.toLowerCase().includes(key.toLowerCase()))
-                );
-                return foundKey ? attrs[foundKey] : fallback;
-            };
-
-            return {
-                name: s.siteName,
-                address: String(attrs.address || getAttr(['address', 'location'], "TBD")),
-                userCount: Number(s.estimatedUsers) || 0,
-                bandwidthDownMbps: Number(attrs.bandwidthDownMbps || getAttr(['bandwidth down', 'down', 'download'], 1000)),
-                bandwidthUpMbps: Number(attrs.bandwidthUpMbps || getAttr(['bandwidth up', 'up', 'upload'], 1000)),
-                redundancyModel: String(attrs.redundancyModel || getAttr(['redundancy', 'ha'], "Single CPE")),
-                wanLinks: Number(attrs.wanLinks || getAttr(['wan links', 'links'], 1)),
-                lanPorts: Number(attrs.lanPorts || getAttr(['lan ports', 'ports'], Math.ceil(s.estimatedUsers * 2))),
-                poePorts: Number(attrs.poePorts || getAttr(['poe ports'], 0)),
-                indoorAPs: Number(attrs.indoorAPs || getAttr(['indoor'], Math.ceil(s.estimatedUsers / 20))),
-                outdoorAPs: Number(attrs.outdoorAPs || getAttr(['outdoor'], 0)),
-                primaryCircuit: String(attrs.primaryCircuit || getAttr(['primary circuit', 'primary'], "Broadband")),
-                secondaryCircuit: (attrs.secondaryCircuit || getAttr(['secondary circuit', 'secondary'], undefined)) ? String(attrs.secondaryCircuit || getAttr(['secondary circuit', 'secondary'], "")) : undefined,
-                notes: s.rawNotes,
-                uxRoute: s.uxRoute,
-                triageReason: s.triageReason,
-            };
+            // Since TriagedSite now extends Site, we just strip the triage-specific UX fields
+            // but keep the core Site properties
+            const { triageFlags, uxRoute, isReviewed, ...baseSite } = s;
+            return baseSite;
         });
         onConfirm(finalSites);
     };
@@ -54,23 +30,19 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
     const renderSiteRow = (site: TriagedSite, idx: number) => (
         <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
             <td className="py-4 px-4 w-1/3 text-sm text-slate-800">
-                <div className="font-bold">{site.siteName}</div>
-                <div className="text-xs text-slate-500 mt-1 line-clamp-2">{site.rawNotes || "No notes"}</div>
+                <div className="font-bold">{site.name}</div>
+                <div className="text-xs text-slate-500 mt-1 line-clamp-2">{site.notes || "No notes"}</div>
             </td>
             <td className="py-4 px-4 w-1/4 text-sm text-slate-600">
                 <div className="flex space-x-3 items-center">
-                    <span>👥 {site.estimatedUsers} Users</span>
-                    {site.sqFt && <span>📏 {site.sqFt} SqFt</span>}
+                    <span>👥 {site.userCount} Users</span>
+                    <span>🌐 {site.bandwidthDownMbps} Mbps</span>
                 </div>
-                {Object.keys(site.dynamicAttributes || {}).length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                        {Object.entries(site.dynamicAttributes).map(([key, val]) => (
-                            <span key={key} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                {key}: {String(val)}
-                            </span>
-                        ))}
-                    </div>
-                )}
+                <div className="mt-2 flex flex-wrap gap-1">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                        {site.primaryCircuit} | {site.redundancyModel}
+                    </span>
+                </div>
             </td>
             <td className="py-4 px-4 text-sm font-medium">
                 {site.uxRoute === 'FAST_TRACK' ? (
@@ -84,8 +56,12 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
                 )}
             </td>
             <td className="py-4 px-4 w-1/4 text-sm">
-                <div className="text-xs text-slate-600 italic">
-                    {site.triageReason}
+                <div className="flex flex-col space-y-1">
+                    {site.triageFlags.map((flag, i) => (
+                        <div key={i} className="text-[10px] text-slate-600 italic">
+                            • {flag.reason}
+                        </div>
+                    ))}
                 </div>
             </td>
         </tr>

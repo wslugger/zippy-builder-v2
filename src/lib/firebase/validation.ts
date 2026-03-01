@@ -150,16 +150,20 @@ export const CatalogMetadataSchema = z.object({
 
 
 const BOMLogicActionSchema = z.object({
-    type: z.enum(["select_equipment", "enable_feature", "set_configuration", "set_parameter", "modify_quantity"]),
+    type: z.enum(["select_equipment", "enable_feature", "set_configuration", "set_parameter", "modify_quantity", "require_triage"]),
     targetId: z.string(),
-    actionValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    actionValue: z.any().optional(),
     quantity: z.number().optional(),
     quantityMultiplierField: z.string().optional(),
+    reason: z.string().optional(),
+    severity: z.enum(['low', 'medium', 'high']).optional(),
+    resolutionPaths: z.array(z.string()).optional(),
 });
 
 export const BOMLogicRuleSchema = z.object({
     id: z.string(),
     name: z.string(),
+    description: z.string().optional(),
     priority: z.number(),
     condition: z.record(z.string(), z.unknown()),
     actions: z.array(BOMLogicActionSchema),

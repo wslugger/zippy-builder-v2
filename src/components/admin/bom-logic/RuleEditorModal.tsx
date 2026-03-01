@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { BOMLogicRule, BOMLogicAction, SYSTEM_PARAMETERS } from "@/src/lib/types";
+import { AIService } from "@/src/lib/ai-service";
 
 // --- Visual Builder Types & Constants ---
 interface SimpleCondition {
@@ -139,6 +140,7 @@ export default function RuleEditorModal({
     const [aiPrompt, setAiPrompt] = useState("");
     const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
     const [jsonImportValue, setJsonImportValue] = useState("");
+    const [verificationRule, setVerificationRule] = useState<Partial<BOMLogicRule> | null>(null);
 
     const handleJsonImport = () => {
         if (!jsonImportValue.trim()) return;
@@ -172,36 +174,45 @@ export default function RuleEditorModal({
         if (!aiPrompt.trim()) return;
         setIsGenerating(true);
         try {
-            const res = await fetch('/api/copilot-suggest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contextType: 'bom_logic_rule',
-                    promptData: {
-                        instruction: aiPrompt,
-                        serviceCategory: serviceCategory,
-                    }
-                })
-            });
-
-            if (!res.ok) throw new Error("Failed to generate rule");
-
-            const generatedRule = await res.json();
-
-            setRule({
-                ...rule,
-                name: generatedRule.name || rule.name,
-                condition: generatedRule.condition || rule.condition,
-                actions: generatedRule.actions || rule.actions,
-            });
-            setShowRawJson(false); // Try to show visually first
-            setAiPrompt(""); // clear after setting
+            const result = await AIService.generateBOMLogicRule(aiPrompt, serviceCategory);
+            setVerificationRule(result);
         } catch (err) {
             console.error(err);
             alert("Failed to generate rule with AI");
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const acceptVerificationRule = () => {
+        if (!verificationRule) return;
+
+        let finalCondition = (verificationRule.condition as Record<string, unknown>) || rule.condition;
+
+        // Ensure serviceId filter is present so it shows up in the UI tabs
+        const serviceFilter = { "==": [{ "var": "serviceId" }, serviceCategory] };
+        const conditionString = JSON.stringify(finalCondition);
+
+        if (!conditionString.includes(serviceCategory)) {
+            finalCondition = {
+                "and": [
+                    serviceFilter,
+                    finalCondition
+                ]
+            };
+        }
+
+        setRule({
+            ...rule,
+            name: verificationRule.name || rule.name,
+            description: verificationRule.description || rule.description,
+            condition: finalCondition,
+            actions: (verificationRule.actions as BOMLogicAction[]) || rule.actions,
+        });
+
+        setVerificationRule(null);
+        setAiPrompt("");
+        setShowRawJson(false); // Default to visual if possible
     };
 
     // Derived state for the visual builder
@@ -365,16 +376,13 @@ export default function RuleEditorModal({
                         {/* AI Assistant Section */}
                         <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-5 shadow-sm">
                             <h3 className="text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
-                                <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                Generate with AI
+                                <span>✨ Rule Copilot</span>
                             </h3>
                             <div className="flex gap-3 relative">
                                 <textarea
                                     value={aiPrompt}
                                     onChange={(e) => setAiPrompt(e.target.value)}
-                                    placeholder="Describe the rule (e.g., 'Require mGig switches if there are any indoor APs')"
+                                    placeholder="Describe your intent (e.g., 'If a site has more than 100 users, require triage for switch stacking')"
                                     className="flex-1 border border-indigo-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 bg-white resize-none shadow-sm"
                                     rows={2}
                                     disabled={isGenerating}
@@ -390,36 +398,108 @@ export default function RuleEditorModal({
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
-                                    ) : "Generate"}
+                                    ) : "Generate Rule"}
                                 </button>
                             </div>
+
+                            {verificationRule && (
+                                <div className="mt-4 p-5 bg-white border-2 border-indigo-200 rounded-xl shadow-lg animate-in slide-in-from-top-2 duration-300">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
+                                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 text-[10px]">AI</span>
+                                            Please Verify Generated Rule
+                                        </h4>
+                                        <button
+                                            type="button"
+                                            onClick={() => setVerificationRule(null)}
+                                            className="text-slate-400 hover:text-slate-600"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                                            <p className="text-xs font-bold text-indigo-700 uppercase tracking-widest mb-1">Human Translation</p>
+                                            <p className="text-sm text-slate-700 leading-relaxed italic">
+                                                &ldquo;{verificationRule.description || "No translation provided."}&rdquo;
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Logic Payload</p>
+                                            <pre className="text-[10px] font-mono bg-slate-900 text-emerald-400 p-4 rounded-lg overflow-x-auto border border-slate-800 shadow-inner max-h-48">
+                                                {JSON.stringify({
+                                                    name: verificationRule.name,
+                                                    condition: verificationRule.condition,
+                                                    actions: verificationRule.actions
+                                                }, null, 2)}
+                                            </pre>
+                                        </div>
+
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={acceptVerificationRule}
+                                                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-md transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <span>✓</span> Accept & Populate Form
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setVerificationRule(null)}
+                                                className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors"
+                                            >
+                                                Discard
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <section className="grid grid-cols-2 gap-6 p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                    Rule Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={rule.name}
-                                    onChange={(e) => setRule({ ...rule, name: e.target.value })}
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
-                                    placeholder="e.g. Standard High-Bandwidth Branch"
-                                    required
-                                />
+                        <section className="p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                        Rule Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={rule.name}
+                                        onChange={(e) => setRule({ ...rule, name: e.target.value })}
+                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
+                                        placeholder="e.g. Standard High-Bandwidth Branch"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                        Priority &nbsp;<span className="normal-case tracking-normal font-normal text-slate-400">(Higher number = evaluated first)</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={rule.priority}
+                                        onChange={(e) => setRule({ ...rule, priority: parseInt(e.target.value) || 0 })}
+                                        className="w-32 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
+                                        required
+                                    />
+                                </div>
                             </div>
 
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                    Priority &nbsp;<span className="normal-case tracking-normal font-normal text-slate-400">(Higher number = evaluated first)</span>
+                                    Human Translation / Description
                                 </label>
-                                <input
-                                    type="number"
-                                    value={rule.priority}
-                                    onChange={(e) => setRule({ ...rule, priority: parseInt(e.target.value) || 0 })}
-                                    className="w-32 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
-                                    required
+                                <textarea
+                                    value={rule.description || ""}
+                                    onChange={(e) => setRule({ ...rule, description: e.target.value })}
+                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors resize-none"
+                                    placeholder="Plain English explanation of what this rule does..."
+                                    rows={2}
                                 />
                             </div>
                         </section>
@@ -593,6 +673,7 @@ export default function RuleEditorModal({
                                                     <option value="set_configuration">Set Configuration</option>
                                                     <option value="set_parameter">Set Parameter</option>
                                                     <option value="modify_quantity">Modify Quantity</option>
+                                                    <option value="require_triage">Require Triage (Guardrail)</option>
                                                 </select>
                                             </div>
                                             <div className="flex-1">
@@ -620,6 +701,46 @@ export default function RuleEditorModal({
                                                 )}
                                             </div>
                                         </div>
+
+                                        {a.type === 'require_triage' && (
+                                            <div className="space-y-4 pt-2 p-4 bg-amber-50/50 border border-amber-100 rounded-xl">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Severity</label>
+                                                        <select
+                                                            value={a.severity || 'medium'}
+                                                            onChange={(e) => updateAction(i, { severity: e.target.value as 'low' | 'medium' | 'high' })}
+                                                            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-white transition-colors"
+                                                        >
+                                                            <option value="low">Low</option>
+                                                            <option value="medium">Medium</option>
+                                                            <option value="high">High</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Resolution Paths (Comma Separated)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={a.resolutionPaths?.join(', ') || ''}
+                                                            onChange={(e) => updateAction(i, { resolutionPaths: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                                                            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-white transition-colors"
+                                                            placeholder="e.g. Increase AP Quantity, Upgrade to HD Models"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Triage Reason</label>
+                                                    <input
+                                                        type="text"
+                                                        value={a.reason || ''}
+                                                        onChange={(e) => updateAction(i, { reason: e.target.value })}
+                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-white transition-colors"
+                                                        placeholder="e.g. User density exceeds 40 users per Access Point."
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {(a.type === 'set_parameter' || a.type === 'set_configuration') && (
                                             <div>
@@ -688,7 +809,7 @@ export default function RuleEditorModal({
                                             </div>
                                         )}
 
-                                        {(a.type !== 'set_parameter') && (
+                                        {(a.type !== 'set_parameter' && a.type !== 'require_triage') && (
                                             <div className="flex gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/80">
                                                 <div className="w-1/3">
                                                     <label className="block text-[11px] font-bold text-slate-400 tracking-wider mb-1.5 uppercase">Fixed Quantity</label>

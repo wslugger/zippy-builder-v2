@@ -80,6 +80,17 @@ export const ProjectService = {
         }
     },
 
+    getSites: async (projectId: string): Promise<Site[]> => {
+        try {
+            const sitesRef = collection(db, PROJECTS_COLLECTION, projectId, "sites");
+            const snapshot = await getDocs(sitesRef);
+            return snapshot.docs.map((d) => d.data() as Site);
+        } catch (error) {
+            console.error("[ProjectService] Failed to get sites:", error);
+            return [];
+        }
+    },
+
     saveSites: async (projectId: string, sites: Site[]): Promise<void> => {
         try {
             const batch = writeBatch(db);

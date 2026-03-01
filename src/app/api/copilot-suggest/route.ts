@@ -43,6 +43,7 @@ Each action should have:
 Output strictly a JSON object matching this interface:
 {
     "name": string (A concise name for the rule),
+    "description": string (A plain English explanation explaining EXACTLY what this rule does, e.g., "Requires mGig switches if indoor APs are present"),
     "condition": Record<string, any> (The JSON Logic condition),
     "actions": Array<Action Object>
 }
@@ -59,11 +60,10 @@ Ensure there is no markdown code block surrounding the JSON, or if there is, I w
             } else if (jsonString.startsWith("\`\`\`")) {
                 jsonString = jsonString.replace(/^\`\`\`\s*/, '').replace(/\s*\`\`\`$/, '');
             }
-
             try {
                 const generatedRule = JSON.parse(jsonString);
                 return NextResponse.json(generatedRule);
-            } catch (err) {
+            } catch (_err) {
                 console.error("Failed to parse Gemini rule JSON:", jsonString);
                 return NextResponse.json({ error: "Gemini produced invalid JSON" }, { status: 500 });
             }

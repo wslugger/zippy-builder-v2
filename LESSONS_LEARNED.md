@@ -268,5 +268,11 @@
 **Issue**: Separating the AP selection into "Indoor" and "Outdoor" blocks introduced a rigid dependency on the database catalog accurately reflecting those specialized tags. If a vendor had no outdoor models synced in the live database, the "Add Outdoor AP" button failed silently because its filtered list was empty, completely confusing the user.
 **Solution**:
 - **Graceful Degradation**: Buttons now explicitly check their filtered lists (`availableOutdoorAPs.length === 0`) and disable themselves with a clear reason ("No Outdoor Models Available") instead of failing to render a dropdown.
-- **Dynamic Seed Injection**: Updated `useBOMBuilder` to intercept the Firestore catalog fetch and natively merge any hardcoded items from `SEED_EQUIPMENT` that aren't yet in the database. 
-- **Key Insight**: When introducing highly specific UI filters (like Environment: Outdoor), the application must natively handle the "Zero Results" state at the point of interaction (the button). Furthermore, local code (seeds) should fluidly patch live database queries during active development so new features don't require forcing database wipe-and-reloads on users.
+
+## 39. AI Rule Generation & Auto-Anchoring (Rule Copilot)
+**Issue**: Using natural language to generate technical logic rules (e.g., "users > 100") via LLMs often resulted in technically valid but contextually "orphaned" rules. The AI would output the logic requested by the user, but omit mandatory system filters (like `serviceId === 'managed_lan'`), causing the rules to disappear from the categorized Admin UI or apply to the wrong services.
+**Solution**:
+- **Human-in-the-loop Verification**: Implemented a two-step "Generate -> Verify -> Accept" workflow. The AI suggestion is presented in a "Verification Card" with a human translation and raw JSON before it ever touches the form state.
+- **Auto-Anchoring Context**: Added a logic layer in the frontend that automatically detects the current service context (e.g., LAN) and wraps any AI-generated condition in an `AND` block with the mandatory `serviceId` filter if it's missing.
+- **Human Translation Persistence**: Added a `description` field to the database schema for rules. The AI generates this "plain English" translation during creation, and it is persisted to the record, acting as a living summary in the Rule List row.
+- **Key Insight**: AI tools shouldn't just be "prompt and save." They require a strict technical boundary that enforces system-level constraints (like filtering) while providing a transparent verification gate for the human administrator.

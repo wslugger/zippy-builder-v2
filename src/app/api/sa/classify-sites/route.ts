@@ -76,8 +76,17 @@ export async function POST(req: NextRequest) {
             }, { status: 500 });
         }
 
-        // 5. Evaluate complexity
-        const triagedSites = extractedArray.map(site => evaluateSiteComplexity(site, criteria));
+        // 5. Return extracted sites (Client handles dynamic triage)
+        const triagedSites = extractedArray.map(site => {
+            // Flatten dynamicAttributes for consistent Site interface
+            const { dynamicAttributes, ...base } = site;
+            return {
+                ...base,
+                ...(dynamicAttributes || {}),
+                uxRoute: 'FAST_TRACK' as const,
+                triageFlags: []
+            };
+        });
 
         // 6. Return response
         return NextResponse.json(triagedSites);

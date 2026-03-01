@@ -10,11 +10,10 @@ import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_PACKAGES } from "@/src/lib/seed-packages";
 import { SEED_SERVICES } from "@/src/lib/seed-services";
-import { calculateBOM, calculateUtilization, validatePOE } from "@/src/lib/bom-engine";
+import { calculateBOM, calculateUtilization, validatePOE, evaluateSiteComplexity } from "@/src/lib/bom-engine";
 import { normalizeServiceId } from "@/src/lib/bom-utils";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
-import { AIService } from "@/src/lib/ai-service";
 import { resolveVendorForService, calculateThroughputOverhead } from "@/src/lib/bom-utils";
 import { getGlobalParameters } from "@/src/lib/firebase/settings";
 
@@ -37,7 +36,7 @@ const DEMO_PROJECT: Project = {
     name: "Demo Project",
     customerName: "Demo Corporation",
     description: "Automated test project for BOM troubleshooting.",
-    status: "completed",
+    status: "customizing",
     currentStep: 5,
     selectedPackageId: "performance_sase",
     createdAt: new Date().toISOString(),
@@ -98,10 +97,6 @@ export interface BOMBuilderState {
     setManualSelections: React.Dispatch<React.SetStateAction<Record<string, any>>>;
     selectedSpecsItem: Equipment | null;
     setSelectedSpecsItem: (eq: Equipment | null) => void;
-    // AI classification
-    isClassifying: boolean;
-    triagedSites: TriagedSite[] | null;
-    setTriagedSites: (sites: TriagedSite[] | null) => void;
     // Derived values
     utilization: number;
     totalLoad: number;
@@ -145,6 +140,8 @@ export interface BOMBuilderState {
     projectManagementLevel: string;
     setProjectManagementLevel: (level: string) => void;
     handleFinalize: () => Promise<void>;
+    pendingTriageSites: TriagedSite[];
+    handleBulkAcknowledge: (reasonSubstring?: string) => void;
 }
 
 export function useBOMBuilder(projectId: string): BOMBuilderState {
@@ -173,9 +170,22 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     const [globalParameters, setGlobalParameters] = useState<Record<string, any>>({});
 
     // ---- Sites ----
-    const [sites, setSites] = useState<Site[]>([]);
+    const [rawSites, setRawSites] = useState<Site[]>([]);
     const [selectedSiteIndex, setSelectedSiteIndex] = useState<number | null>(null);
     const [siteFilter, setSiteFilter] = useState<"all" | "flagged">("all");
+
+    // --- Dynamic Site Triage (Reactive to Packages/Rules) ---
+    const sites = useMemo<TriagedSite[]>(() => {
+        if (!pkg) return rawSites as unknown as TriagedSite[];
+        return rawSites.map((s) => {
+            const triageInfo = evaluateSiteComplexity(s, SEED_BOM_RULES, pkg);
+            return {
+                ...s,
+                uxRoute: triageInfo.uxRoute,
+                triageFlags: triageInfo.triageFlags,
+            };
+        });
+    }, [rawSites, pkg]);
 
     // ---- Tabs ----
     const [activeTab, setActiveTab] = useState<string>("WAN");
@@ -185,11 +195,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     const [manualSelections, setManualSelections] = useState<Record<string, any>>({});
     const [selectedSpecsItem, setSelectedSpecsItem] = useState<Equipment | null>(null);
 
-    // ---- AI state ----
-    const [isClassifying, setIsClassifying] = useState(false);
-    const [triagedSites, setTriagedSites] = useState<TriagedSite[] | null>(null);
-
-    // ---- Pricing & Simulation state ----
+    // ---- PRICING state ----
     const [globalDiscount, setGlobalDiscount] = useState<number>(0);
     const [swapSimulation, setSwapSimulation] = useState<{ fromItemId: string; toItemId: string } | null>(null);
     const [acquisitionModel, setAcquisitionModel] = useState<'purchase' | 'rental'>('purchase');
@@ -214,12 +220,13 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                     setPkg(pk);
                 }
 
-                const [allPkgs, svcs, eq, globalParams, mgmtMatrix] = await Promise.all([
+                const [allPkgs, svcs, eq, globalParams, mgmtMatrix, projectSites] = await Promise.all([
                     PackageService.getAllPackages().catch(() => []),
                     ServiceService.getAllServices().catch(() => []),
                     EquipmentService.getAllEquipment().catch(() => []),
                     getGlobalParameters().catch(() => ({})),
                     ManagementPricingService.getManagementPricing().catch(() => null),
+                    ProjectService.getSites(projectId).catch(() => []),
                 ]);
 
                 setAllPackages(allPkgs);
@@ -239,6 +246,17 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 }
                 setGlobalParameters(globalParams);
                 setManagementPricingMatrix(mgmtMatrix);
+
+                if (projectSites.length > 0) {
+                    setRawSites(projectSites);
+                }
+
+                if (p?.bomState) {
+                    if (p.bomState.manualSelections) setManualSelections(p.bomState.manualSelections);
+                    if (p.bomState.globalDiscount !== undefined) setGlobalDiscount(p.bomState.globalDiscount);
+                    if (p.bomState.acquisitionModel) setAcquisitionModel(p.bomState.acquisitionModel);
+                    if (p.bomState.projectManagementLevel) setProjectManagementLevel(p.bomState.projectManagementLevel);
+                }
 
                 const st = await SiteDefinitionService.getAllSiteDefinitions().catch(() => []);
                 setSiteTypes(st.length > 0 ? st : ALL_SITE_TYPES);
@@ -333,12 +351,14 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         tabs.push({ id: "Pricing", label: "Pricing", serviceIds: [], primaryServiceId: "", icon: "💰" });
 
         return tabs;
-    }, [pkg, services]);
+    }, [pkg, services, sites]);
 
     // Sync activeTab when available tabs change
     useEffect(() => {
         if (availableTabs.length > 0 && !availableTabs.some((t) => t.id === activeTab)) {
-            setActiveTab(availableTabs[0].id);
+            setTimeout(() => {
+                setActiveTab(availableTabs[0].id);
+            }, 0);
         }
     }, [availableTabs, activeTab]);
 
@@ -595,11 +615,10 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     const totalLoad = selectedSite
         ? (selectedSite.bandwidthDownMbps || 0) + (selectedSite.bandwidthUpMbps || 0) + sdwanOverhead
         : 0;
+
     const poeWarnings = selectedSite ? validatePOE(selectedSite, siteBOMItems, catalog) : [];
 
-    // -------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------
+    // --- Helpers ---
     const getVendorForService = useCallback(
         (serviceId: string) => (pkg ? resolveVendorForService(pkg, serviceId, services) : "meraki"),
         [pkg, services]
@@ -611,44 +630,31 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         if (project) setProject({ ...project, selectedPackageId: pkgId });
     }, [project]);
 
-    const handleSiteTypeChange = useCallback((siteTypeId: string) => {
-        setSites((prev) => {
-            const next = [...prev];
-            if (selectedSiteIndex !== null && next[selectedSiteIndex]) {
-                next[selectedSiteIndex] = { ...next[selectedSiteIndex], siteTypeId };
-            }
-            return next;
-        });
-    }, [selectedSiteIndex]);
+    const pendingTriageSites = useMemo(() =>
+        sites.filter(s => s.uxRoute === 'GUIDED_FLOW' && !s.isReviewed),
+        [sites]
+    );
 
-    const handleSiteUpdate = useCallback((updates: Partial<Site>) => {
-        setSites((prev) => {
-            const next = [...prev];
-            if (selectedSiteIndex !== null && next[selectedSiteIndex]) {
-                next[selectedSiteIndex] = { ...next[selectedSiteIndex], ...updates };
+    const handleBulkAcknowledge = useCallback((reasonSubstring?: string) => {
+        setRawSites(prev => prev.map(site => {
+            const triageInfo = pkg ? evaluateSiteComplexity(site, SEED_BOM_RULES, pkg) : null;
+            if (triageInfo?.uxRoute === 'GUIDED_FLOW' && !site.isReviewed) {
+                const hasMatchingFlag = !reasonSubstring || triageInfo.triageFlags.some(f => f.reason.includes(reasonSubstring));
+                if (hasMatchingFlag) {
+                    return { ...site, isReviewed: true };
+                }
             }
-            return next;
-        });
-    }, [selectedSiteIndex]);
+            return site;
+        }));
+    }, [pkg]);
 
     // -------------------------------------------------------
     // AI Triage Pipeline
     // -------------------------------------------------------
     const triageAndPreview = useCallback(async (rawInput: string) => {
         if (!rawInput.trim()) return;
-        setIsClassifying(true);
-        try {
-            const results = await AIService.triageSites(rawInput);
-            setTriagedSites(results);
-        } catch (error) {
-            console.error("Triage classification failed:", error);
-            // Fallback: parse locally and just import as is if AI fails?
-            // Or better yet, show error. For now, let's keep it robust.
-            const parsed = parseSiteListCSV(rawInput);
-            setSites(parsed);
-        } finally {
-            setIsClassifying(false);
-        }
+        const parsed = parseSiteListCSV(rawInput);
+        setRawSites(parsed);
     }, []);
 
     const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -663,7 +669,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     }, [triageAndPreview]);
 
     const loadSampleData = useCallback(async () => {
-        await triageAndPreview(SAMPLE_CSV);
+        triageAndPreview(SAMPLE_CSV);
     }, [triageAndPreview]);
 
     // Auto-load sample data when ?loadSample=true
@@ -685,12 +691,12 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         siteTypes,
         catalog,
         sites,
-        setSites,
+        setSites: setRawSites,
         selectedSiteIndex,
         setSelectedSiteIndex,
         siteFilter,
         setSiteFilter,
-        selectedSite,
+        selectedSite: sites[selectedSiteIndex!] || undefined,
         activeTab,
         setActiveTab,
         availableTabs,
@@ -700,9 +706,6 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         setManualSelections,
         selectedSpecsItem,
         setSelectedSpecsItem,
-        isClassifying,
-        triagedSites,
-        setTriagedSites,
         utilization,
         totalLoad,
         poeWarnings,
@@ -713,8 +716,24 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         loadSampleData,
         getVendorForService,
         handlePackageChange,
-        handleSiteTypeChange,
-        handleSiteUpdate,
+        handleSiteTypeChange: (siteTypeId: string) => {
+            setRawSites((prev) => {
+                const next = [...prev];
+                if (selectedSiteIndex !== null && next[selectedSiteIndex]) {
+                    next[selectedSiteIndex] = { ...next[selectedSiteIndex], siteTypeId };
+                }
+                return next;
+            });
+        },
+        handleSiteUpdate: (updates: Partial<Site>) => {
+            setRawSites((prev) => {
+                const next = [...prev];
+                if (selectedSiteIndex !== null && next[selectedSiteIndex]) {
+                    next[selectedSiteIndex] = { ...next[selectedSiteIndex], ...updates };
+                }
+                return next;
+            });
+        },
         projectId,
         globalDiscount,
         setGlobalDiscount,
@@ -736,6 +755,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
             // Update local state
             setProject({ ...project, status: 'completed', embeddedEquipment: usedEquipment });
-        }
+        },
+        pendingTriageSites,
+        handleBulkAcknowledge
     };
 }

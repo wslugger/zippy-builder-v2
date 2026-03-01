@@ -331,6 +331,14 @@ export interface Project {
   // Initialized from Package.items, then modified by SA
   customizedItems?: PackageItem[];
 
+  // Saved WIP state from the BOM Builder
+  bomState?: {
+    manualSelections: Record<string, any>;
+    globalDiscount: number;
+    acquisitionModel: 'purchase' | 'rental';
+    projectManagementLevel: string;
+  };
+
   /**
    * Finalized snapshot of technical specifications for all unique equipment
    * items used in this project's BOM. This protects historical projects
@@ -484,7 +492,11 @@ export const SiteSchema = z.object({
   embeddedEquipment: z.array(z.any()).optional(), // typed as EmbeddedEquipmentSnapshot[] in usage
   embeddedServices: z.array(z.any()).optional(),  // typed as EmbeddedServiceSnapshot[] in usage
   uxRoute: z.enum(['FAST_TRACK', 'GUIDED_FLOW']).optional(),
-  triageReason: z.string().optional(),
+  triageFlags: z.array(z.object({
+    ruleName: z.string(),
+    reason: z.string(),
+    resolutionPaths: z.array(z.string())
+  })).optional(),
   isReviewed: z.boolean().optional(),
 });
 
@@ -524,16 +536,22 @@ export const SYSTEM_PARAMETERS: SystemParameterDefinition[] = [
 ];
 
 export interface BOMLogicAction {
-  type: "select_equipment" | "enable_feature" | "set_configuration" | "set_parameter" | "modify_quantity";
+  type: "select_equipment" | "enable_feature" | "set_configuration" | "set_parameter" | "modify_quantity" | "require_triage";
   targetId: string; // SKU, Feature ID, or Parameter Name
-  actionValue?: string | number | boolean; // The value to set (e.g. default uplink speed)
+  actionValue?: any; // Simple value or JSON Logic object for calculations
   quantity?: number; // Fixed number or derived? (e.g. 1 per site)
   quantityMultiplierField?: keyof Site; // e.g. "indoorAPs" -> 1 per AP count
+
+  // Triage-specific fields
+  reason?: string;
+  severity?: 'low' | 'medium' | 'high';
+  resolutionPaths?: string[];
 }
 
 export interface BOMLogicRule {
   id: string;
   name: string;
+  description?: string;
   priority: number; // Higher number = higher priority
   condition: Record<string, unknown>; // JSON Logic condition
   actions: BOMLogicAction[];
@@ -677,7 +695,7 @@ export interface ExtractedSiteRequirements {
   dynamicAttributes: Record<string, string | number | boolean>;
 }
 
-export interface TriagedSite extends ExtractedSiteRequirements {
+export interface TriagedSite extends Site {
   uxRoute: 'FAST_TRACK' | 'GUIDED_FLOW';
-  triageReason: string;
+  triageFlags: { ruleName: string; reason: string; resolutionPaths: string[] }[];
 }

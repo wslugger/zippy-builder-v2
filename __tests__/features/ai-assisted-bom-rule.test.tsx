@@ -14,6 +14,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
             ok: true,
             json: async () => ({
                 name: "AI Generated Rule: Require mGig for Indoor APs",
+                description: "This rule requires mGig if indoor APs are 5.",
                 condition: { "==": [{ "var": "site.indoorAPs" }, 5] },
                 actions: [{
                     type: "set_parameter",
@@ -24,7 +25,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
         });
     });
 
-    it('should generate a rule using the AI Copilot API', async () => {
+    it('should generate a rule using the AI Copilot API and require verification', async () => {
         const mockOnSave = jest.fn();
         const mockOnClose = jest.fn();
 
@@ -39,7 +40,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
         );
 
         // 1. Enter prompt into AI assistant text area
-        const aiInput = screen.getByPlaceholderText(/Describe the rule/i);
+        const aiInput = screen.getByPlaceholderText(/Describe your intent/i);
         fireEvent.change(aiInput, { target: { value: "Require mGig-Copper if there are 5 indoor APs" } });
 
         // 2. Click the Generate button
@@ -49,12 +50,18 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
         // 3. Ensure loading state appeared
         expect(generateButton).toBeDisabled();
 
-        // 4. Await API resolution and verify the Rule Name was updated
-        // Use placeholder for robust finding
+        // 4. Await verification card and click Accept
         await waitFor(() => {
-            const ruleNameInput = screen.getByPlaceholderText(/e\.g\. Standard High-Bandwidth Branch/i);
-            expect(ruleNameInput).toHaveValue("AI Generated Rule: Require mGig for Indoor APs");
+            const acceptButton = screen.getByRole('button', { name: /Accept & Populate/i });
+            expect(acceptButton).toBeInTheDocument();
         });
+
+        const acceptButton = screen.getByRole('button', { name: /Accept & Populate/i });
+        fireEvent.click(acceptButton);
+
+        // 5. Verify the Rule Name was updated
+        const ruleNameInput = screen.getByPlaceholderText(/e\.g\. Standard High-Bandwidth Branch/i);
+        expect(ruleNameInput).toHaveValue("AI Generated Rule: Require mGig for Indoor APs");
 
         // 5. Verify the fetch attributes were correct
         expect(global.fetch).toHaveBeenCalledWith('/api/copilot-suggest', expect.objectContaining({
@@ -73,9 +80,9 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
         const fieldSelect = screen.getByDisplayValue(/Site: Indoor APs/i);
         expect(fieldSelect).toBeInTheDocument();
 
-        // Check for value input format
+        // Check for value input format (Index 1 because Index 0 is now the auto-injected service filter)
         const valueInputs = screen.getAllByPlaceholderText(/Value/i);
-        expect(valueInputs[0]).toHaveValue("5");
+        expect(valueInputs[1]).toHaveValue("5");
 
         // 7. Check that the action was mapped correctly
         const actionTypeSelect = screen.getByDisplayValue(/Set Parameter/i);

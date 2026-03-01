@@ -211,6 +211,10 @@ sequenceDiagram
 - **Lesson**: Visibility into long-running, multi-step processes across systems is critical.
 - **Pattern**: Implement a dynamic Metrics Dashboard pulling discrete step progress (e.g., Solution Architecture flow metrics). Rather than hardcoding metric values, flow events update centralized tracking allowing dashboards to reflect accurate real-time states and spot bottlenecks.
 
+### 11. Work-in-Progress (WIP) State Persistence
+- **Lesson**: Complex multi-step configuration forms containing many entity configurations (like a BOM builder with multiple sites and hardware parameter overrides) risk losing data if not explicitly persisted before finalizing.
+- **Pattern**: Provide explicit "Save WIP" actions that persist partial states safely. Store dynamic UI configurations (like model overrides or discounts) as a structured JSON object (`bomState`) on the main parent document, and persist complex arrays (like sites) into a dedicated Firestore subcollection. When the process resumes, hydrate the UI hook state by fetching the subcollection and rehydrating the primitive values from the parent document's `bomState`.
+
 ## 🏗️ Deployment Infrastructure
 - **Production**: Hosted on **Vercel** with global edge distribution.
 - **CI/CD Orchestration**: GitHub Actions.
