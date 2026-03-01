@@ -164,8 +164,6 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
             if (role !== roleMap[requiredPurpose]) return false;
         }
 
-        if (!matchesConstraints(e, siteDef.constraints)) return false;
-
         const minPorts = siteParameters['minAccessPorts'] || site.lanPorts || 0;
         const minPoe = siteParameters['required_poe_watts'] || 0;
         const specs = e.specs as any;

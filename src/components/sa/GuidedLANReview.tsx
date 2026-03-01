@@ -81,7 +81,7 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                         </h2>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 font-medium pl-9">
-                        This site is too complex for auto-defaults. Confirm the LAN topology requirements to enable BOM generation.
+                        Confirm the LAN topology requirements to enable BOM generation.
                     </p>
                 </div>
 

@@ -98,14 +98,14 @@ describe('Smart Defaults Engine', () => {
         expect(result.lanRequirements!.poeCapabilities).toBe('PoE+');
     });
 
-    it('flags complex sites (userCount > 15) for manual review', () => {
-        const site = baseSite({ userCount: 50 });
+    it('applies defaults indiscriminately for sites (userCount > 15)', () => {
+        const site = baseSite({ userCount: 50, poePorts: 5 });
         const result = evaluateSiteComplexity(site, [], basePackage);
 
         expect(result.lanRequirements).toBeDefined();
-        expect(result.lanRequirements!.needsManualReview).toBe(true);
-        expect(result.lanRequirements!.accessPortType).toBeUndefined();
-        expect(result.lanRequirements!.uplinkPortType).toBeUndefined();
+        expect(result.lanRequirements!.needsManualReview).toBe(false);
+        expect(result.lanRequirements!.accessPortType).toBe('1G-Copper');
+        expect(result.lanRequirements!.uplinkPortType).toBe('10G-Fiber');
     });
 
     it('preserves existing SA-set lanRequirements (does not overwrite)', () => {

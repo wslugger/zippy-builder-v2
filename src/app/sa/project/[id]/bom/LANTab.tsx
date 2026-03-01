@@ -209,7 +209,7 @@ export function LANTab({
                     <div className="flex-1">
                         <p className="font-bold text-amber-900 dark:text-amber-200 text-sm">LAN Requirements Need Review</p>
                         <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                            This site is too complex for Smart Defaults. Confirm the LAN topology requirements to enable automatic BOM generation.
+                            Confirm the LAN topology requirements to enable automatic BOM generation.
                         </p>
                     </div>
                     <button

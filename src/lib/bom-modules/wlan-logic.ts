@@ -151,8 +151,6 @@ export function calculateWLANBOM(input: BOMModuleInput): BOMLineItem[] {
             if (role !== roleMap[requiredPurpose]) return false;
         }
 
-        if (!matchesConstraints(e, siteDef.constraints)) return false;
-
         return true;
     });
 

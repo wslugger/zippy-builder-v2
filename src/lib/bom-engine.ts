@@ -87,24 +87,14 @@ export function evaluateSiteComplexity(
  * - Complex site: flag for manual SA review via GuidedLANReview.
  */
 function applySmartLANDefaults(site: Site): SiteLANRequirements {
-    // Determine if it's genuinely a small branch
-    const isSmallBranch = (site.userCount || 0) <= 25 && (site.lanPorts || 0) <= 12;
-
-    if (isSmallBranch) {
-        const needsPoe = (site.poePorts && site.poePorts > 0) || (site.indoorAPs && site.indoorAPs > 0) || (site.outdoorAPs && site.outdoorAPs > 0);
-        return {
-            accessPortType: '1G-Copper',
-            uplinkPortType: '10G-Fiber',
-            poeCapabilities: needsPoe ? 'PoE+' : 'None',
-            isStackable: false,
-            isRugged: false,
-            needsManualReview: false,
-        };
-    }
-
-    // Complex site — leave topology fields undefined; SA must review via GuidedLANReview
+    const needsPoe = (site.poePorts && site.poePorts > 0) || (site.indoorAPs && site.indoorAPs > 0) || (site.outdoorAPs && site.outdoorAPs > 0);
     return {
-        needsManualReview: true,
+        accessPortType: '1G-Copper',
+        uplinkPortType: '10G-Fiber',
+        poeCapabilities: needsPoe ? 'PoE+' : 'None',
+        isStackable: false,
+        isRugged: false,
+        needsManualReview: false,
     };
 }
 
