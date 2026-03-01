@@ -7,6 +7,7 @@ import {
     SERVICE_CATEGORIES,
     DESIGN_OPTION_CATEGORIES,
     EQUIPMENT_STATUSES,
+    INTERFACE_TYPES,
 } from '@/src/lib/types';
 
 export function useCatalogMetadata() {
@@ -29,7 +30,7 @@ export function useCatalogMetadata() {
         wifiStandards: getTaxonomyField('wifi_standards', WIFI_STANDARDS),
         mountingOptions: getTaxonomyField('mounting_options', []),
         recommendedUseCases: getTaxonomyField('recommended_use_cases', []),
-        interfaceTypes: getTaxonomyField('interface_types', []),
+        interfaceTypes: getTaxonomyField('interface_types', INTERFACE_TYPES),
         featureCategories: getTaxonomyField('feature_categories', []),
         serviceCategories: getTaxonomyField('service_categories', SERVICE_CATEGORIES),
         designOptionCategories: getTaxonomyField('design_option_categories', DESIGN_OPTION_CATEGORIES),

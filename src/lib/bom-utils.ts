@@ -5,7 +5,7 @@
  * and the BOM builder UI. Keeping them in one place prevents logic drift.
  */
 
-import { Package, Equipment, EQUIPMENT_PURPOSES } from "./types";
+import { Package, Equipment, EQUIPMENT_PURPOSES, INTERFACE_TYPES, POE_CAPABILITIES } from "./types";
 import { Site } from "./bom-types";
 import { SiteType } from "./site-types";
 
@@ -232,29 +232,40 @@ export interface LANTaxonomy {
 }
 
 export function extractLANTaxonomy(catalog: Equipment[]): LANTaxonomy {
-    const accessPortTypes = new Set<string>();
-    const uplinkPortTypes = new Set<string>();
-    const poeCapabilities = new Set<string>();
+    const catalogAccessPortTypes = new Set<string>();
+    const catalogUplinkPortTypes = new Set<string>();
+    const catalogPoeCapabilities = new Set<string>();
 
     catalog
         .filter(e => e.role === 'LAN' && e.active !== false)
         .forEach(e => {
             const specs = e.specs as Record<string, unknown>;
             if (typeof specs.accessPortType === 'string' && specs.accessPortType) {
-                accessPortTypes.add(specs.accessPortType);
+                catalogAccessPortTypes.add(specs.accessPortType);
             }
             if (typeof specs.uplinkPortType === 'string' && specs.uplinkPortType) {
-                uplinkPortTypes.add(specs.uplinkPortType);
+                catalogUplinkPortTypes.add(specs.uplinkPortType);
             }
             if (typeof specs.poe_capabilities === 'string' && specs.poe_capabilities) {
-                poeCapabilities.add(specs.poe_capabilities);
+                catalogPoeCapabilities.add(specs.poe_capabilities);
             }
         });
 
+    // Start with the canonical list (from types.ts constants) as the authoritative base.
+    // This ensures all options are always visible even when catalog coverage is sparse.
+    // Then append any catalog-only custom values not already in the canonical list.
+    const mergeWithBase = (base: readonly string[], catalogValues: Set<string>): string[] => {
+        const result = [...base];
+        catalogValues.forEach(v => {
+            if (!result.includes(v)) result.push(v);
+        });
+        return result;
+    };
+
     return {
-        accessPortTypes: [...accessPortTypes].sort(),
-        uplinkPortTypes: [...uplinkPortTypes].sort(),
-        poeCapabilities: [...poeCapabilities].sort(),
+        accessPortTypes: mergeWithBase(INTERFACE_TYPES, catalogAccessPortTypes),
+        uplinkPortTypes: mergeWithBase(INTERFACE_TYPES, catalogUplinkPortTypes),
+        poeCapabilities: mergeWithBase(POE_CAPABILITIES, catalogPoeCapabilities),
     };
 }
 

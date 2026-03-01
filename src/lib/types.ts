@@ -33,6 +33,36 @@ export const CELLULAR_TYPES = ["LTE", "5G", "LTE/5G"] as const;
 export const WIFI_STANDARDS = ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"] as const;
 export const EQUIPMENT_STATUSES = ["Supported", "In development", "Not supported", "eos"] as const;
 
+/**
+ * Canonical interface/port speed taxonomy — single source of truth.
+ * Matches the system config default and the EquipmentModal dropdown.
+ */
+export const INTERFACE_TYPES = [
+  '1G-Copper',
+  '10G-Copper',
+  'mGig-Copper',
+  '1G-Fiber',
+  '10G-Fiber',
+  '25G-Fiber',
+  '40G-Fiber',
+  '100G-Fiber',
+  '400G-Fiber',
+  '1000G-Fiber',
+] as const;
+
+/**
+ * Canonical PoE capability taxonomy — single source of truth.
+ * Used in GuidedLANReview dropdowns and BOM engine filtering.
+ */
+export const POE_CAPABILITIES = [
+  'None',
+  'PoE',
+  'PoE+',
+  'UPOE',
+  'UPOE+',
+  'PoE++',
+] as const;
+
 export const EQUIPMENT_ROLES = ["WAN", "LAN", "WLAN", "SECURITY"] as const;
 export type EquipmentRole = typeof EQUIPMENT_ROLES[number];
 
@@ -690,7 +720,7 @@ export const SystemConfigSchema = z.object({
     wifi_standards: ['Wi-Fi 5', 'Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7'],
     mounting_options: ['Rack', 'Wall', 'Desktop', 'Ceiling'],
     recommended_use_cases: ['High Density', 'Outdoor', 'Harsh Environment', 'Standard Office'],
-    interface_types: ['1G-Copper', '10G-Copper', 'mGig-Copper', '1G-Fiber', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'],
+    interface_types: ['1G-Copper', '10G-Copper', 'mGig-Copper', '1G-Fiber', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber', '400G-Fiber', '1000G-Fiber'],
     feature_categories: ['SD-WAN', 'Security', 'Routing', 'Switching', 'Wireless', 'Visibility'],
     service_categories: ['Managed WAN', 'Managed LAN', 'Managed WLAN', 'Managed Security'],
     design_option_categories: ['Redundancy', 'Performance', 'Scale', 'Topology']

@@ -134,34 +134,54 @@ describe('extractLANTaxonomy', () => {
         baseSwitch('sw1', { accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' }),
         baseSwitch('sw2', { accessPortType: 'mGig-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE++' }),
         baseSwitch('sw3', { accessPortType: '1G-Copper', uplinkPortType: '1G-Fiber', poe_capabilities: 'PoE+' }),
-        // Inactive — should be excluded
+        // Inactive — excluded from catalog scan, but canonical base still provides its value
         { ...baseSwitch('sw4', { accessPortType: '10G-Copper' }), active: false } as unknown as Equipment,
-        // WLAN device — should be excluded
+        // WLAN device — excluded from catalog scan
         { ...baseSwitch('ap1', {}), role: 'WLAN' } as unknown as Equipment,
     ];
 
-    it('returns unique, sorted accessPortTypes from active LAN equipment', () => {
+    it('includes full INTERFACE_TYPES canonical base in accessPortTypes', () => {
         const taxonomy = extractLANTaxonomy(catalog);
-        expect(taxonomy.accessPortTypes).toEqual(['1G-Copper', 'mGig-Copper']);
+        expect(taxonomy.accessPortTypes).toContain('1G-Copper');
+        expect(taxonomy.accessPortTypes).toContain('10G-Copper');
+        expect(taxonomy.accessPortTypes).toContain('mGig-Copper');
+        expect(taxonomy.accessPortTypes).toContain('1G-Fiber');
+        expect(taxonomy.accessPortTypes).toContain('10G-Fiber');
+        expect(taxonomy.accessPortTypes).toContain('25G-Fiber');
+        expect(taxonomy.accessPortTypes).toContain('100G-Fiber');
     });
 
-    it('returns unique, sorted uplinkPortTypes', () => {
+    it('includes full INTERFACE_TYPES canonical base in uplinkPortTypes', () => {
         const taxonomy = extractLANTaxonomy(catalog);
-        expect(taxonomy.uplinkPortTypes).toEqual(['10G-Fiber', '1G-Fiber']);
+        expect(taxonomy.uplinkPortTypes).toContain('1G-Fiber');
+        expect(taxonomy.uplinkPortTypes).toContain('10G-Fiber');
+        expect(taxonomy.uplinkPortTypes).toContain('25G-Fiber');
+        expect(taxonomy.uplinkPortTypes).toContain('100G-Fiber');
     });
 
-    it('returns unique, sorted poeCapabilities', () => {
+    it('includes POE_CAPABILITIES base and catalog-only extras in poeCapabilities', () => {
         const taxonomy = extractLANTaxonomy(catalog);
-        expect(taxonomy.poeCapabilities).toEqual(['PoE+', 'PoE++']);
+        // Canonical base values (from POE_CAPABILITIES constant)
+        expect(taxonomy.poeCapabilities).toContain('None');
+        expect(taxonomy.poeCapabilities).toContain('PoE');
+        expect(taxonomy.poeCapabilities).toContain('PoE+');
+        expect(taxonomy.poeCapabilities).toContain('UPOE');
+        // PoE++ is not in POE_CAPABILITIES constant but is in the catalog — should still appear
+        expect(taxonomy.poeCapabilities).toContain('PoE++');
     });
 
-    it('returns empty arrays if no active LAN equipment in catalog', () => {
+    it('returns full canonical base even when catalog is empty', () => {
         const taxonomy = extractLANTaxonomy([]);
-        expect(taxonomy.accessPortTypes).toHaveLength(0);
-        expect(taxonomy.uplinkPortTypes).toHaveLength(0);
-        expect(taxonomy.poeCapabilities).toHaveLength(0);
+        // Full INTERFACE_TYPES constant = 10 values
+        expect(taxonomy.accessPortTypes.length).toBeGreaterThanOrEqual(10);
+        expect(taxonomy.uplinkPortTypes.length).toBeGreaterThanOrEqual(10);
+        // Full POE_CAPABILITIES constant = 6 values
+        expect(taxonomy.poeCapabilities.length).toBeGreaterThanOrEqual(6);
+        expect(taxonomy.poeCapabilities).toContain('PoE+');
+        expect(taxonomy.poeCapabilities).toContain('UPOE');
     });
 });
+
 
 describe('BOM Engine strict LAN filtering', () => {
     const switches: Equipment[] = [
