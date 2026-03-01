@@ -282,4 +282,10 @@
 **Solution**:
 - **Contextual Copilot API**: Instead of creating a new API, we extended the `/api/copilot-suggest` endpoint to handle multiple `contextType` values. This allowed us to reuse the prompt cleaning and JSON parsing infrastructure while swapping the system instructions and schema definitions based on the request.
 - **Form-Aware Interaction**: In `AITriageRuleEditor.tsx`, the copilot was designed to be "Form-Aware," specifically disabling itself during "Edit" mode to prevent accidental overwrites of existing production IDs, while serving as an accelerator for creating "New" rules.
-- **Key Insight**: Once a "Verify -> Accept" UI pattern is established for AI interactions, it should be reused across the application to maintain a consistent admin experience. Centralizing the backend suggestions into a single polymorphic API endpoint reduces technical debt as more "Copilots" are added to different features.
+## 41. Synchronizing Config-Driven Taxonomy with Equipment Specs
+**Issue**: The "PoE Capabilities" field in the equipment catalog was a free-text input, leading to string mismatches (e.g., "UPOE" vs "uPoE") that broke the BOM engine's filtering logic. 
+**Solution**: 
+- **Metadata-Linked Selects**: Replaced the free-text input in the `EquipmentModal` with a dropdown driven by the `useCatalogMetadata` hook.
+- **Single Source of Truth**: Updated the hook to prioritize `validPoeTypes` from the `SystemConfig` (Site Taxonomy), ensuring that any administrative changes to "Valid PoE Types" are immediately reflected in the catalog options.
+- **UI Consistency**: Synchronized the `GuidedLANReview` to use the same metadata-driven options, ensuring the SA's requirements always align with the available catalog standards.
+- **Key Insight**: Technical specifications used for filtering must never be free-text. They should be strictly bound to a managed taxonomy to ensure the "Selector" (SA) and the "Provider" (Catalog) are always speaking the same language.
