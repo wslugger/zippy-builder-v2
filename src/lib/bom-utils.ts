@@ -312,3 +312,35 @@ export function exportBomToCsv(bomData: BOMLineItem[], projectName: string) {
     link.click();
     document.body.removeChild(link);
 }
+
+/**
+ * Build a pricing snapshot from catalog equipment data.
+ * Defaults discountPercent to 0 so netPrice equals listPrice.
+ */
+export function makePricingSnapshot(equip: Equipment): BOMLineItem['pricing'] | undefined {
+    const purchase = equip.pricing?.purchasePrice ?? equip.listPrice ?? equip.price ?? 0;
+    const rental = equip.pricing?.rentalPrice ?? 0;
+
+    if (!purchase && !rental) return undefined;
+
+    return {
+        listPrice: purchase, // Legacy fallback
+        purchasePrice: purchase,
+        rentalPrice: rental,
+        discountPercent: 0,
+        netPrice: purchase,
+        effectiveDate: equip.pricingEffectiveDate,
+    };
+}
+
+export function matchesConstraints(equipment: Equipment, constraints: { type: string; description?: string }[]): boolean {
+    for (const constraint of constraints) {
+        const type = (constraint.type || "").toLowerCase();
+        if (type === "hardware") {
+            const desc = (constraint.description || "").toLowerCase();
+            if (desc.includes("rugged") && !equipment.description?.toLowerCase().includes("rugged")) return false;
+            if (desc.includes("virtual") && !equipment.model.toLowerCase().includes("v")) return false;
+        }
+    }
+    return true;
+}

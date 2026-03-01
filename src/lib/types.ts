@@ -677,6 +677,19 @@ export interface BOMEngineInput {
   globalParameters?: Record<string, any>;
 }
 
+export interface BOMModuleInput {
+  projectId: string;
+  site: Site;
+  siteDef: SiteType;
+  selectedPackage: Package;
+  service: Service;
+  canonicalServiceId: string;
+  equipmentCatalog: Equipment[];
+  rules: BOMLogicRule[];
+  siteParameters: Record<string, any>;
+  pkgItem: PackageItem;
+}
+
 export interface InfrastructureOptions {
   poeRequirements: string[];
   uplinkSpeeds: string[];

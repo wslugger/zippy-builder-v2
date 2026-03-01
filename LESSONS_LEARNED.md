@@ -289,3 +289,18 @@
 - **Single Source of Truth**: Updated the hook to prioritize `validPoeTypes` from the `SystemConfig` (Site Taxonomy), ensuring that any administrative changes to "Valid PoE Types" are immediately reflected in the catalog options.
 - **UI Consistency**: Synchronized the `GuidedLANReview` to use the same metadata-driven options, ensuring the SA's requirements always align with the available catalog standards.
 - **Key Insight**: Technical specifications used for filtering must never be free-text. They should be strictly bound to a managed taxonomy to ensure the "Selector" (SA) and the "Provider" (Catalog) are always speaking the same language.
+
+## 42. Modular BOM Engine Architecture & Data-Driven Logic
+**Issue**: As the `bom-engine.ts` grew to support WAN, LAN, and WLAN, it became a monolithic "god file" that was difficult to test and prone to regression. Logic for different domains (e.g., throughput vs. port counts) was intermingled, making it hard to apply domain-specific constraints without affecting others.
+**Solution**: Refactored the engine into a **Modular Orchestrator** pattern.
+- **Domain Decoupling**: Split the engine into independent modules (`wan-logic.ts`, `lan-logic.ts`, `wlan-logic.ts`), each responsible for hardware selection within its own purpose.
+- **Unified Interface**: Introduced a standard `BOMModuleInput` interface for all sub-engines, allowing the main `calculateBOM` to act as a pure router/orchestrator.
+- **Strict Data-Driven Constraint**: Enforced a rule that **no business logic or equipment data** should be hardcoded in these modules. All rules (json-logic), taxonomy, and parameters are injected from the database.
+- **Key Insight**: Complexity in a rules engine is best managed by compartmentalizing *purposes* while standardizing the *data flow*. This architecture allows for scaling into new domains (like Edge AI or Security) by simply adding a new module and updating the purpose router, without touching the existing, verified WAN/LAN logic.
+- **Pattern**: 
+  ```typescript
+  // Orchestrator routers based on service purpose
+  if (purpose === "WAN") return calculateWANBOM(moduleInput);
+  if (purpose === "LAN") return calculateLANBOM(moduleInput);
+  ```
+- **Benefit**: Improved testability (can test LAN logic in isolation) and clearer "Reasoning" strings tailored to the specific domain metrics.
