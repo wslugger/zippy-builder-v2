@@ -53,8 +53,9 @@ export function SiteSidebar({
         return sites.map((site, index) => ({ site, index }))
             .filter((item) => {
                 if (siteFilter === "flagged") {
-                    const needsReview = item.site.uxRoute === 'GUIDED_FLOW' || (!item.site.uxRoute && !item.site.siteTypeId);
-                    return needsReview && !item.site.isReviewed;
+                    const needsWANReview = item.site.uxRoute === 'GUIDED_FLOW' || (!item.site.uxRoute && !item.site.siteTypeId);
+                    const needsLANReview = item.site.lanRequirements?.needsManualReview === true;
+                    return (needsWANReview && !item.site.isReviewed) || needsLANReview;
                 }
                 return true;
             });
@@ -64,11 +65,18 @@ export function SiteSidebar({
         const groups: Record<string, { typeName: string, items: typeof filteredSites }> = {};
 
         filteredSites.forEach(item => {
+            const needsLANReview = item.site.lanRequirements?.needsManualReview === true;
+            const needsWANReview = item.site.uxRoute === 'GUIDED_FLOW' || (!item.site.uxRoute && !item.site.siteTypeId);
+
             // Determine the bucket ID
             let bucketId = item.site.siteTypeId;
             if (!bucketId) {
-                if (item.site.uxRoute === 'FAST_TRACK') bucketId = "fast_track_pending";
-                else bucketId = "flagged_unmapped";
+                if (needsWANReview && !item.site.isReviewed) bucketId = "flagged_unmapped";
+                else if (needsLANReview) bucketId = "lan_review_needed";
+                else bucketId = "fast_track_pending";
+            } else if (needsLANReview) {
+                // Named site type but still needs LAN review — put in LAN bucket
+                bucketId = "lan_review_needed";
             }
 
             if (!groups[bucketId]) {
@@ -81,6 +89,8 @@ export function SiteSidebar({
                     typeName = "Fast Track (Ready)";
                 } else if (bucketId === "flagged_unmapped") {
                     typeName = "Flagged / Unmapped";
+                } else if (bucketId === "lan_review_needed") {
+                    typeName = "LAN Review Needed";
                 }
 
                 groups[bucketId] = {
@@ -91,12 +101,14 @@ export function SiteSidebar({
             groups[bucketId].items.push(item);
         });
 
-        // Ensure Flagged is always at the top, then Fast Track
+        // Sort: Flagged (WAN) → LAN Review Needed → Fast Track → Named types
         const sortedKeys = Object.keys(groups).sort((a, b) => {
             if (a === "flagged_unmapped") return -1;
             if (b === "flagged_unmapped") return 1;
-            if (a === "fast_track_pending") return -1;
-            if (b === "fast_track_pending") return 1;
+            if (a === "lan_review_needed") return -1;
+            if (b === "lan_review_needed") return 1;
+            if (a === "fast_track_pending") return 1;
+            if (b === "fast_track_pending") return -1;
             return groups[a].typeName.localeCompare(groups[b].typeName);
         });
 
@@ -231,15 +243,27 @@ export function SiteSidebar({
                             {/* Group Header */}
                             <button
                                 onClick={() => toggleGroup(group.id)}
-                                className="w-full sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700 px-4 py-2 flex items-center justify-between hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors focus:outline-none"
+                                className={`w-full sticky top-0 z-10 border-y px-4 py-2 flex items-center justify-between transition-colors focus:outline-none ${group.id === 'lan_review_needed'
+                                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30'
+                                        : group.id === 'flagged_unmapped'
+                                            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 hover:bg-red-100'
+                                            : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                    }`}
                             >
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center">
+                                <span className={`text-xs font-bold uppercase tracking-wider flex items-center ${group.id === 'lan_review_needed' ? 'text-amber-700 dark:text-amber-400'
+                                        : group.id === 'flagged_unmapped' ? 'text-red-600 dark:text-red-400'
+                                            : 'text-slate-700 dark:text-slate-300'
+                                    }`}>
                                     <svg className={`w-4 h-4 mr-1 text-slate-400 transform transition-transform ${isCollapsed ? "-rotate-90" : "rotate-0"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
+                                    {group.id === 'lan_review_needed' && <span className="mr-1">⚠️</span>}
                                     {group.typeName}
                                 </span>
-                                <span className="text-[10px] font-medium bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600">
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${group.id === 'lan_review_needed'
+                                        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-600'
+                                        : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600'
+                                    }`}>
                                     {group.items.length}
                                 </span>
                             </button>
@@ -263,18 +287,25 @@ export function SiteSidebar({
                                                     <div>
                                                         <div className={`font-medium truncate ${isSelected ? "text-blue-900 dark:text-blue-100" : "text-slate-900 dark:text-slate-100"}`}>{site.name}</div>
                                                         <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{site.address}</div>
-                                                        <div className="mt-2 flex items-center space-x-2">
+                                                        <div className="mt-2 flex items-center space-x-2 flex-wrap gap-1">
                                                             {qty > 1 && (
                                                                 <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded uppercase tracking-wider">
                                                                     {qty} x CPE
+                                                                </span>
+                                                            )}
+                                                            {site.lanRequirements?.needsManualReview === true && (
+                                                                <span className="text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-wider border border-amber-200 dark:border-amber-600">
+                                                                    🔌 LAN
                                                                 </span>
                                                             )}
                                                         </div>
                                                     </div>
                                                     <div className="mt-1">
                                                         <div className={`w-2 h-2 rounded-full ${(!site.isReviewed && (site.uxRoute === 'GUIDED_FLOW' || (!site.uxRoute && !site.siteTypeId)))
-                                                            ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                                                            : "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]"
+                                                                ? "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]"
+                                                                : site.lanRequirements?.needsManualReview === true
+                                                                    ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                                                                    : "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]"
                                                             }`} />
                                                     </div>
                                                 </div>
