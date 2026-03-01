@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import jsonLogic from "json-logic-js";
-import { Site, BOM, BOMLineItem, BOMEngineInput, Package, BOMLogicRule, SiteLANRequirements } from "./types";
+import { Site, BOM, BOMLineItem, BOMEngineInput, Package, BOMLogicRule, SiteLANRequirements, POE_CAPABILITIES } from "./types";
 import { Equipment } from "./types";
 import { VENDOR_LABELS } from "./types";
 import { SiteType } from "./site-types";
@@ -389,8 +389,12 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                         if (req.accessPortType && specs.accessPortType !== req.accessPortType) return false;
                         if (req.uplinkPortType && specs.uplinkPortType !== req.uplinkPortType) return false;
                         if (req.poeCapabilities && req.poeCapabilities !== 'None') {
-                            // Require PoE capability to be present if non-None is requested
-                            if (!specs.poe_capabilities || specs.poe_capabilities === 'None') return false;
+                            // Verify the switch meets or exceeds the requested PoE tier
+                            const reqIndex = POE_CAPABILITIES.indexOf(req.poeCapabilities as any);
+                            const switchIndex = POE_CAPABILITIES.indexOf(specs.poe_capabilities as any);
+
+                            // If switch lacks capability (index -1) or is lower tier, reject it
+                            if (switchIndex < reqIndex) return false;
                         }
                         if (req.totalPoeBudgetWatts && (specs.poeBudgetWatts || 0) < req.totalPoeBudgetWatts) return false;
                         if (req.isStackable === true && !specs.isStackable) return false;
@@ -403,6 +407,18 @@ export function calculateBOM(input: BOMEngineInput): BOM {
             });
 
             const sortedCandidates = candidates.sort((a, b) => {
+                const roleA = getEquipmentRole(a);
+                const roleB = getEquipmentRole(b);
+
+                // For LAN switches, always prefer the smallest port count that satisfies the filter
+                if (roleA === 'LAN' && roleB === 'LAN') {
+                    const aPorts = Number((a.specs as any).accessPortCount || 0);
+                    const bPorts = Number((b.specs as any).accessPortCount || 0);
+                    if (aPorts !== bPorts) {
+                        return aPorts - bPorts;
+                    }
+                }
+
                 return getEquipmentPerformanceValue(a, activeThroughputField) - getEquipmentPerformanceValue(b, activeThroughputField);
             });
 

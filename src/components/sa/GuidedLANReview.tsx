@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Site, SiteLANRequirements } from "@/src/lib/types";
 import { Equipment } from "@/src/lib/types";
 import { extractLANTaxonomy } from "@/src/lib/bom-utils";
+import { useCatalogMetadata } from "@/src/hooks";
 
 interface GuidedLANReviewProps {
     site: Site;
@@ -24,6 +25,7 @@ const FIELD_LABEL: Record<string, string> = {
  */
 export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedLANReviewProps) {
     const existing = site.lanRequirements;
+    const { metadata } = useCatalogMetadata();
 
     const [draft, setDraft] = useState<Omit<SiteLANRequirements, "needsManualReview">>({
         accessPortType: existing?.accessPortType ?? "",
@@ -35,6 +37,10 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
     });
 
     const taxonomy = useMemo(() => extractLANTaxonomy(catalog), [catalog]);
+
+    const poeOptions = useMemo(() => {
+        return metadata.poeCapabilities || taxonomy.poeCapabilities;
+    }, [metadata.poeCapabilities, taxonomy.poeCapabilities]);
 
     const isEmpty = (val: string | undefined) => !val || val === "";
 
@@ -105,8 +111,8 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                             value={draft.accessPortType ?? ""}
                             onChange={e => setDraft(prev => ({ ...prev, accessPortType: e.target.value }))}
                             className={`block w-full rounded-lg border text-sm py-2.5 px-3 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-800 dark:text-slate-100 transition-all ${isEmpty(draft.accessPortType)
-                                    ? "border-amber-400 ring-2 ring-amber-400/30 bg-amber-50 dark:bg-amber-900/20"
-                                    : "border-slate-200 dark:border-slate-700"
+                                ? "border-amber-400 ring-2 ring-amber-400/30 bg-amber-50 dark:bg-amber-900/20"
+                                : "border-slate-200 dark:border-slate-700"
                                 }`}
                         >
                             <option value="">Select access port type…</option>
@@ -134,8 +140,8 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                             value={draft.uplinkPortType ?? ""}
                             onChange={e => setDraft(prev => ({ ...prev, uplinkPortType: e.target.value }))}
                             className={`block w-full rounded-lg border text-sm py-2.5 px-3 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-800 dark:text-slate-100 transition-all ${isEmpty(draft.uplinkPortType)
-                                    ? "border-amber-400 ring-2 ring-amber-400/30 bg-amber-50 dark:bg-amber-900/20"
-                                    : "border-slate-200 dark:border-slate-700"
+                                ? "border-amber-400 ring-2 ring-amber-400/30 bg-amber-50 dark:bg-amber-900/20"
+                                : "border-slate-200 dark:border-slate-700"
                                 }`}
                         >
                             <option value="">Select uplink port type…</option>
@@ -163,12 +169,12 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                             value={draft.poeCapabilities ?? ""}
                             onChange={e => setDraft(prev => ({ ...prev, poeCapabilities: e.target.value }))}
                             className={`block w-full rounded-lg border text-sm py-2.5 px-3 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-800 dark:text-slate-100 transition-all ${isEmpty(draft.poeCapabilities)
-                                    ? "border-amber-400 ring-2 ring-amber-400/30 bg-amber-50 dark:bg-amber-900/20"
-                                    : "border-slate-200 dark:border-slate-700"
+                                ? "border-amber-400 ring-2 ring-amber-400/30 bg-amber-50 dark:bg-amber-900/20"
+                                : "border-slate-200 dark:border-slate-700"
                                 }`}
                         >
                             <option value="">Select PoE capability…</option>
-                            {taxonomy.poeCapabilities.map(t => (
+                            {poeOptions.map((t: string) => (
                                 <option key={t} value={t}>{t}</option>
                             ))}
                         </select>

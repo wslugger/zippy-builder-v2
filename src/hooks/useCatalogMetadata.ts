@@ -8,7 +8,25 @@ import {
     DESIGN_OPTION_CATEGORIES,
     EQUIPMENT_STATUSES,
     INTERFACE_TYPES,
+    POE_CAPABILITIES,
 } from '@/src/lib/types';
+
+export interface CatalogMetadata {
+    regions: string[];
+    siteTypes: string[];
+    vendors: string[];
+    purposes: string[];
+    cellularTypes: string[];
+    wifiStandards: string[];
+    mountingOptions: string[];
+    recommendedUseCases: string[];
+    interfaceTypes: string[];
+    featureCategories: string[];
+    serviceCategories: string[];
+    designOptionCategories: string[];
+    statuses: string[];
+    poeCapabilities: string[];
+}
 
 export function useCatalogMetadata() {
     const { config, isLoading: isLoadingConfig } = useSystemConfig();
@@ -21,7 +39,7 @@ export function useCatalogMetadata() {
         return [...fallback];
     };
 
-    const metadata = {
+    const metadata: CatalogMetadata = {
         regions: getTaxonomyField('regions', []),
         siteTypes: getTaxonomyField('siteTypes', []),
         vendors: getTaxonomyField('vendors', VENDOR_IDS),
@@ -35,6 +53,9 @@ export function useCatalogMetadata() {
         serviceCategories: getTaxonomyField('service_categories', SERVICE_CATEGORIES),
         designOptionCategories: getTaxonomyField('design_option_categories', DESIGN_OPTION_CATEGORIES),
         statuses: getTaxonomyField('statuses', EQUIPMENT_STATUSES),
+        poeCapabilities: config?.validPoeTypes
+            ? config.validPoeTypes.split(',').map(s => s.trim()).filter(Boolean)
+            : [...POE_CAPABILITIES],
     };
 
     return {

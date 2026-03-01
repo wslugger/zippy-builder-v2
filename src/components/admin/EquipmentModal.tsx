@@ -681,13 +681,23 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                         PoE Capabilities
                                                         <span className="invisible block normal-case tracking-normal">Spacer</span>
                                                     </label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="e.g. PoE+, UPOE"
+                                                    <select
                                                         value={specs.poe_capabilities || ""}
                                                         onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)}
-                                                        className={inputClass}
-                                                    />
+                                                        className={selectClass}
+                                                        disabled={isMetadataLoading}
+                                                    >
+                                                        {isMetadataLoading ? (
+                                                            <option value="">Loading options...</option>
+                                                        ) : (
+                                                            <>
+                                                                <option value="">Select PoE Capability...</option>
+                                                                {metadata.poeCapabilities?.map((p: string) => (
+                                                                    <option key={p} value={p}>{p}</option>
+                                                                ))}
+                                                            </>
+                                                        )}
+                                                    </select>
                                                 </div>
                                             </>
                                         )}

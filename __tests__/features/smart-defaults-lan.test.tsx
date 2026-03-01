@@ -22,7 +22,7 @@ const basePackage: Package = {
     short_description: '',
     detailed_description: '',
     active: true,
-    items: [{ service_id: 'managed_lan', inclusion_type: 'required', enabled_features: [] }],
+    items: [{ service_id: 'managed_lan', inclusion_type: 'required', enabled_features: [], design_option_id: 'cisco_catalyst_do' }],
     throughput_basis: 'sdwanCryptoThroughputMbps',
 };
 
@@ -227,5 +227,47 @@ describe('BOM Engine strict LAN filtering', () => {
         const bom = makeBOM({ needsManualReview: true });
         const lanItems = bom.items.filter(i => i.serviceId === 'managed_lan');
         expect(lanItems).toHaveLength(0);
+    });
+
+    it('selects smaller port-count switch when multiple match criteria', () => {
+        const smallSwitch = baseSwitch('sw_24', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' });
+        const largeSwitch = baseSwitch('sw_48', { accessPortCount: 48, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' });
+
+        const bom = calculateBOM({
+            projectId: 'test',
+            sites: [baseSite({ userCount: 10, lanPorts: 12, lanRequirements: { accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poeCapabilities: 'PoE+', needsManualReview: false } })],
+            selectedPackage: basePackage,
+            services,
+            siteTypes,
+            equipmentCatalog: [largeSwitch, smallSwitch], // Intentionally out of order
+            rules: [],
+        });
+        const lanItems = bom.items.filter(i => i.serviceId === 'managed_lan');
+        expect(lanItems[0].itemId).toBe('sw_24');
+    });
+
+    it('rejects switches with insufficient PoE capabilities tier', () => {
+        const noneSwitch = baseSwitch('sw_none', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'None' });
+        const poeSwitch = baseSwitch('sw_poe', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE' });
+        const poePlusSwitch = baseSwitch('sw_poe_plus', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' });
+        const poePlusPlusSwitch = baseSwitch('sw_poe_plus_plus', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE++' });
+
+        // Requesting PoE+ -- None and PoE should fail, PoE+ and PoE++ should pass
+        // Calculate BOM will just return the best fit of those that pass
+        const bom = calculateBOM({
+            projectId: 'test',
+            sites: [baseSite({ userCount: 10, lanPorts: 12, lanRequirements: { accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poeCapabilities: 'PoE+', needsManualReview: false } })],
+            selectedPackage: basePackage,
+            services,
+            siteTypes,
+            equipmentCatalog: [noneSwitch, poeSwitch, poePlusPlusSwitch, poePlusSwitch],
+            rules: [],
+        });
+
+        const lanItems = bom.items.filter(i => i.serviceId === 'managed_lan');
+        // Will select poePlusSwitch or poePlusPlusSwitch, but let's just make sure neither 'none' nor 'poe' is selected
+        expect(lanItems[0].itemId).not.toBe('sw_none');
+        expect(lanItems[0].itemId).not.toBe('sw_poe');
+        expect(['sw_poe_plus', 'sw_poe_plus_plus']).toContain(lanItems[0].itemId);
     });
 });
