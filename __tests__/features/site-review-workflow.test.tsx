@@ -25,11 +25,11 @@ const createMockSite = (overrides: Partial<Site>): Site => ({
 describe('Site Review Workflow - Dashboard Logic', () => {
     it('counts only unreviewed flagged sites in the Flagged For Review card', () => {
         const mockSites: Site[] = [
-            createMockSite({ name: 'Flagged Unreviewed', uxRoute: 'GUIDED_FLOW', isReviewed: false }),
-            createMockSite({ name: 'Flagged Reviewed', uxRoute: 'GUIDED_FLOW', isReviewed: true }),
+            createMockSite({ name: 'Flagged Unreviewed', lanRequirements: { needsManualReview: true }, isReviewed: false }),
+            createMockSite({ name: 'Flagged Reviewed', lanRequirements: { needsManualReview: true }, isReviewed: true }),
             createMockSite({ name: 'Missing Profile Unreviewed', siteTypeId: '', isReviewed: false }),
             createMockSite({ name: 'Missing Profile Reviewed', siteTypeId: '', isReviewed: true }),
-            createMockSite({ name: 'Standard Site', siteTypeId: 'small_office', uxRoute: 'FAST_TRACK' }),
+            createMockSite({ name: 'Standard Site', siteTypeId: 'small_office' }),
         ];
 
         render(<ProjectSummaryDashboard sites={mockSites} setSiteFilter={() => { }} />);
@@ -39,7 +39,7 @@ describe('Site Review Workflow - Dashboard Logic', () => {
 
     it('disables the Finalize button if there are unreviewed flagged sites', () => {
         const mockSites: Site[] = [
-            createMockSite({ uxRoute: 'GUIDED_FLOW', isReviewed: false }),
+            createMockSite({ lanRequirements: { needsManualReview: true }, isReviewed: false }),
         ];
 
         render(<ProjectSummaryDashboard sites={mockSites} setSiteFilter={() => { }} />);
@@ -50,7 +50,7 @@ describe('Site Review Workflow - Dashboard Logic', () => {
 
     it('enables the Finalize button if all flagged sites are reviewed', () => {
         const mockSites: Site[] = [
-            createMockSite({ uxRoute: 'GUIDED_FLOW', isReviewed: true }),
+            createMockSite({ lanRequirements: { needsManualReview: true }, isReviewed: true }),
         ];
 
         render(<ProjectSummaryDashboard sites={mockSites} setSiteFilter={() => { }} />);

@@ -52,7 +52,7 @@ export const INTERFACE_TYPES = [
 
 /**
  * Canonical PoE capability taxonomy — single source of truth.
- * Used in GuidedLANReview dropdowns and BOM engine filtering.
+ * Used in LANRequirementsEditor dropdowns and BOM engine filtering.
  */
 export const POE_CAPABILITIES = [
   'None',
@@ -544,14 +544,14 @@ export const SiteSchema = z.object({
   requiredPoePorts: z.number().optional(),
   embeddedEquipment: z.array(z.any()).optional(), // typed as EmbeddedEquipmentSnapshot[] in usage
   embeddedServices: z.array(z.any()).optional(),  // typed as EmbeddedServiceSnapshot[] in usage
-  uxRoute: z.enum(['FAST_TRACK', 'GUIDED_FLOW']).optional(),
+
   triageFlags: z.array(z.object({
     ruleName: z.string(),
     reason: z.string(),
     resolutionPaths: z.array(z.string())
   })).optional(),
   isReviewed: z.boolean().optional(),
-  /** Data-driven LAN requirements. Auto-filled by Smart Defaults Engine or set via GuidedLANReview. */
+  /** Data-driven LAN requirements. Auto-filled by Smart Defaults Engine or set via LANRequirementsEditor. */
   lanRequirements: z.object({
     accessPortType: z.string().optional(),
     uplinkPortType: z.string().optional(),
@@ -761,7 +761,7 @@ export interface TriageCriterion {
   label: string;
   type: 'boolean' | 'string' | 'number';
   promptInstruction: string;
-  forcesGuidedFlow: boolean;
+
 }
 
 export interface ExtractedSiteRequirements {
@@ -773,6 +773,6 @@ export interface ExtractedSiteRequirements {
 }
 
 export interface TriagedSite extends Site {
-  uxRoute: 'FAST_TRACK' | 'GUIDED_FLOW';
+
   triageFlags: { ruleName: string; reason: string; resolutionPaths: string[] }[];
 }

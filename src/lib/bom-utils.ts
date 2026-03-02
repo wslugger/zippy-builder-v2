@@ -222,7 +222,7 @@ export function getEquipmentPerformanceValue(equip: Equipment, throughputBasis?:
 
 /**
  * Derives the available LAN filter options directly from the active equipment catalog.
- * All dropdown options in GuidedLANReview are populated from this function to ensure
+ * All dropdown options in LANRequirementsEditor are populated from this function to ensure
  * they always reflect what's actually selectable — no hardcoded enums.
  */
 export interface LANTaxonomy {

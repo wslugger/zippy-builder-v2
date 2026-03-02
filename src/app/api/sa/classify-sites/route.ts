@@ -79,11 +79,13 @@ export async function POST(req: NextRequest) {
         // 5. Return extracted sites (Client handles dynamic triage)
         const triagedSites = extractedArray.map(site => {
             // Flatten dynamicAttributes for consistent Site interface
-            const { dynamicAttributes, ...base } = site;
+            const { dynamicAttributes, siteName, estimatedUsers, rawNotes, ...base } = site;
             return {
                 ...base,
+                name: siteName || "Unknown Site",
+                userCount: estimatedUsers || 0,
+                notes: rawNotes || "",
                 ...(dynamicAttributes || {}),
-                uxRoute: 'FAST_TRACK' as const,
                 triageFlags: []
             };
         });

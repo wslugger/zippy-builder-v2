@@ -70,7 +70,7 @@ export const GlobalTriageParameters: React.FC = () => {
             <div className="p-6 space-y-6">
                 <div className="max-w-md">
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        Maximum Users for Standard Branch (Fast Track)
+                        Maximum Users for Standard Branch
                     </label>
                     <div className="flex gap-4">
                         <input
@@ -95,10 +95,10 @@ export const GlobalTriageParameters: React.FC = () => {
                         </button>
                     </div>
                     <p className="text-xs text-slate-500 mt-2">
-                        Sites with an estimated user count above this value will be flagged for manual review (Guided Flow).
+                        Sites with an estimated user count above this value will be flagged for manual review.
                     </p>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

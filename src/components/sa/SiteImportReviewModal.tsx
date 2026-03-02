@@ -13,15 +13,12 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
     onConfirm,
     onCancel
 }) => {
-    const fastTrackSites = sites.filter(s => s.uxRoute === 'FAST_TRACK');
-    const guidedFlowSites = sites.filter(s => s.uxRoute === 'GUIDED_FLOW');
 
     const handleConfirm = () => {
         // Map TriagedSite to the standard Site format for the BOM Engine
         const finalSites: Site[] = sites.map(s => {
-            // Since TriagedSite now extends Site, we just strip the triage-specific UX fields
-            // but keep the core Site properties
-            const { triageFlags, uxRoute, isReviewed, ...baseSite } = s;
+            // Map TriagedSite to the standard Site format for the BOM Engine
+            const { triageFlags, isReviewed, ...baseSite } = s;
             return baseSite;
         });
         onConfirm(finalSites);
@@ -44,17 +41,7 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
                     </span>
                 </div>
             </td>
-            <td className="py-4 px-4 text-sm font-medium">
-                {site.uxRoute === 'FAST_TRACK' ? (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-green-700 bg-green-100">
-                        ⚡ Fast Track
-                    </span>
-                ) : (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-amber-700 bg-amber-100">
-                        ⚠️ Guided Flow
-                    </span>
-                )}
-            </td>
+
             <td className="py-4 px-4 w-1/4 text-sm">
                 <div className="flex flex-col space-y-1">
                     {site.triageFlags.map((flag, i) => (
@@ -77,7 +64,7 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
                             🌐 AI Triage Complete
                         </h3>
                         <p className="text-sm text-slate-500 mt-1">
-                            Analyzed {sites.length} sites. {fastTrackSites.length} fast-tracked, {guidedFlowSites.length} flagged for guided configuration.
+                            Analyzed {sites.length} sites.
                         </p>
                     </div>
                     <div className="flex space-x-3">
@@ -103,32 +90,11 @@ export const SiteImportReviewModal: React.FC<SiteImportReviewModalProps> = ({
                             <tr className="border-b border-slate-200">
                                 <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-widest">Site Detail</th>
                                 <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-widest">Extracted Parameters</th>
-                                <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-widest">UX Route</th>
                                 <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-widest">Reasoning</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {fastTrackSites.length > 0 && (
-                                <>
-                                    <tr className="bg-slate-50/80">
-                                        <td colSpan={4} className="px-6 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                            Fast Track (Automated Build Check)
-                                        </td>
-                                    </tr>
-                                    {fastTrackSites.map((site, index) => renderSiteRow(site, index))}
-                                </>
-                            )}
-
-                            {guidedFlowSites.length > 0 && (
-                                <>
-                                    <tr className="bg-orange-50/50">
-                                        <td colSpan={4} className="px-6 py-3 text-xs font-bold text-orange-800 uppercase tracking-wider border-t border-orange-100">
-                                            Guided Flow (Requires SA Review)
-                                        </td>
-                                    </tr>
-                                    {guidedFlowSites.map((site, index) => renderSiteRow(site, index))}
-                                </>
-                            )}
+                            {sites.map((site, index) => renderSiteRow(site, index))}
                         </tbody>
                     </table>
                 </div>

@@ -33,7 +33,6 @@ test.describe('SA Workflow Critical Path', () => {
                             wanLinks: 1,
                             redundancyModel: 'Single CPE'
                         },
-                        uxRoute: 'FAST_TRACK',
                         triageReason: 'Auto-classified as Large Office'
                     },
                     {
@@ -53,7 +52,6 @@ test.describe('SA Workflow Critical Path', () => {
                             wanLinks: 1,
                             redundancyModel: 'Single CPE'
                         },
-                        uxRoute: 'FAST_TRACK',
                         triageReason: 'Auto-classified as Small Office'
                     }
                 ]),

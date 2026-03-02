@@ -313,3 +313,10 @@
 - **Improved Fallback Scaling**: Updated the LAN fallback algorithm to account for port capacity. If a perfectly matching switch isn't found, the engine now prefers the most suitable candidate and scales the `quantity` to meet the site's total port requirement.
 - **Key Insight**: Site "Types" are often a business-level or WAN-topology construct. LAN and WLAN requirements are physical and scaling-based. Forcing LAN logic to adhere to WAN-centric site definitions creates fragile edge cases and limits hardware selection flexibility.
 - **UI Alignment**: Updated UI banners and alerts to remove language about "complexity" for large sites, shifting the focus to manual requirement confirmation where necessary.
+## 44. Resilient Metadata & Efficiency-Driven Selection (LAN)
+**Issue**: Missing `uplinkPortType` in the equipment catalog caused strict filtering to fail for sites like MIA-Office, triggering unwanted "Best Effort" fallbacks. The fallback logic was also prone to picking oversized hardware (48-port for 12-port sites).
+**Solution**:
+- **Defensive Filtering**: Relaxed the `uplinkPortType` check in `lan-logic.ts` to allow hardware with missing metadata if it meets other primary criteria.
+- **Efficiency Sorting**: Updated both primary and fallback sorting to prefer the smallest/most cost-efficient hardware that meets the minimum requirement (e.g., picking 24-port over 48-port for a 12-port site).
+- **Metadata Patching**: Systematically added missing `uplinkPortType` and `poe_capabilities` to the `MS130` series in the database and seed files.
+- **Key Insight**: A rules engine shouldn't be "all-or-nothing" with metadata. Implementing a tiered filtering approach (Strict -> Relaxed -> Best Effort) ensures continuity of the workflow even when data is imperfect, while efficiency-based sorting keeps the suggestions commercially viable.

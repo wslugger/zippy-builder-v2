@@ -6,7 +6,7 @@ import { Equipment } from "@/src/lib/types";
 import { extractLANTaxonomy } from "@/src/lib/bom-utils";
 import { useCatalogMetadata } from "@/src/hooks";
 
-interface GuidedLANReviewProps {
+interface LANRequirementsEditorProps {
     site: Site;
     catalog: Equipment[];
     onConfirm: (requirements: SiteLANRequirements) => void;
@@ -23,7 +23,7 @@ const FIELD_LABEL: Record<string, string> = {
  * Slide-out panel shown for sites where lanRequirements.needsManualReview === true.
  * Dropdowns are data-driven from extractLANTaxonomy; no hardcoded option lists.
  */
-export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedLANReviewProps) {
+export function LANRequirementsEditor({ site, catalog, onConfirm, onDismiss }: LANRequirementsEditorProps) {
     const existing = site.lanRequirements;
     const { metadata } = useCatalogMetadata();
 
@@ -77,7 +77,7 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                     <div className="flex items-center gap-3 mb-1">
                         <span className="text-2xl">🔍</span>
                         <h2 className="text-base font-black text-slate-900 dark:text-slate-100 leading-tight">
-                            LAN Requirements Review
+                            LAN Requirements Editor
                         </h2>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 font-medium pl-9">
@@ -101,13 +101,13 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                     {/* Access Port Type */}
                     <div>
                         <label
-                            htmlFor="guided-access-port-type"
+                            htmlFor="requirement-access-port-type"
                             className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2"
                         >
                             {FIELD_LABEL.accessPortType}
                         </label>
                         <select
-                            id="guided-access-port-type"
+                            id="requirement-access-port-type"
                             value={draft.accessPortType ?? ""}
                             onChange={e => setDraft(prev => ({ ...prev, accessPortType: e.target.value }))}
                             className={`block w-full rounded-lg border text-sm py-2.5 px-3 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-800 dark:text-slate-100 transition-all ${isEmpty(draft.accessPortType)
@@ -130,13 +130,13 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                     {/* Uplink Port Type */}
                     <div>
                         <label
-                            htmlFor="guided-uplink-port-type"
+                            htmlFor="requirement-uplink-port-type"
                             className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2"
                         >
                             {FIELD_LABEL.uplinkPortType}
                         </label>
                         <select
-                            id="guided-uplink-port-type"
+                            id="requirement-uplink-port-type"
                             value={draft.uplinkPortType ?? ""}
                             onChange={e => setDraft(prev => ({ ...prev, uplinkPortType: e.target.value }))}
                             className={`block w-full rounded-lg border text-sm py-2.5 px-3 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-800 dark:text-slate-100 transition-all ${isEmpty(draft.uplinkPortType)
@@ -159,13 +159,13 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                     {/* PoE Capabilities */}
                     <div>
                         <label
-                            htmlFor="guided-poe-capabilities"
+                            htmlFor="requirement-poe-capabilities"
                             className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2"
                         >
                             {FIELD_LABEL.poeCapabilities}
                         </label>
                         <select
-                            id="guided-poe-capabilities"
+                            id="requirement-poe-capabilities"
                             value={draft.poeCapabilities ?? ""}
                             onChange={e => setDraft(prev => ({ ...prev, poeCapabilities: e.target.value }))}
                             className={`block w-full rounded-lg border text-sm py-2.5 px-3 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-800 dark:text-slate-100 transition-all ${isEmpty(draft.poeCapabilities)
@@ -195,7 +195,7 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                         <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 transition-all">
                             <input
                                 type="checkbox"
-                                id="guided-stackable"
+                                id="requirement-stackable"
                                 checked={draft.isStackable ?? false}
                                 onChange={e => setDraft(prev => ({ ...prev, isStackable: e.target.checked }))}
                                 className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
@@ -209,7 +209,7 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                         <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 transition-all">
                             <input
                                 type="checkbox"
-                                id="guided-rugged"
+                                id="requirement-rugged"
                                 checked={draft.isRugged ?? false}
                                 onChange={e => setDraft(prev => ({ ...prev, isRugged: e.target.checked }))}
                                 className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
@@ -224,14 +224,14 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                     {/* Optional PoE budget override */}
                     <div>
                         <label
-                            htmlFor="guided-poe-budget"
+                            htmlFor="requirement-poe-budget"
                             className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2"
                         >
                             Minimum PoE Budget Override (W) <span className="text-slate-400 font-normal normal-case">Optional</span>
                         </label>
                         <div className="relative">
                             <input
-                                id="guided-poe-budget"
+                                id="requirement-poe-budget"
                                 type="number"
                                 min={0}
                                 placeholder="e.g. 740"
@@ -264,7 +264,7 @@ export function GuidedLANReview({ site, catalog, onConfirm, onDismiss }: GuidedL
                         className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-black rounded-xl shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98]"
                         title={hasUnresolved ? "Fill all required fields to continue" : undefined}
                     >
-                        {hasUnresolved ? "⚠️ Fill All Fields" : "✓ Confirm & Recalculate"}
+                        {hasUnresolved ? "⚠️ Fill All Fields" : "✓ Save Requirements"}
                     </button>
                 </div>
             </div>

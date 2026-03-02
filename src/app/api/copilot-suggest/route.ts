@@ -115,8 +115,7 @@ Extraction rules define what parameters our AI should look for in unstructured c
     "id": string (A camelCase unique identifier, e.g., "requiresLTE", "isOutdoor", "highTrafficCount"),
     "label": string (Friendly display name, e.g., "Outdoor Rated", "High Density"),
     "type": "boolean" | "string" | "number",
-    "promptInstruction": string (Detailed instructions for the AI on how to identify this value in notes),
-    "forcesGuidedFlow": boolean (True if finding this requirement should force a manual human review)
+    "promptInstruction": string (Detailed instructions for the AI on how to identify this value in notes)
 }
 
 **Input Instruction:**

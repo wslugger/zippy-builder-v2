@@ -15,6 +15,7 @@ import { ProjectSummaryDashboard } from "./ProjectSummaryDashboard";
 import { Tooltip } from "@/src/components/common/Tooltip";
 import { GlobalPricingView } from "./GlobalPricingView";
 import { TriageDashboard } from "@/src/components/sa/TriageDashboard";
+import { SiteImportReviewModal } from "@/src/components/sa/SiteImportReviewModal";
 
 // ─────────────────────────────────────────────
 // Main content (needs useSearchParams → Suspense wrapper below)
@@ -38,7 +39,8 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
         handlePackageChange, handleSiteTypeChange,
         siteFilter, setSiteFilter,
         handleFinalize,
-        pendingTriageSites, handleBulkAcknowledge
+        pendingTriageSites, handleBulkAcknowledge,
+        isClassifying, triagedSites, setTriagedSites
     } = state;
 
     const isLoading = !project || siteTypes.length === 0;
@@ -359,7 +361,35 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                     <SpecsModal item={selectedSpecsItem} onClose={() => setSelectedSpecsItem(null)} />
                 )}
 
+                {/* AI Classification Loading Overlay */}
+                {isClassifying && (
+                    <div className="fixed inset-0 z-[110] bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center space-y-4 max-w-xs text-center border border-slate-100">
+                            <div className="relative">
+                                <div className="w-16 h-16 border-4 border-blue-50 border-t-blue-600 rounded-full animate-spin"></div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-xl">🤖</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-slate-900 text-lg">Triage Engine Core...</h4>
+                                <p className="text-xs text-slate-500 mt-1">Gemini AI is analyzing your data to match the best deployment profiles.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
+                {/* AI Review Modal */}
+                {triagedSites && (
+                    <SiteImportReviewModal
+                        sites={triagedSites}
+                        onCancel={() => setTriagedSites(null)}
+                        onConfirm={(finalSites) => {
+                            setSites(finalSites);
+                            setTriagedSites(null);
+                        }}
+                    />
+                )}
 
             </div>
         </div>

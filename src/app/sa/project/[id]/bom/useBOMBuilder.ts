@@ -16,6 +16,7 @@ import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
 import { resolveVendorForService, calculateThroughputOverhead } from "@/src/lib/bom-utils";
 import { getGlobalParameters } from "@/src/lib/firebase/settings";
+import { AIService } from "@/src/lib/ai-service";
 
 // -------------------------------------------------------
 // Sample CSV embedded in module scope (not in component)
@@ -97,6 +98,10 @@ export interface BOMBuilderState {
     setManualSelections: React.Dispatch<React.SetStateAction<Record<string, any>>>;
     selectedSpecsItem: Equipment | null;
     setSelectedSpecsItem: (eq: Equipment | null) => void;
+    // AI classification
+    isClassifying: boolean;
+    triagedSites: TriagedSite[] | null;
+    setTriagedSites: (sites: TriagedSite[] | null) => void;
     // Derived values
     utilization: number;
     totalLoad: number;
@@ -181,7 +186,6 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
             const triageInfo = evaluateSiteComplexity(s, SEED_BOM_RULES, pkg);
             return {
                 ...s,
-                uxRoute: triageInfo.uxRoute,
                 triageFlags: triageInfo.triageFlags,
                 // Propagate Smart Defaults — only set if not already overridden by SA
                 ...(triageInfo.lanRequirements && !s.lanRequirements
@@ -198,6 +202,10 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [manualSelections, setManualSelections] = useState<Record<string, any>>({});
     const [selectedSpecsItem, setSelectedSpecsItem] = useState<Equipment | null>(null);
+
+    // ---- AI state ----
+    const [isClassifying, setIsClassifying] = useState(false);
+    const [triagedSites, setTriagedSites] = useState<TriagedSite[] | null>(null);
 
     // ---- PRICING state ----
     const [globalDiscount, setGlobalDiscount] = useState<number>(0);
@@ -659,14 +667,14 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     }, [project]);
 
     const pendingTriageSites = useMemo(() =>
-        sites.filter(s => s.uxRoute === 'GUIDED_FLOW' && !s.isReviewed),
+        sites.filter(s => s.lanRequirements?.needsManualReview === true && !s.isReviewed),
         [sites]
     );
 
     const handleBulkAcknowledge = useCallback((reasonSubstring?: string) => {
         setRawSites(prev => prev.map(site => {
             const triageInfo = pkg ? evaluateSiteComplexity(site, SEED_BOM_RULES, pkg) : null;
-            if (triageInfo?.uxRoute === 'GUIDED_FLOW' && !site.isReviewed) {
+            if (triageInfo?.lanRequirements?.needsManualReview === true && !site.isReviewed) {
                 const hasMatchingFlag = !reasonSubstring || triageInfo.triageFlags.some(f => f.reason.includes(reasonSubstring));
                 if (hasMatchingFlag) {
                     return { ...site, isReviewed: true };
@@ -681,8 +689,20 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     // -------------------------------------------------------
     const triageAndPreview = useCallback(async (rawInput: string) => {
         if (!rawInput.trim()) return;
-        const parsed = parseSiteListCSV(rawInput);
-        setRawSites(parsed);
+
+        setIsClassifying(true);
+        try {
+            const results = await AIService.triageSites(rawInput);
+            setTriagedSites(results);
+        } catch (error) {
+            console.error("Triage classification failed:", error);
+            // Fallback: parse locally and just import as is if AI fails
+            const parsed = parseSiteListCSV(rawInput);
+            setRawSites(parsed);
+            setManualSelections({}); // Clear manual selections on new upload
+        } finally {
+            setIsClassifying(false);
+        }
     }, []);
 
     const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -734,6 +754,9 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         setManualSelections,
         selectedSpecsItem,
         setSelectedSpecsItem,
+        isClassifying,
+        triagedSites,
+        setTriagedSites,
         utilization,
         totalLoad,
         poeWarnings,

@@ -43,7 +43,6 @@ export function evaluateSiteComplexity(
 ): TriagedSite {
     const result: TriagedSite = {
         ...site,
-        uxRoute: 'FAST_TRACK',
         triageFlags: [],
     };
 
@@ -60,7 +59,6 @@ export function evaluateSiteComplexity(
         if (jsonLogic.apply(rule.condition, context)) {
             const triageActions = rule.actions.filter(a => a.type === 'require_triage');
             if (triageActions.length > 0) {
-                result.uxRoute = 'GUIDED_FLOW';
                 triageActions.forEach(action => {
                     result.triageFlags.push({
                         ruleName: rule.name,
@@ -84,7 +82,7 @@ export function evaluateSiteComplexity(
 /**
  * Applies safe LAN topology defaults for simple sites.
  * - Small branch (userCount <= 15): auto-fill 1G-Copper access, 10G-Fiber uplink, PoE+ capabilities.
- * - Complex site: flag for manual SA review via GuidedLANReview.
+ * - Complex site: flag for manual SA review via LANRequirementsEditor.
  */
 function applySmartLANDefaults(site: Site): SiteLANRequirements {
     const needsPoe = (site.poePorts && site.poePorts > 0) || (site.indoorAPs && site.indoorAPs > 0) || (site.outdoorAPs && site.outdoorAPs > 0);

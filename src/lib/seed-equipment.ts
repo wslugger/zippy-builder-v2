@@ -156,6 +156,81 @@ export const SEED_EQUIPMENT: Equipment[] = [
         }
     },
 
+    // --- Meraki Managed LAN (MS130 Series) ---
+    {
+        id: "meraki_ms1308phw",
+        vendor_id: "meraki",
+        model: "MS130-8P-HW",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
+        description: "8-port 1GbE PoE+ compact switch with 2x 1GbE SFP uplinks.",
+        specs: {
+            accessPortCount: 8,
+            accessPortType: '1G-Copper',
+            poeBudgetWatts: 150,
+            poe_capabilities: 'PoE+',
+            uplinkPortCount: 2,
+            uplinkPortType: '1G-Fiber',
+            isStackable: false
+        }
+    },
+    {
+        id: "meraki_ms13012xhw",
+        vendor_id: "meraki",
+        model: "MS130-12X-HW",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
+        description: "12-port Multi-Gigabit PoE+ switch with 2x 10GbE SFP+ uplinks (8x 1GbE + 4x 2.5GbE RJ45 access ports).",
+        specs: {
+            accessPortCount: 12,
+            accessPortType: '1G-Copper',
+            poeBudgetWatts: 240,
+            poe_capabilities: 'PoE+',
+            uplinkPortCount: 2,
+            uplinkPortType: '10G-Fiber',
+            isStackable: false
+        }
+    },
+    {
+        id: "meraki_ms13024phw",
+        vendor_id: "meraki",
+        model: "MS130-24P-HW",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
+        description: "24-port 1GbE PoE+ switch with 4x 1GbE SFP uplinks.",
+        specs: {
+            accessPortCount: 24,
+            accessPortType: '1G-Copper',
+            poeBudgetWatts: 370,
+            poe_capabilities: 'PoE+',
+            uplinkPortCount: 4,
+            uplinkPortType: '1G-Fiber',
+            isStackable: false
+        }
+    },
+    {
+        id: "meraki_ms13048phw",
+        vendor_id: "meraki",
+        model: "MS130-48P-HW",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
+        description: "48-port 1GbE PoE+ switch with 4x 1GbE SFP uplinks.",
+        specs: {
+            accessPortCount: 48,
+            accessPortType: '1G-Copper',
+            poeBudgetWatts: 740,
+            poe_capabilities: 'PoE+',
+            uplinkPortCount: 4,
+            uplinkPortType: '1G-Fiber',
+            isStackable: false
+        }
+    },
+
+
     // --- Meraki Generic Wireless ---
     {
         id: "meraki_mr44",

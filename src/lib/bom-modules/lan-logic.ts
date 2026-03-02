@@ -179,22 +179,24 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
         // Strict matching against SiteLANRequirements (data-driven)
         const req = site.lanRequirements;
         if (req && !req.needsManualReview) {
-            if (req.accessPortType && specs.accessPortType !== req.accessPortType) {
+            if (req.accessPortType && specs.accessPortType && specs.accessPortType !== req.accessPortType) {
                 return false;
             }
-            if (req.uplinkPortType && specs.uplinkPortType !== req.uplinkPortType) {
+            // Relaxed check: Only reject if the switch HAS an uplink type and it MISMATCHES.
+            // If the metadata is missing, we allow it as a candidate.
+            if (req.uplinkPortType && specs.uplinkPortType && specs.uplinkPortType !== req.uplinkPortType) {
                 return false;
             }
             if (req.poeCapabilities && req.poeCapabilities !== 'None') {
                 const reqIndex = POE_CAPABILITIES.indexOf(req.poeCapabilities as any);
                 const switchIndex = POE_CAPABILITIES.indexOf(specs.poe_capabilities as any);
 
-                if (switchIndex < reqIndex) {
+                if (switchIndex < reqIndex && switchIndex !== -1) {
                     return false;
                 }
             }
-            if (req.totalPoeBudgetWatts && (specs.poeBudgetWatts || 0) < req.totalPoeBudgetWatts) return false;
-            if (req.isStackable === true && !specs.isStackable) {
+            if (req.totalPoeBudgetWatts && specs.poeBudgetWatts && specs.poeBudgetWatts < req.totalPoeBudgetWatts) return false;
+            if (req.isStackable === true && specs.isStackable === false) {
                 return false;
             }
         }
@@ -205,6 +207,8 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
     const sortedCandidates = candidates.sort((a, b) => {
         const aPorts = Number((a.specs as any).accessPortCount || 0);
         const bPorts = Number((b.specs as any).accessPortCount || 0);
+
+        // Primary sort: Smallest switch that meets requirements (efficiency)
         if (aPorts !== bPorts) {
             return aPorts - bPorts;
         }
@@ -247,7 +251,7 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
             const reqPoe = (site.lanRequirements?.poeCapabilities || 'None') !== 'None';
 
             const aSpecs = a.specs as any;
-            const bSpecs = b.specs as any;
+            const bSpecs = b.specs || {} as any;
 
             const aPorts = Number(aSpecs.accessPortCount || 0);
             const bPorts = Number(bSpecs.accessPortCount || 0);
@@ -265,12 +269,19 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
                 return bEnoughPorts ? 1 : -1;
             }
 
-            if (!aEnoughPorts && !bEnoughPorts && aPorts !== bPorts) {
-                return bPorts - aPorts; // Prefer the one with more ports
+            // Both enough: Prefer the SMALLER of the two for cost efficiency
+            if (aEnoughPorts && bEnoughPorts) {
+                return aPorts - bPorts;
             }
 
-            return getEquipmentPerformanceValue(b, activeThroughputField) - getEquipmentPerformanceValue(a, activeThroughputField);
+            // Both NOT enough: Prefer the LARGER of the two to get closer to requirements
+            if (!aEnoughPorts && !bEnoughPorts && aPorts !== bPorts) {
+                return bPorts - aPorts;
+            }
+
+            return getEquipmentPerformanceValue(a, activeThroughputField) - getEquipmentPerformanceValue(b, activeThroughputField);
         });
+
 
         bestFit = sortedFallbackCandidates[0];
 

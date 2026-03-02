@@ -53,9 +53,7 @@ export function SiteSidebar({
         return sites.map((site, index) => ({ site, index }))
             .filter((item) => {
                 if (siteFilter === "flagged") {
-                    const needsWANReview = item.site.uxRoute === 'GUIDED_FLOW' || (!item.site.uxRoute && !item.site.siteTypeId);
-                    const needsLANReview = item.site.lanRequirements?.needsManualReview === true;
-                    return (needsWANReview && !item.site.isReviewed) || needsLANReview;
+                    return item.site.lanRequirements?.needsManualReview === true || !item.site.siteTypeId;
                 }
                 return true;
             });
@@ -65,19 +63,7 @@ export function SiteSidebar({
         const groups: Record<string, { typeName: string, items: typeof filteredSites }> = {};
 
         filteredSites.forEach(item => {
-            const needsLANReview = item.site.lanRequirements?.needsManualReview === true;
-            const needsWANReview = item.site.uxRoute === 'GUIDED_FLOW' || (!item.site.uxRoute && !item.site.siteTypeId);
-
-            // Determine the bucket ID
-            let bucketId = item.site.siteTypeId;
-            if (!bucketId) {
-                if (needsWANReview && !item.site.isReviewed) bucketId = "flagged_unmapped";
-                else if (needsLANReview) bucketId = "lan_review_needed";
-                else bucketId = "fast_track_pending";
-            } else if (needsLANReview) {
-                // Named site type but still needs LAN review — put in LAN bucket
-                bucketId = "lan_review_needed";
-            }
+            const bucketId = item.site.siteTypeId || "unmapped";
 
             if (!groups[bucketId]) {
                 const sType = siteTypes.find(t => t.id === bucketId);
@@ -85,12 +71,8 @@ export function SiteSidebar({
 
                 if (sType) {
                     typeName = sType.name;
-                } else if (bucketId === "fast_track_pending") {
-                    typeName = "Fast Track (Ready)";
-                } else if (bucketId === "flagged_unmapped") {
-                    typeName = "Flagged / Unmapped";
-                } else if (bucketId === "lan_review_needed") {
-                    typeName = "LAN Review Needed";
+                } else if (bucketId === "unmapped") {
+                    typeName = "Unmapped Sites";
                 }
 
                 groups[bucketId] = {
@@ -101,14 +83,9 @@ export function SiteSidebar({
             groups[bucketId].items.push(item);
         });
 
-        // Sort: Flagged (WAN) → LAN Review Needed → Fast Track → Named types
         const sortedKeys = Object.keys(groups).sort((a, b) => {
-            if (a === "flagged_unmapped") return -1;
-            if (b === "flagged_unmapped") return 1;
-            if (a === "lan_review_needed") return -1;
-            if (b === "lan_review_needed") return 1;
-            if (a === "fast_track_pending") return 1;
-            if (b === "fast_track_pending") return -1;
+            if (a === "unmapped") return -1;
+            if (b === "unmapped") return 1;
             return groups[a].typeName.localeCompare(groups[b].typeName);
         });
 
@@ -243,25 +220,21 @@ export function SiteSidebar({
                             {/* Group Header */}
                             <button
                                 onClick={() => toggleGroup(group.id)}
-                                className={`w-full sticky top-0 z-10 border-y px-4 py-2 flex items-center justify-between transition-colors focus:outline-none ${group.id === 'lan_review_needed'
-                                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30'
-                                        : group.id === 'flagged_unmapped'
-                                            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 hover:bg-red-100'
-                                            : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                className={`w-full sticky top-0 z-10 border-y px-4 py-2 flex items-center justify-between transition-colors focus:outline-none ${group.id === 'unmapped'
+                                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 hover:bg-red-100'
+                                        : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                                     }`}
                             >
-                                <span className={`text-xs font-bold uppercase tracking-wider flex items-center ${group.id === 'lan_review_needed' ? 'text-amber-700 dark:text-amber-400'
-                                        : group.id === 'flagged_unmapped' ? 'text-red-600 dark:text-red-400'
-                                            : 'text-slate-700 dark:text-slate-300'
+                                <span className={`text-xs font-bold uppercase tracking-wider flex items-center ${group.id === 'unmapped' ? 'text-red-600 dark:text-red-400'
+                                        : 'text-slate-700 dark:text-slate-300'
                                     }`}>
                                     <svg className={`w-4 h-4 mr-1 text-slate-400 transform transition-transform ${isCollapsed ? "-rotate-90" : "rotate-0"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
-                                    {group.id === 'lan_review_needed' && <span className="mr-1">⚠️</span>}
                                     {group.typeName}
                                 </span>
-                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${group.id === 'lan_review_needed'
-                                        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-600'
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${group.id === 'unmapped'
+                                        ? 'bg-white dark:bg-red-900/40 text-red-500 dark:text-red-400 border-red-200 dark:border-red-600'
                                         : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600'
                                     }`}>
                                     {group.items.length}
@@ -301,7 +274,7 @@ export function SiteSidebar({
                                                         </div>
                                                     </div>
                                                     <div className="mt-1">
-                                                        <div className={`w-2 h-2 rounded-full ${(!site.isReviewed && (site.uxRoute === 'GUIDED_FLOW' || (!site.uxRoute && !site.siteTypeId)))
+                                                        <div className={`w-2 h-2 rounded-full ${(!site.siteTypeId)
                                                                 ? "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]"
                                                                 : site.lanRequirements?.needsManualReview === true
                                                                     ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"

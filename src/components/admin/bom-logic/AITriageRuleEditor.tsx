@@ -17,7 +17,6 @@ export const AITriageRuleEditor: React.FC = () => {
     const [label, setLabel] = useState('');
     const [type, setType] = useState<'boolean' | 'string' | 'number'>('boolean');
     const [promptInstruction, setPromptInstruction] = useState('');
-    const [forcesGuidedFlow, setForcesGuidedFlow] = useState(false);
 
     // AI Assistant state
     const [isGenerating, setIsGenerating] = useState(false);
@@ -61,14 +60,12 @@ export const AITriageRuleEditor: React.FC = () => {
             setLabel(criterion.label);
             setType(criterion.type);
             setPromptInstruction(criterion.promptInstruction);
-            setForcesGuidedFlow(criterion.forcesGuidedFlow);
         } else {
             setEditingCriterion(null);
             setId('');
             setLabel('');
             setType('boolean');
             setPromptInstruction('');
-            setForcesGuidedFlow(false);
         }
         setIsModalOpen(true);
     };
@@ -85,10 +82,9 @@ export const AITriageRuleEditor: React.FC = () => {
                 !('id' in parsed) ||
                 !('label' in parsed) ||
                 !('type' in parsed) ||
-                !('promptInstruction' in parsed) ||
-                !('forcesGuidedFlow' in parsed)
+                !('promptInstruction' in parsed)
             ) {
-                throw new Error('JSON is missing required TriageCriterion fields (id, label, type, promptInstruction, forcesGuidedFlow)');
+                throw new Error('JSON is missing required TriageCriterion fields (id, label, type, promptInstruction)');
             }
 
             // Populate form state
@@ -103,7 +99,6 @@ export const AITriageRuleEditor: React.FC = () => {
             }
 
             setPromptInstruction(String(parsed.promptInstruction));
-            setForcesGuidedFlow(Boolean(parsed.forcesGuidedFlow));
 
             setIsJsonImportOpen(false);
             setJsonImportValue('');
@@ -138,7 +133,6 @@ export const AITriageRuleEditor: React.FC = () => {
             setType(verificationCriterion.type as 'boolean' | 'string' | 'number');
         }
         setPromptInstruction(verificationCriterion.promptInstruction || '');
-        setForcesGuidedFlow(!!verificationCriterion.forcesGuidedFlow);
 
         setVerificationCriterion(null);
         setAiPrompt('');
@@ -156,8 +150,7 @@ export const AITriageRuleEditor: React.FC = () => {
             id,
             label,
             type,
-            promptInstruction,
-            forcesGuidedFlow
+            promptInstruction
         };
 
         try {
@@ -221,7 +214,6 @@ export const AITriageRuleEditor: React.FC = () => {
                             <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID / Label</th>
                             <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
                             <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Prompt Instruction</th>
-                            <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Guided Flow Trigger</th>
                             <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
@@ -248,17 +240,6 @@ export const AITriageRuleEditor: React.FC = () => {
                                         <div className="text-xs text-slate-600 truncate" title={c.promptInstruction}>
                                             {c.promptInstruction}
                                         </div>
-                                    </td>
-                                    <td className="py-3 px-4 text-center">
-                                        {c.forcesGuidedFlow ? (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
-                                                YES
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">
-                                                NO
-                                            </span>
-                                        )}
                                     </td>
                                     <td className="py-3 px-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
@@ -311,7 +292,7 @@ export const AITriageRuleEditor: React.FC = () => {
                                     value={jsonImportValue}
                                     onChange={(e) => setJsonImportValue(e.target.value)}
                                     rows={6}
-                                    placeholder='{&#10;  "id": "requireLTE",&#10;  "label": "Requires Backup LTE",&#10;  "type": "boolean",&#10;  "promptInstruction": "...",&#10;  "forcesGuidedFlow": true&#10;}'
+                                    placeholder='{&#10;  "id": "requireLTE",&#10;  "label": "Requires Backup LTE",&#10;  "type": "boolean",&#10;  "promptInstruction": "..."&#10;}'
                                     className="w-full text-[13px] font-mono border-slate-300 rounded-lg p-3 border focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-y"
                                 />
                                 <div className="mt-3 flex justify-end">
@@ -454,24 +435,6 @@ export const AITriageRuleEditor: React.FC = () => {
                                     required
                                 />
                                 <p className="text-[10px] text-slate-500 mt-1">This instruction is injected directly into the Gemini extraction prompt.</p>
-                            </div>
-
-                            <div className="flex items-center pt-2">
-                                <input
-                                    type="checkbox"
-                                    id="forcesGuidedFlow"
-                                    checked={forcesGuidedFlow}
-                                    onChange={e => setForcesGuidedFlow(e.target.checked)}
-                                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
-                                />
-                                <div className="ml-3">
-                                    <label htmlFor="forcesGuidedFlow" className="text-sm font-semibold text-slate-900 cursor-pointer">
-                                        Forces Guided Flow (Manual Review)
-                                    </label>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        If the AI extracts a positive value for this rule, the site will be routed to the Guided Flow (skipping Fast Track).
-                                    </p>
-                                </div>
                             </div>
 
                             <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">

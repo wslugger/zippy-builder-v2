@@ -1,7 +1,7 @@
 import { Site, BOMLineItem } from "@/src/lib/bom-types";
 import { Equipment, LANSpecs } from "@/src/lib/types";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
-import { GuidedLANReview } from "@/src/components/sa/GuidedLANReview";
+import { LANRequirementsEditor } from "@/src/components/sa/LANRequirementsEditor";
 import { useState, useEffect, useMemo } from "react";
 import { SiteLANRequirements } from "@/src/lib/types";
 
@@ -29,7 +29,7 @@ export function LANTab({
     handleSiteUpdate
 }: LANTabProps) {
     const [animatePulse, setAnimatePulse] = useState(false);
-    const [showGuidedReview, setShowGuidedReview] = useState(false);
+    const [showRequirementsEditor, setShowRequirementsEditor] = useState(false);
 
     useEffect(() => {
         if (lanItems.length > 0) {
@@ -47,9 +47,9 @@ export function LANTab({
     const lanReq = selectedSite.lanRequirements;
     const needsReview = lanReq?.needsManualReview === true;
 
-    const handleGuidedConfirm = (requirements: SiteLANRequirements) => {
+    const handleRequirementsConfirm = (requirements: SiteLANRequirements) => {
         handleSiteUpdate({ lanRequirements: requirements });
-        setShowGuidedReview(false);
+        setShowRequirementsEditor(false);
     };
 
     const selectionKey = `${selectedSite.name}:managed_lan`;
@@ -213,7 +213,7 @@ export function LANTab({
                         </p>
                     </div>
                     <button
-                        onClick={() => setShowGuidedReview(true)}
+                        onClick={() => setShowRequirementsEditor(true)}
                         className="shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-lg shadow-sm transition-all active:scale-[0.98]"
                     >
                         Review Now →
@@ -244,7 +244,7 @@ export function LANTab({
                         </div>
                     </div>
                     <button
-                        onClick={() => setShowGuidedReview(true)}
+                        onClick={() => setShowRequirementsEditor(true)}
                         className="shrink-0 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 underline"
                     >
                         Edit
@@ -445,13 +445,13 @@ export function LANTab({
                     </div>
                 </div>
             )}
-            {/* GuidedLANReview slide-out panel */}
-            {showGuidedReview && (
-                <GuidedLANReview
+            {/* LANRequirementsEditor slide-out panel */}
+            {showRequirementsEditor && (
+                <LANRequirementsEditor
                     site={selectedSite}
                     catalog={catalog}
-                    onConfirm={handleGuidedConfirm}
-                    onDismiss={() => setShowGuidedReview(false)}
+                    onConfirm={handleRequirementsConfirm}
+                    onDismiss={() => setShowRequirementsEditor(false)}
                 />
             )}
         </div>

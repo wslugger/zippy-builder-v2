@@ -25,8 +25,7 @@ describe('AI Extraction Rule Copilot', () => {
                 id: "isOutdoor",
                 label: "Outdoor Rated",
                 type: "boolean",
-                promptInstruction: "Look for mentions of outdoor equipment or ruggedized requirements.",
-                forcesGuidedFlow: true
+                promptInstruction: "Look for mentions of outdoor equipment or ruggedized requirements."
             })
         });
     });
@@ -68,7 +67,6 @@ describe('AI Extraction Rule Copilot', () => {
         expect(screen.getByPlaceholderText(/e\.g\., Outdoor Rated/i)).toHaveValue("Outdoor Rated");
         expect(screen.getByDisplayValue(/Boolean \(True\/False\)/i)).toBeInTheDocument();
         expect(screen.getByPlaceholderText(/Explain exactly what the AI should look for/i)).toHaveValue("Look for mentions of outdoor equipment or ruggedized requirements.");
-        expect(screen.getByLabelText(/Forces Guided Flow/i)).toBeChecked();
 
         // 7. Verify the fetch attributes were correct
         expect(global.fetch).toHaveBeenCalledWith('/api/copilot-suggest', expect.objectContaining({

@@ -43,15 +43,13 @@ describe("evaluateSiteComplexity", () => {
         outdoorAPs: 0
     };
 
-    it("should flag site for GUIDED_FLOW if user count rule triggers", () => {
+    it("should flag site if user count rule triggers", () => {
         const siteUnder = { ...baseSite, userCount: 10 };
         const resultUnder = evaluateSiteComplexity(siteUnder, [userLimitRule], mockPackage);
-        expect(resultUnder.uxRoute).toBe("FAST_TRACK");
         expect(resultUnder.triageFlags).toHaveLength(0);
 
         const siteOver = { ...baseSite, userCount: 16 };
         const resultOver = evaluateSiteComplexity(siteOver, [userLimitRule], mockPackage);
-        expect(resultOver.uxRoute).toBe("GUIDED_FLOW");
         expect(resultOver.triageFlags).toHaveLength(1);
         expect(resultOver.triageFlags[0].reason).toBe("User count exceeds standard branch limit");
     });
@@ -74,11 +72,11 @@ describe("evaluateSiteComplexity", () => {
         const site50 = { ...baseSite, userCount: 50 };
         // Should not trigger on standard package
         const resultStd = evaluateSiteComplexity(site50, [packageSpecificRule], mockPackage);
-        expect(resultStd.uxRoute).toBe("FAST_TRACK");
+        expect(resultStd.triageFlags).toHaveLength(0);
 
         // Should trigger on high_perf package if over 100
         const site150 = { ...baseSite, userCount: 150 };
         const resultHigh = evaluateSiteComplexity(site150, [packageSpecificRule], highPerfPackage);
-        expect(resultHigh.uxRoute).toBe("GUIDED_FLOW");
+        expect(resultHigh.triageFlags).toHaveLength(1);
     });
 });
