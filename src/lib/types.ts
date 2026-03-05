@@ -337,8 +337,9 @@ export interface Project {
   name: string;
   customerName: string;
   description?: string;
-  status: 'draft' | 'package_selection' | 'customizing' | 'completed';
-  currentStep: number; // 1-5 (mapped to UI steps)
+  status: 'draft' | 'scope_selection' | 'package_selection' | 'customizing' | 'completed';
+  projectScope?: 'complete_network' | 'standalone_sites';
+  currentStep: number; // 1-6 (mapped to UI steps)
 
   // Step 2: Package Selection
   selectedPackageId?: string;

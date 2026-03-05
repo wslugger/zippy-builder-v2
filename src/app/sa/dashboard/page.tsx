@@ -9,11 +9,11 @@ import { DEFAULT_WORKFLOW_STEPS } from '@/src/lib/workflow-defaults';
 // Using a placeholder User ID for now since we don't have Auth context yet
 const MOCK_USER_ID = "user_123";
 
-/** Map a project's currentStep (2-based) to the correct workflow path. */
+/** Map a project's currentStep (1-based) to the correct workflow path. */
 function getResumePathForStep(currentStep: number): string {
-    const index = currentStep - 2; // currentStep 2 = index 0 (package-selection)
+    const index = currentStep - 1; // currentStep 1 = index 0 (scope)
     const step = DEFAULT_WORKFLOW_STEPS[index];
-    return step?.path ?? 'package-selection';
+    return step?.path ?? 'scope';
 }
 
 export default function SADashboard() {
@@ -51,14 +51,14 @@ export default function SADashboard() {
                 name: newProjectName,
                 customerName: customerName,
                 description: description,
-                status: 'package_selection', // Initial status
-                currentStep: 2, // Start at package selection (Step 2 in UI flow, Step 1 is Dashboard)
+                status: 'scope_selection', // Initial status
+                currentStep: 1, // Start at Project Scope
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
 
             await ProjectService.createProject(newProject);
-            router.push(`/sa/project/${newProject.id}/package-selection`);
+            router.push(`/sa/project/${newProject.id}/scope`);
         } catch (error) {
             console.error("Failed to create project:", error);
             alert("Error creating project. Check console.");
@@ -119,7 +119,7 @@ export default function SADashboard() {
                             <p className="text-sm text-neutral-500 mb-4 truncate">{project.customerName}</p>
                             <div className="text-xs text-neutral-400 flex justify-between items-center mt-auto pt-4 border-t border-neutral-100 dark:border-neutral-800">
                                 <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
-                                <span className="font-mono">Step {project.currentStep}/5</span>
+                                <span className="font-mono">Step {project.currentStep}/{DEFAULT_WORKFLOW_STEPS.length}</span>
                             </div>
                         </div>
                     ))}

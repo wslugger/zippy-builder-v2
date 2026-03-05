@@ -120,14 +120,22 @@
 - **Dynamic Item Injection**: Modified the `useBOMBuilder` hook to scan generated hardware and inject virtual "Managed Service" items based on a 3D pricing matrix (Purpose × Size × Level).
 - **Service-Site Binding**: Injected circuit costs directly from site metadata into the BOM array to ensure total project Opex is captured.
 - **Key Insight**: Complexity in "Managed" logic is best handled at the UI aggregation layer (after the core hardware engine runs) to keep the suggestion logic clean and focused on technical specs.
-123: 
-124: ## 18. Cost Type Granularity (OTC vs. MRC)
-125: **Issue**: Combining hardware installation fees (OTC) and service subscriptions (MRC) into a single "Price" field obscured the true financial structure of a project, especially for circuits where installation is often a separate one-time charge.
-126: **Solution**:
-127: - **Breakout Infrastructure**: Explicitly split `price` into `unitOTC` and `unitMRC` throughout the BOM engine and state.
-128: - **Manual Data Entry**: Added side-by-side $ inputs in the WAN tab for circuits to capture both One-time and Monthly recurring costs independently.
-129: - **Visual Clarity**: Refactored all pricing tables (Site and Global) to remove the "Total Net" column and instead show independent "Net OTC" and "Net MRC" columns, ensuring stakeholders can clearly distinguish between up-front costs and ongoing revenue.
-130: - **Lesson**: Financial transparency in quoting tools requires tracking cost types at the point of origin (manual entry or rule generation) rather than just aggregating at the point of display.
+
+## 45. Initial Scope Selection to Direct User Journeys
+**Issue**: Users (SAs) were being dropped immediately into a complex "Package Selection" flow even if they were only trying to add a single site or service to an existing network. This created unnecessary cognitive load for simple tasks.
+**Solution**:
+- **High-Level Interstitial**: Introduced an initial "Project Scope" step at the very beginning of the project creation process.
+- **Dynamic Branching**: The selection (Complete Network vs. Individual Sites & Additional Services) acts as a router. Architecture-heavy projects proceed to Package Selection, while individual additions route to a streamlined (placeholder) workflow.
+- **Key Insight**: One-size-fits-all workflows inevitably become bloated. Implementing a "choice point" at the start allows the system to switch between "Comprehensive" and "Fast-Track" modes, ensuring the UI density matches the user's intent.
+- **Technical Alignment**: Updated all global navigation and progress bar logic to support dynamic 1-based indexing, ensuring Step 1 reflects the actual first user interaction.
+
+## 18. Cost Type Granularity (OTC vs. MRC)
+**Issue**: Combining hardware installation fees (OTC) and service subscriptions (MRC) into a single "Price" field obscured the true financial structure of a project, especially for circuits where installation is often a separate one-time charge.
+**Solution**:
+- **Breakout Infrastructure**: Explicitly split `price` into `unitOTC` and `unitMRC` throughout the BOM engine and state.
+- **Manual Data Entry**: Added side-by-side $ inputs in the WAN tab for circuits to capture both One-time and Monthly recurring costs independently.
+- **Visual Clarity**: Refactored all pricing tables (Site and Global) to remove the "Total Net" column and instead show independent "Net OTC" and "Net MRC" columns, ensuring stakeholders can clearly distinguish between up-front costs and ongoing revenue.
+- **Lesson**: Financial transparency in quoting tools requires tracking cost types at the point of origin (manual entry or rule generation) rather than just aggregating at the point of display.
 
 ## 19. Schema Resilience & Metadata-Driven UI
 **Issue**: Hardcoded enums in Zod schemas (e.g., `z.enum(VENDOR_IDS)`) caused application-wide crashes whenever an administrator added a new, valid value to the database that wasn't yet reflected in the source code.

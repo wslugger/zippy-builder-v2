@@ -47,3 +47,7 @@ firebase-debug.log
 
 # Temporary scratch files
 /tmp/
+
+# Playwright
+/playwright-report/
+/test-results/

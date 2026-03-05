@@ -33,8 +33,9 @@ describe('SA Flow Navigation', () => {
         );
 
         // Verify steps are present in the sidebar/progress bar
-        expect(screen.getByText(/1\. Package Selection/i)).toBeInTheDocument();
-        expect(screen.getByText(/5\. BOM Builder/i)).toBeInTheDocument();
-        expect(screen.getByText(/6\. HLD/i)).toBeInTheDocument();
+        expect(screen.getByText(/1\. Project Scope/i)).toBeInTheDocument();
+        expect(screen.getByText(/2\. Package Selection/i)).toBeInTheDocument();
+        expect(screen.getByText(/6\. BOM Builder/i)).toBeInTheDocument();
+        expect(screen.getByText(/7\. HLD/i)).toBeInTheDocument();
     });
 });
