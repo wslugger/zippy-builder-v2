@@ -40,18 +40,10 @@ function AttributeCell({ attributes, role }: { attributes: any, role: string }) 
         if (data.poeBudgetWatts !== undefined || data.poe_budget !== undefined) keyAttrs.push({ label: 'PoE', value: `${data.poeBudgetWatts ?? data.poe_budget}W` });
         if (data.isStackable || data.stackable) keyAttrs.push({ label: 'Stackable', value: 'Yes' });
     } else if (role === 'WLAN') {
-        if (data.wifiStandard) keyAttrs.push({ label: 'Wi-Fi', value: data.wifiStandard });
-        if (data.mimoBandwidth || data.mimo) keyAttrs.push({ label: 'MIMO', value: data.mimoBandwidth || data.mimo });
-    } else if (role === 'SECURITY') {
-        keyAttrs.push({ label: 'Type', value: 'Security Appliance' });
-    }
-
-    // fallback if empty
-    if (keyAttrs.length === 0) {
-        const keys = Object.keys(data).filter(k => typeof data[k] !== 'object' && typeof data[k] !== 'function' && data[k] !== null && data[k] !== undefined).slice(0, 2);
-        keys.forEach(k => {
-            keyAttrs.push({ label: k.replace(/_/g, ' '), value: String(data[k]) });
-        });
+        const wifi = data.wifiStandard || data.wifi_standard;
+        const mimo = data.mimoBandwidth || data.mimo;
+        if (wifi) keyAttrs.push({ label: 'Wi-Fi', value: wifi });
+        if (mimo) keyAttrs.push({ label: 'MIMO', value: mimo });
     }
 
     return (
@@ -126,7 +118,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                         className="py-2 pl-3 pr-8 text-sm bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 auto-cols-auto"
                     >
                         <option value="All">All Categories</option>
-                        {Array.from(new Set([...EQUIPMENT_PURPOSES.map(p => p.toUpperCase()), "WAN", "LAN", "WLAN", "SECURITY"])).map(p => (
+                        {EQUIPMENT_PURPOSES.map(p => (
                             <option key={p} value={p}>{p}</option>
                         ))}
                     </select>
@@ -252,7 +244,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                                     const purposes = [
                                                         itemWithAny.primary_purpose,
                                                         ...(itemWithAny.additional_purposes || [])
-                                                    ].filter(Boolean);
+                                                    ].filter((p): p is string => Boolean(p) && EQUIPMENT_PURPOSES.includes(p as any));
 
                                                     return purposes.map((p) => (
                                                         <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">

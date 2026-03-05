@@ -202,9 +202,9 @@ export function getEquipmentRole(equip: Equipment): "WAN" | "LAN" | "WLAN" | "Ot
     if (r === "WLAN" || pp === "WLAN" || p === "WLAN") return "WLAN";
     if (r === "LAN" || pp === "LAN" || p === "LAN") return "LAN";
 
-    // Fallback to fuzzy includes if exact match fails, but WLAN must be checked first
-    if (pp.includes("WAN") || p.includes("WAN")) return "WAN";
+    // Fallback to fuzzy includes — WLAN must be checked before WAN (WLAN contains "WAN")
     if (pp.includes("WLAN") || p.includes("WLAN")) return "WLAN";
+    if ((pp.includes("WAN") && !pp.includes("WLAN")) || (p.includes("WAN") && !p.includes("WLAN"))) return "WAN";
     if (pp.includes("LAN") || p.includes("LAN")) return "LAN";
 
     return "Other";
