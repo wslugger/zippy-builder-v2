@@ -6,7 +6,7 @@ import {
     resolveVendorForService,
     calculateCPEQuantity,
     getEquipmentPerformanceValue,
-    getEquipmentRole,
+    hasEquipmentPurpose,
     makePricingSnapshot,
     matchesConstraints,
     SERVICE_TO_PURPOSE
@@ -191,12 +191,8 @@ export function calculateWANBOM(input: BOMModuleInput): BOMLineItem[] {
     const candidates = equipmentCatalog.filter(e => {
         if (e.vendor_id !== vendorId) return false;
 
-        const role = getEquipmentRole(e);
         const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
-        if (requiredPurpose) {
-            const roleMap: Record<string, string> = { "WAN": "WAN", "LAN": "LAN", "WLAN": "WLAN" };
-            if (role !== roleMap[requiredPurpose]) return false;
-        }
+        if (requiredPurpose && !hasEquipmentPurpose(e, requiredPurpose)) return false;
 
         if (!matchesConstraints(e, siteDef.constraints)) return false;
 
@@ -245,8 +241,7 @@ export function calculateWANBOM(input: BOMModuleInput): BOMLineItem[] {
             if (e.vendor_id !== vendorId) return false;
             const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
             if (!requiredPurpose) return true;
-            const candidatePurposes = [e.primary_purpose, ...(e.additional_purposes || [])];
-            return candidatePurposes.includes(requiredPurpose as any);
+            return hasEquipmentPurpose(e, requiredPurpose);
         });
 
         const sortedFallbackCandidates = allPurposeCandidates.sort((a, b) => {

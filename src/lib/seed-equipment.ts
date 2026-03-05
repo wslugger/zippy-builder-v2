@@ -11,6 +11,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Entry-level SD-WAN appliance for small branches.",
+        mapped_services: ["Managed SD-WAN"],
         specs: {
             advancedSecurityThroughputMbps: 0,
             rawFirewallThroughputMbps: 450,
@@ -30,6 +31,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Small branch appliance with more ports and PoE.",
+        mapped_services: ["Managed SD-WAN"],
         specs: {
             advancedSecurityThroughputMbps: 0,
             rawFirewallThroughputMbps: 600,
@@ -50,6 +52,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "Mid-range SD-WAN appliance for medium branches.",
+        mapped_services: ["Managed SD-WAN"],
         specs: {
             advancedSecurityThroughputMbps: 0,
             rawFirewallThroughputMbps: 1000,
@@ -69,6 +72,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "High-performance SD-WAN appliance for large branches.",
+        mapped_services: ["Managed SD-WAN"],
         specs: {
             advancedSecurityThroughputMbps: 0,
             rawFirewallThroughputMbps: 2000,
@@ -88,6 +92,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Meraki MX",
         description: "High-capacity SD-WAN appliance for large-scale deployments.",
+        mapped_services: ["Managed SD-WAN"],
         specs: {
             advancedSecurityThroughputMbps: 0,
             rawFirewallThroughputMbps: 4000,
@@ -107,6 +112,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         primary_purpose: "WAN", role: "WAN", additional_purposes: ["Security"],
         family: "Catalyst 8400",
         description: "Ultra-high performance fixed-platform SD-WAN appliance.",
+        mapped_services: ["Managed SD-WAN"],
         specs: {
             advancedSecurityThroughputMbps: 0,
             rawFirewallThroughputMbps: 10000,
@@ -127,6 +133,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Catalyst 9200",
         description: "Stackable enterprise access switch with 24 PoE+ ports.",
+        mapped_services: ["Managed LAN"],
         specs: {
             accessPortCount: 24,
             accessPortType: '1G-Copper',
@@ -145,6 +152,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Catalyst 9200",
         description: "Stackable enterprise access switch with 48 PoE+ ports.",
+        mapped_services: ["Managed LAN"],
         specs: {
             accessPortCount: 48,
             accessPortType: '1G-Copper',
@@ -165,6 +173,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
         description: "8-port 1GbE PoE+ compact switch with 2x 1GbE SFP uplinks.",
+        mapped_services: ["Managed LAN"],
         specs: {
             accessPortCount: 8,
             accessPortType: '1G-Copper',
@@ -183,6 +192,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
         description: "12-port Multi-Gigabit PoE+ switch with 2x 10GbE SFP+ uplinks (8x 1GbE + 4x 2.5GbE RJ45 access ports).",
+        mapped_services: ["Managed LAN"],
         specs: {
             accessPortCount: 12,
             accessPortType: '1G-Copper',
@@ -201,6 +211,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
         description: "24-port 1GbE PoE+ switch with 4x 1GbE SFP uplinks.",
+        mapped_services: ["Managed LAN"],
         specs: {
             accessPortCount: 24,
             accessPortType: '1G-Copper',
@@ -219,6 +230,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
         description: "48-port 1GbE PoE+ switch with 4x 1GbE SFP uplinks.",
+        mapped_services: ["Managed LAN"],
         specs: {
             accessPortCount: 48,
             accessPortType: '1G-Copper',
@@ -240,6 +252,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Meraki MR",
         description: "Wi-Fi 6 Indoor Access Point",
+        mapped_services: ["Managed Wi-Fi"],
         specs: {
             wifiStandard: "Wi-Fi 6",
             mimoBandwidth: "4x4",
@@ -256,6 +269,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Meraki MR",
         description: "Wi-Fi 6 Outdoor Access Point",
+        mapped_services: ["Managed Wi-Fi"],
         specs: {
             wifiStandard: "Wi-Fi 6",
             mimoBandwidth: "2x2",
@@ -272,6 +286,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Meraki MR",
         description: "Wi-Fi 6 Outdoor Access Point",
+        mapped_services: ["Managed Wi-Fi"],
         specs: {
             wifiStandard: "Wi-Fi 6",
             mimoBandwidth: "2x2",
@@ -289,6 +304,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Catalyst Wireless",
         description: "Wi-Fi 6E Indoor Access Point",
+        mapped_services: ["Managed Wi-Fi"],
         specs: {
             wifiStandard: "Wi-Fi 6E",
             mimoBandwidth: "4x4",
@@ -305,6 +321,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "Catalyst Wireless",
         description: "Wi-Fi 6E Outdoor Access Point",
+        mapped_services: ["Managed Wi-Fi"],
         specs: {
             wifiStandard: "Wi-Fi 6E",
             mimoBandwidth: "4x4",
@@ -322,6 +339,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "FortiAP",
         description: "Wi-Fi 6 Indoor Access Point",
+        mapped_services: ["Managed Wi-Fi"],
         specs: {
             wifiStandard: "Wi-Fi 6",
             mimoBandwidth: "4x4",
@@ -338,6 +356,7 @@ export const SEED_EQUIPMENT: Equipment[] = [
         status: "Supported",
         primary_purpose: "WLAN", role: "WLAN", additional_purposes: [], family: "FortiAP",
         description: "Wi-Fi 6 Outdoor Access Point",
+        mapped_services: ["Managed Wi-Fi"],
         specs: {
             wifiStandard: "Wi-Fi 6",
             mimoBandwidth: "4x4",

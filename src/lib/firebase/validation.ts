@@ -39,7 +39,7 @@ export function validateDocs<T>(schema: z.ZodType<T>, docs: { id: string; data: 
 export const TechnicalFeatureSchema = z.object({
     id: z.string(),
     name: z.string(),
-    category: z.string(),
+    category: z.array(z.string()).default([]),
     status: z.string().optional(),
     description: z.string(),
     caveats: z.array(z.string()).optional(),

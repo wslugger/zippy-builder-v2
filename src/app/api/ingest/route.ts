@@ -5,7 +5,7 @@ import { SystemConfigService } from "@/src/lib/firebase/system-config-service";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 export async function POST(req: Request) {
   try {
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
             "additional_purposes": ["WAN", "Security", etc],
             "family": "Product Family (e.g. Catalyst 9200, Meraki MX)",
             "managementSize": "'X-Small' | 'Small' | 'Medium' | 'Large' | 'X-Large' | 'None'",
+            "mapped_services": ["String of Service names this equipment supports, e.g. 'Managed SD-WAN', 'Managed LAN', 'Managed Wi-Fi'"],
             "specs": {
               "performance_rating": "Wire Rate | etc",
               "ports": Number (Total),
@@ -147,12 +148,21 @@ export async function POST(req: Request) {
         const primary = (itemObj.primary_purpose as string) || (userSelectedPurposes?.[0] || "LAN");
         const additional = (itemObj.additional_purposes as string[]) || (userSelectedPurposes?.length > 1 ? userSelectedPurposes.slice(1) : []);
 
+        // Normalize mapped_services to array if string, or use empty
+        let mappedServices = itemObj.mapped_services;
+        if (typeof mappedServices === 'string') {
+          mappedServices = [mappedServices];
+        } else if (!Array.isArray(mappedServices)) {
+          mappedServices = [];
+        }
+
         return {
           ...itemObj,
           id: activeId,
           vendor_id: vendorId,
           primary_purpose: primary,
           additional_purposes: additional,
+          mapped_services: mappedServices,
           active: true,
           status: "Supported"
         };

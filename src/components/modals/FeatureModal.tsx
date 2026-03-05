@@ -1,30 +1,38 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { TechnicalFeature, EQUIPMENT_STATUSES } from "@/src/lib/types";
+import { TechnicalFeature, EQUIPMENT_STATUSES, Service } from "@/src/lib/types";
 import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 
 interface FeatureModalProps {
     feature: TechnicalFeature | null;
+    services: Service[];
     isOpen: boolean;
     onClose: () => void;
     onSave: (feature: TechnicalFeature) => Promise<void>;
 }
 
-export default function FeatureModal({ feature, isOpen, onClose, onSave }: FeatureModalProps) {
-    const [formData, setFormData] = useState<Partial<TechnicalFeature>>(
-        feature || {
+export default function FeatureModal({ feature, services, isOpen, onClose, onSave }: FeatureModalProps) {
+    const [formData, setFormData] = useState<Partial<TechnicalFeature>>(() => {
+        if (feature) {
+            // Normalize category to array for legacy data
+            const categoryArray = Array.isArray(feature.category)
+                ? feature.category
+                : feature.category ? [feature.category] : [];
+            return { ...feature, category: categoryArray };
+        }
+        return {
             id: "",
             name: "",
-            category: "Routing",
+            category: [],
             status: "Supported",
             description: "",
             caveats: [],
             assumptions: []
-        }
-    );
+        };
+    });
     const [saving, setSaving] = useState(false);
     const { config, isLoading: metadataLoading } = useSystemConfig();
 
@@ -114,9 +122,14 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
         }
     };
 
-    const categories = useMemo(() => {
-        return (config?.taxonomy as Record<string, string[]>)?.feature_categories || [];
-    }, [config]);
+    const toggleService = (serviceName: string) => {
+        const current = formData.category || [];
+        if (current.includes(serviceName)) {
+            setFormData({ ...formData, category: current.filter(s => s !== serviceName) });
+        } else {
+            setFormData({ ...formData, category: [...current, serviceName] });
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -162,32 +175,28 @@ export default function FeatureModal({ feature, isOpen, onClose, onSave }: Featu
                                 placeholder="e.g. BGP Routing"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
-                            {metadataLoading ? (
-                                <div className="animate-pulse h-9 bg-zinc-100 dark:bg-zinc-800 rounded-lg"></div>
-                            ) : categories.length > 0 ? (
-                                <select
-                                    required
-                                    value={formData.category || ""}
-                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all appearance-none"
-                                >
-                                    <option value="" disabled>Select a category</option>
-                                    {categories.map(cat => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.category || ""}
-                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                                    placeholder="e.g. Routing"
-                                />
-                            )}
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Mapped Services (Categories)</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                {services.map(service => (
+                                    <label key={service.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-white dark:hover:bg-zinc-900 rounded-lg cursor-pointer transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={(formData.category || []).includes(service.name)}
+                                            onChange={() => toggleService(service.name)}
+                                            className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm text-zinc-600 dark:text-zinc-400 truncate" title={service.name}>
+                                            {service.name}
+                                        </span>
+                                    </label>
+                                ))}
+                                {services.length === 0 && (
+                                    <div className="col-span-full text-center py-2 text-zinc-400 text-xs italic">
+                                        No services found in catalog
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Status</label>

@@ -96,7 +96,8 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                 item.primary_purpose === categoryFilter ||
                 item.primary_purpose?.toLowerCase() === categoryFilter.toLowerCase() ||
                 getEquipmentRole(item) === categoryFilter ||
-                (item.additional_purposes || []).some(p => p === categoryFilter || p.toLowerCase() === categoryFilter.toLowerCase());
+                (item.additional_purposes || []).some(p => p === categoryFilter || p.toLowerCase() === categoryFilter.toLowerCase()) ||
+                (item.mapped_services || []).some(s => s === categoryFilter || s.toLowerCase() === categoryFilter.toLowerCase());
 
             return matchesSearch && matchesCategory;
         });
@@ -181,6 +182,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                 <th className="px-6 py-4">Model</th>
                                 <th className="px-6 py-4">Vendor</th>
                                 <th className="px-6 py-4">Purpose</th>
+                                <th className="px-6 py-4">Mapped Services</th>
                                 <th className="px-6 py-4 w-64 max-w-sm">Attributes</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
@@ -262,6 +264,18 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800" title="Management Size">
                                                         {item.managementSize} Mgt
                                                     </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-wrap gap-1">
+                                                {(item.mapped_services || []).map((s) => (
+                                                    <span key={s} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                                                        {s}
+                                                    </span>
+                                                ))}
+                                                {(!item.mapped_services || item.mapped_services.length === 0) && (
+                                                    <span className="text-[10px] text-zinc-400 italic">None</span>
                                                 )}
                                             </div>
                                         </td>

@@ -173,7 +173,23 @@ export function calculateThroughputOverhead(
 // ============================================================
 
 /**
- * Detects the primary functional role of a device using fuzzy matching on 
+ * Returns true if the equipment has the given purpose as primary or additional.
+ * Use this for multi-purpose equipment filtering (e.g. WAN+WLAN router).
+ */
+export function hasEquipmentPurpose(equip: Equipment, purpose: string): boolean {
+    const purposes = [
+        String((equip as any).primary_purpose || ""),
+        ...((equip as any).additional_purposes || []).map(String),
+        // Legacy support: flat purpose string or array
+        ...(Array.isArray((equip as any).purpose)
+            ? (equip as any).purpose.map(String)
+            : [String((equip as any).purpose || "")]),
+    ];
+    return purposes.some(p => p === purpose || p.includes(purpose));
+}
+
+/**
+ * Detects the primary functional role of a device using fuzzy matching on
  * purpose strings (to handle Firestore's multi-purpose labels).
  */
 export function getEquipmentRole(equip: Equipment): "WAN" | "LAN" | "WLAN" | "Other" {

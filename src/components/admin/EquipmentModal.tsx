@@ -8,7 +8,8 @@ import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 import { useCatalogMetadata } from "@/src/hooks";
 import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
-import { getEquipmentRole } from "@/src/lib/bom-utils";
+
+import { useServices } from "@/src/hooks/useServices";
 
 interface EquipmentModalProps {
     equipment: Equipment;
@@ -33,9 +34,9 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
     const { config, updateConfigAsync } = useSystemConfig();
     const { metadata, isLoading: isMetadataLoading } = useCatalogMetadata();
+    const { services } = useServices();
     const specs = formData.specs as any;
     const taxonomy = (config?.taxonomy as Record<string, string[]>) || {};
-    const powerConnectorTypes = taxonomy.power_connector_types || [];
 
     const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
     const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
@@ -147,26 +148,28 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
             "Security": "SECURITY"
         };
         const newRole = (ROLE_MAP[purpose] || "LAN") as Equipment['role'];
-        const roleChanged = newRole !== formData.role;
-
+        // Keep existing specs — changing purpose does not wipe spec data.
+        // Specs are now purpose-agnostic (unified flat schema).
         setFormData({
             ...formData,
             primary_purpose: purpose as any,
             role: newRole,
-            specs: roleChanged ? ({} as any) : formData.specs
         } as any);
     };
 
-    const handleAdditionalPurposeChange = (purpose: string) => {
-        const current = formData.additional_purposes || [];
-        const next = current.includes(purpose as any)
-            ? current.filter(p => p !== purpose)
-            : [...current, purpose];
+    // All active purposes for this equipment (primary + additional)
+    const activePurposes = [formData.primary_purpose, ...(formData.additional_purposes || [])];
+
+    const toggleMappedService = (serviceName: string) => {
+        const current = formData.mapped_services || [];
+        const next = current.includes(serviceName)
+            ? current.filter(s => s !== serviceName)
+            : [...current, serviceName];
 
         setFormData({
             ...formData,
-            additional_purposes: next as any
-        } as any);
+            mapped_services: next
+        });
     };
 
     const handleMountingChange = (option: string) => {
@@ -326,12 +329,41 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                         <input
                                                             type="checkbox"
                                                             checked={(formData.additional_purposes || []).includes(p as any)}
-                                                            onChange={() => handleAdditionalPurposeChange(p)}
+                                                            onChange={() => {
+                                                                const current = formData.additional_purposes || [];
+                                                                const next = current.includes(p as any)
+                                                                    ? current.filter(px => px !== p)
+                                                                    : [...current, p];
+                                                                setFormData({ ...formData, additional_purposes: next as any });
+                                                            }}
                                                             className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
                                                         />
                                                         <span className="text-[10px] font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{p}</span>
                                                     </label>
                                                 ))
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2 mt-4">
+                                        <label className={labelClass}>Mapped Services (Used in Logic)</label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                                            {services.map((service) => (
+                                                <label key={service.id} className="flex items-center gap-2 cursor-pointer transition-all hover:opacity-80 group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={(formData.mapped_services || []).includes(service.name)}
+                                                        onChange={() => toggleMappedService(service.name)}
+                                                        className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                                                    />
+                                                    <span className="text-[11px] font-medium text-slate-600 dark:text-zinc-300 group-hover:text-blue-600 truncate" title={service.name}>
+                                                        {service.name}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                            {services.length === 0 && (
+                                                <div className="col-span-full text-center py-2 text-zinc-400 text-xs italic">
+                                                    No services found in catalog
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -348,6 +380,43 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 </option>
                                             ))}
                                         </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className={labelClass}>Mounting Options</label>
+                                        <div className="flex flex-wrap gap-2.5">
+                                            {isMetadataLoading ? (
+                                                <div className="text-sm text-zinc-500">Loading options...</div>
+                                            ) : (
+                                                metadata.mountingOptions.map((option: string) => (
+                                                    <label key={option} className="flex items-center gap-2.5 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(specs.mounting_options as string[])?.includes(option) || false}
+                                                            onChange={() => handleMountingChange(option)}
+                                                            className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{option}</span>
+                                                    </label>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="col-span-1">
+                                        {specs.mounting_options?.includes("Rack") && (
+                                            <div>
+                                                <label className={labelClass}>Rack Units</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={specs.rack_units || 0}
+                                                        onChange={(e) => handleSpecChange("rack_units", e.target.value)}
+                                                        className={`${inputClass} pr-10`}
+                                                        placeholder="U Size"
+                                                    />
+                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">U</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="col-span-2">
                                         <label className={`${labelClass} flex items-center`}>
@@ -422,10 +491,10 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 </div>
                             </section>
 
-                            {/* Throughput & Performance Card - Primarily for WAN */}
-                            {getEquipmentRole(formData) === 'WAN' && (
+                            {/* Throughput & Performance Card - WAN purpose */}
+                            {activePurposes.includes('WAN') && (
                                 <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                    <h4 className={sectionTitleClass}>Throughput & Performance</h4>
+                                    <h4 className={sectionTitleClass}>WAN — Throughput & Performance</h4>
                                     <div className="grid grid-cols-1 gap-y-8">
                                         <div className="grid grid-cols-3 gap-x-8 gap-y-8">
                                             <div className="col-span-1">
@@ -489,474 +558,329 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-zinc-800 px-1 py-0.5 rounded">Tunnels</span>
                                                 </div>
                                             </div>
-                                            <div className="col-span-2">
-                                                <label className={labelClass}>Recommended Use Case</label>
-                                                <select
-                                                    value={specs.recommended_use_case || ""}
-                                                    onChange={(e) => handleSpecChange("recommended_use_case", e.target.value)}
-                                                    className={selectClass}
-                                                    disabled={isMetadataLoading}
-                                                >
-                                                    {isMetadataLoading ? (
-                                                        <option value="">Loading options...</option>
-                                                    ) : (
-                                                        <>
-                                                            <option value="">Select Use Case...</option>
-                                                            {metadata.recommendedUseCases.map((uc: string) => (
-                                                                <option key={uc} value={uc}>{uc}</option>
-                                                            ))}
-                                                            {specs.recommended_use_case && !metadata.recommendedUseCases.includes(specs.recommended_use_case) && (
-                                                                <option value={specs.recommended_use_case}>{specs.recommended_use_case} (Custom)</option>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </select>
-                                            </div>
                                         </div>
                                     </div>
                                 </section>
                             )}
 
-                            {/* Interfaces Card */}
-                            {(getEquipmentRole(formData) === 'WAN' || getEquipmentRole(formData) === 'LAN' || getEquipmentRole(formData) === 'WLAN') && (
+                            {/* WAN Interfaces Card */}
+                            {activePurposes.includes('WAN') && (
                                 <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                    <h4 className={sectionTitleClass}>Interfaces</h4>
+                                    <h4 className={sectionTitleClass}>WAN — Ports & Interfaces</h4>
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                                        {getEquipmentRole(formData) === 'WAN' && (
-                                            <>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        WAN Port Count
-                                                        <span className="text-slate-400 font-normal block normal-case tracking-normal">WAN: For circuits.</span>
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.wanPortCount ?? 0}
-                                                        onChange={(e) => handleSpecChange('wanPortCount', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Qty (e.g. 2)"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        WAN Port Type
-                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
-                                                    </label>
-                                                    <select
-                                                        value={specs.wanPortType || ""}
-                                                        onChange={(e) => handleSpecChange('wanPortType', e.target.value)}
-                                                        className={selectClass}
-                                                        disabled={isMetadataLoading}
-                                                    >
-                                                        {isMetadataLoading ? (
-                                                            <option value="">Loading options...</option>
-                                                        ) : (
-                                                            <>
-                                                                <option value="">Select Speed...</option>
-                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        LAN Port Count
-                                                        <span className="text-slate-400 font-normal block normal-case tracking-normal">LAN: For switch handoff & HA.</span>
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.lanPortCount ?? 0}
-                                                        onChange={(e) => handleSpecChange('lanPortCount', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Qty (e.g. 4)"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        LAN Port Type
-                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
-                                                    </label>
-                                                    <select
-                                                        value={specs.lanPortType || ""}
-                                                        onChange={(e) => handleSpecChange('lanPortType', e.target.value)}
-                                                        className={selectClass}
-                                                        disabled={isMetadataLoading}
-                                                    >
-                                                        {isMetadataLoading ? (
-                                                            <option value="">Loading options...</option>
-                                                        ) : (
-                                                            <>
-                                                                <option value="">Select Speed...</option>
-                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {getEquipmentRole(formData) === 'LAN' && (
-                                            <>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        Access Port Count
-                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.accessPortCount ?? 0}
-                                                        onChange={(e) => handleSpecChange('accessPortCount', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Qty (e.g. 24, 48)"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        Uplink Port Count
-                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.uplinkPortCount ?? 0}
-                                                        onChange={(e) => handleSpecChange('uplinkPortCount', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Qty (e.g. 4)"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass} title="Copper supports PoE. Fiber is for aggregation/distribution. mGig covers 2.5G/5G.">
-                                                        Access Port Type <span className="opacity-50 block font-normal normal-case">Hover for details</span>
-                                                    </label>
-                                                    <select
-                                                        value={specs.accessPortType || ""}
-                                                        onChange={(e) => handleSpecChange('accessPortType', e.target.value)}
-                                                        className={selectClass}
-                                                        disabled={isMetadataLoading}
-                                                    >
-                                                        {isMetadataLoading ? (
-                                                            <option value="">Loading options...</option>
-                                                        ) : (
-                                                            <>
-                                                                <option value="">Select Speed...</option>
-                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        Uplink Port Type
-                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
-                                                    </label>
-                                                    <select
-                                                        value={specs.uplinkPortType || ""}
-                                                        onChange={(e) => handleSpecChange('uplinkPortType', e.target.value)}
-                                                        className={selectClass}
-                                                        disabled={isMetadataLoading}
-                                                    >
-                                                        {isMetadataLoading ? (
-                                                            <option value="">Loading options...</option>
-                                                        ) : (
-                                                            <>
-                                                                <option value="">Select Speed...</option>
-                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass} title="Total switch PoE capacity (e.g., 370W, 740W).">
-                                                        PoE Budget (Watts) <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.poe_budget ?? specs.poeBudgetWatts ?? 0}
-                                                        onChange={(e) => handleSpecChange('poe_budget', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Watts"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        PoE Capabilities
-                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
-                                                    </label>
-                                                    <select
-                                                        value={specs.poe_capabilities || ""}
-                                                        onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)}
-                                                        className={selectClass}
-                                                        disabled={isMetadataLoading}
-                                                    >
-                                                        {isMetadataLoading ? (
-                                                            <option value="">Loading options...</option>
-                                                        ) : (
-                                                            <>
-                                                                <option value="">Select PoE Capability...</option>
-                                                                {metadata.poeCapabilities?.map((p: string) => (
-                                                                    <option key={p} value={p}>{p}</option>
-                                                                ))}
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {formData.role === 'WLAN' && (
-                                            <div className="col-span-2 grid grid-cols-2 gap-x-8 gap-y-8">
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        Wi-Fi Standard
-                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
-                                                    </label>
-                                                    <select
-                                                        value={specs.wifiStandard || ""}
-                                                        onChange={(e) => handleSpecChange('wifiStandard', e.target.value)}
-                                                        className={selectClass}
-                                                        disabled={isMetadataLoading}
-                                                    >
-                                                        {isMetadataLoading ? (
-                                                            <option value="">Loading options...</option>
-                                                        ) : (
-                                                            <>
-                                                                <option value="">Select Standard...</option>
-                                                                {metadata.wifiStandards.map(s => <option key={s} value={s}>{s}</option>)}
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>
-                                                        MIMO Density
-                                                        <span className="invisible block normal-case tracking-normal">Spacer</span>
-                                                    </label>
-                                                    <select
-                                                        value={specs.mimoBandwidth || ""}
-                                                        onChange={(e) => handleSpecChange('mimoBandwidth', e.target.value)}
-                                                        className={selectClass}
-                                                    >
-                                                        <option value="">Select Density...</option>
-                                                        <option value="2x2">2x2</option>
-                                                        <option value="4x4">4x4</option>
-                                                    </select>
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass} title="The required switchport speed. High-end Wi-Fi 7 often requires 10G-Copper.">
-                                                        Uplink Type <span className="opacity-50 block font-normal normal-case">Hover for details</span>
-                                                    </label>
-                                                    <select
-                                                        value={specs.uplinkType || ""}
-                                                        onChange={(e) => handleSpecChange('uplinkType', e.target.value)}
-                                                        className={selectClass}
-                                                        disabled={isMetadataLoading}
-                                                    >
-                                                        {isMetadataLoading ? (
-                                                            <option value="">Loading options...</option>
-                                                        ) : (
-                                                            <>
-                                                                <option value="">Select Type...</option>
-                                                                {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass} title="Crucial for switch PoE sizing. (Usually 15W to 45W).">
-                                                        Max Power Draw (Watts) <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={specs.powerDrawWatts ?? 0}
-                                                        onChange={(e) => handleSpecChange('powerDrawWatts', parseInt(e.target.value) || 0)}
-                                                        className={inputClass}
-                                                        placeholder="Watts"
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <label className={labelClass}>Environment</label>
-                                                    <select
-                                                        value={specs.environment || ""}
-                                                        onChange={(e) => handleSpecChange('environment', e.target.value)}
-                                                        className={inputClass}
-                                                    >
-                                                        <option value="">Select Environment...</option>
-                                                        <option value="Indoor">Indoor</option>
-                                                        <option value="Outdoor">Outdoor</option>
-                                                        <option value="Hazardous">Hazardous</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                    </div>
-                                </section>
-                            )}
-
-
-
-
-                            {/* Physical & Power Card */}
-                            <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h4 className={sectionTitleClass}>Physical & Power</h4>
-                                <div className="grid grid-cols-3 gap-x-8 gap-y-8">
-                                    <div>
-                                        <label className={labelClass}>Power Supply (W)</label>
-                                        <div className="relative">
-                                            <input type="number" value={specs.power_supply_watts || 0} onChange={(e) => handleSpecChange("power_supply_watts", e.target.value)} className={`${inputClass} pr-10`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Idle Load (W)</label>
-                                        <div className="relative">
-                                            <input type="number" value={specs.power_load_idle_watts || 0} onChange={(e) => handleSpecChange("power_load_idle_watts", e.target.value)} className={`${inputClass} pr-10`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Max Load (W)</label>
-                                        <div className="relative">
-                                            <input type="number" value={specs.power_load_max_watts || 0} onChange={(e) => handleSpecChange("power_load_max_watts", e.target.value)} className={`${inputClass} pr-10`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className={labelClass}>Mounting Options</label>
-                                        <div className="flex flex-wrap gap-2.5">
-                                            {isMetadataLoading ? (
-                                                <div className="text-sm text-zinc-500">Loading options...</div>
-                                            ) : (
-                                                metadata.mountingOptions.map((option: string) => (
-                                                    <label key={option} className="flex items-center gap-2.5 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500 group">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={(specs.mounting_options as string[])?.includes(option) || false}
-                                                            onChange={() => handleMountingChange(option)}
-                                                            className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
-                                                        />
-                                                        <span className="text-xs font-bold text-slate-600 dark:text-zinc-300 group-hover:text-blue-600">{option}</span>
-                                                    </label>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                        {specs.mounting_options?.includes("Rack") && (
-                                            <div className="">
-                                                <label className={labelClass}>Rack Units</label>
-                                                <div className="relative">
-                                                    <input
-                                                        type="number"
-                                                        value={specs.rack_units || 0}
-                                                        onChange={(e) => handleSpecChange("rack_units", e.target.value)}
-                                                        className={`${inputClass} pr-10`}
-                                                        placeholder="U Size"
-                                                    />
-                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">U</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>PoE Budget (W)</label>
-                                        <div className="relative">
-                                            <input type="number" value={specs.poe_budget ?? specs.poeBudgetWatts ?? 0} onChange={(e) => handleSpecChange("poe_budget", parseInt(e.target.value) || 0)} className={`${inputClass} pr-10`} />
-                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">W</span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <label className={labelClass}>Power Connector</label>
-                                        <select
-                                            value={specs.power_connector_type || ""}
-                                            onChange={(e) => handleSpecChange("power_connector_type", e.target.value)}
-                                            className={inputClass}
-                                        >
-                                            <option value="">Select Connector...</option>
-                                            {powerConnectorTypes.map((pc: string) => (
-                                                <option key={pc} value={pc}>{pc}</option>
-                                            ))}
-                                            {specs.power_connector_type && !powerConnectorTypes.includes(specs.power_connector_type) && (
-                                                <option value={specs.power_connector_type}>{specs.power_connector_type} (Custom)</option>
-                                            )}
-                                        </select>
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* Switching & Performance Card - Only show for LAN role */}
-                            {formData.role === 'LAN' && (
-                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                    <h4 className={sectionTitleClass}>Switching & Performance</h4>
-                                    <div className="grid grid-cols-3 gap-x-8 gap-y-8">
                                         <div className="col-span-1">
-                                            <label className={labelClass}>Forwarding Rate (Mpps)</label>
-                                            <div className="relative">
-                                                <input type="number" step="0.01" value={specs.forwarding_rate_mpps || 0} onChange={(e) => handleSpecChange("forwarding_rate_mpps", e.target.value)} className={`${inputClass} pr-14`} />
-                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Mpps</span>
-                                            </div>
-                                        </div>
-                                        <div className="col-span-1">
-                                            <label className={labelClass}>Switching Capacity (Gbps)</label>
-                                            <div className="relative">
-                                                <input type="number" value={specs.switching_capacity_gbps || 0} onChange={(e) => handleSpecChange("switching_capacity_gbps", e.target.value)} className={`${inputClass} pr-14`} />
-                                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Gbps</span>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* Stacking & High Availability Card - LAN and WAN */}
-                            {(formData.role === 'LAN' || formData.role === 'WAN') && (
-                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                    <h4 className={sectionTitleClass}>Stacking & Power Redundancy</h4>
-                                    <div className="grid grid-cols-3 gap-x-8 gap-y-8">
-                                        <div className="col-span-1">
-                                            <label className={labelClass}>Performance Rating</label>
+                                            <label className={labelClass}>
+                                                WAN Port Count
+                                                <span className="text-slate-400 font-normal block normal-case tracking-normal">For circuits.</span>
+                                            </label>
                                             <input
-                                                type="text"
-                                                placeholder="e.g. Wire Rate"
-                                                value={specs.performance_rating || ""}
-                                                onChange={(e) => handleSpecChange("performance_rating", e.target.value)}
+                                                type="number"
+                                                value={specs.wanPortCount ?? 0}
+                                                onChange={(e) => handleSpecChange('wanPortCount', parseInt(e.target.value) || 0)}
                                                 className={inputClass}
+                                                placeholder="Qty (e.g. 2)"
                                             />
                                         </div>
                                         <div className="col-span-1">
-                                            <label className={labelClass}>Stacking Support</label>
-                                            <label className="flex items-center gap-3 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={specs.isStackable || specs.stacking_supported || false}
-                                                    onChange={(e) => handleSpecChange("isStackable", e.target.checked)}
-                                                    className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
-                                                />
-                                                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Stackable</span>
+                                            <label className={labelClass}>
+                                                WAN Port Type
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
                                             </label>
+                                            <select
+                                                value={specs.wanPortType || ""}
+                                                onChange={(e) => handleSpecChange('wanPortType', e.target.value)}
+                                                className={selectClass}
+                                                disabled={isMetadataLoading}
+                                            >
+                                                {isMetadataLoading ? (
+                                                    <option value="">Loading options...</option>
+                                                ) : (
+                                                    <>
+                                                        <option value="">Select Speed...</option>
+                                                        {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                    </>
+                                                )}
+                                            </select>
                                         </div>
-                                        {(specs.isStackable || specs.stacking_supported) && (
-                                            <div className="col-span-1">
-                                                <label className={labelClass}>Stack Bandwidth (Gbps)</label>
-                                                <div className="relative">
-                                                    <input type="number" value={specs.stacking_bandwidth_gbps || 0} onChange={(e) => handleSpecChange("stacking_bandwidth_gbps", e.target.value)} className={`${inputClass} pr-14`} />
-                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 px-1 py-0.5 rounded">Gbps</span>
-                                                </div>
-                                            </div>
-                                        )}
                                         <div className="col-span-1">
-                                            <label className={labelClass}>Primary Power Supply</label>
-                                            <input type="text" placeholder="Model #" value={specs.primary_power_supply || ""} onChange={(e) => handleSpecChange("primary_power_supply", e.target.value)} className={inputClass} />
+                                            <label className={labelClass}>
+                                                LAN Port Count
+                                                <span className="text-slate-400 font-normal block normal-case tracking-normal">For switch handoff & HA.</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={specs.lanPortCount ?? 0}
+                                                onChange={(e) => handleSpecChange('lanPortCount', parseInt(e.target.value) || 0)}
+                                                className={inputClass}
+                                                placeholder="Qty (e.g. 4)"
+                                            />
                                         </div>
                                         <div className="col-span-1">
-                                            <label className={labelClass}>Secondary Power Supply</label>
-                                            <input type="text" placeholder="Model #" value={specs.secondary_power_supply || ""} onChange={(e) => handleSpecChange("secondary_power_supply", e.target.value)} className={inputClass} />
+                                            <label className={labelClass}>
+                                                LAN Port Type
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                            </label>
+                                            <select
+                                                value={specs.lanPortType || ""}
+                                                onChange={(e) => handleSpecChange('lanPortType', e.target.value)}
+                                                className={selectClass}
+                                                disabled={isMetadataLoading}
+                                            >
+                                                {isMetadataLoading ? (
+                                                    <option value="">Loading options...</option>
+                                                ) : (
+                                                    <>
+                                                        <option value="">Select Speed...</option>
+                                                        {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                    </>
+                                                )}
+                                            </select>
                                         </div>
                                     </div>
                                 </section>
                             )}
 
-                            {/* Modular Components Sections - LAN and WAN */}
-                            {(formData.role === 'LAN' || formData.role === 'WAN') && (
+                            {/* LAN Interfaces Card */}
+                            {activePurposes.includes('LAN') && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>LAN — Ports & Switching</h4>
+                                    <div className="grid grid-cols-2 gap-x-8 gap-y-8">
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>
+                                                Access Port Count
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={specs.accessPortCount ?? 0}
+                                                onChange={(e) => handleSpecChange('accessPortCount', parseInt(e.target.value) || 0)}
+                                                className={inputClass}
+                                                placeholder="Qty (e.g. 24, 48)"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>
+                                                Uplink Port Count
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={specs.uplinkPortCount ?? 0}
+                                                onChange={(e) => handleSpecChange('uplinkPortCount', parseInt(e.target.value) || 0)}
+                                                className={inputClass}
+                                                placeholder="Qty (e.g. 4)"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass} title="Copper supports PoE. Fiber is for aggregation/distribution. mGig covers 2.5G/5G.">
+                                                Access Port Type <span className="opacity-50 block font-normal normal-case">Hover for details</span>
+                                            </label>
+                                            <select
+                                                value={specs.accessPortType || ""}
+                                                onChange={(e) => handleSpecChange('accessPortType', e.target.value)}
+                                                className={selectClass}
+                                                disabled={isMetadataLoading}
+                                            >
+                                                {isMetadataLoading ? (
+                                                    <option value="">Loading options...</option>
+                                                ) : (
+                                                    <>
+                                                        <option value="">Select Speed...</option>
+                                                        {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>
+                                                Uplink Port Type
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                            </label>
+                                            <select
+                                                value={specs.uplinkPortType || ""}
+                                                onChange={(e) => handleSpecChange('uplinkPortType', e.target.value)}
+                                                className={selectClass}
+                                                disabled={isMetadataLoading}
+                                            >
+                                                {isMetadataLoading ? (
+                                                    <option value="">Loading options...</option>
+                                                ) : (
+                                                    <>
+                                                        <option value="">Select Speed...</option>
+                                                        {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass} title="Total switch PoE capacity (e.g., 370W, 740W).">
+                                                PoE Budget (Watts) <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={specs.poe_budget ?? specs.poeBudgetWatts ?? 0}
+                                                onChange={(e) => handleSpecChange('poe_budget', parseInt(e.target.value) || 0)}
+                                                className={inputClass}
+                                                placeholder="Watts"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>
+                                                PoE Capabilities
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                            </label>
+                                            <select
+                                                value={specs.poe_capabilities || ""}
+                                                onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)}
+                                                className={selectClass}
+                                                disabled={isMetadataLoading}
+                                            >
+                                                {isMetadataLoading ? (
+                                                    <option value="">Loading options...</option>
+                                                ) : (
+                                                    <>
+                                                        <option value="">Select PoE Capability...</option>
+                                                        {metadata.poeCapabilities?.map((p: string) => (
+                                                            <option key={p} value={p}>{p}</option>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Stackable</label>
+                                            <label className="flex items-center gap-3 cursor-pointer bg-slate-50 dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 transition-all hover:border-blue-500">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={specs.isStackable || false}
+                                                    onChange={(e) => handleSpecChange("isStackable", e.target.checked)}
+                                                    className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                                />
+                                                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Supports Stacking</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* WLAN Specs Card */}
+                            {activePurposes.includes('WLAN') && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>WLAN — Wireless Specifications</h4>
+                                    <div className="grid grid-cols-2 gap-x-8 gap-y-8">
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>
+                                                Wi-Fi Standard
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                            </label>
+                                            <select
+                                                value={specs.wifiStandard || ""}
+                                                onChange={(e) => handleSpecChange('wifiStandard', e.target.value)}
+                                                className={selectClass}
+                                                disabled={isMetadataLoading}
+                                            >
+                                                {isMetadataLoading ? (
+                                                    <option value="">Loading options...</option>
+                                                ) : (
+                                                    <>
+                                                        <option value="">Select Standard...</option>
+                                                        {metadata.wifiStandards.map(s => <option key={s} value={s}>{s}</option>)}
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>
+                                                MIMO Density
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                            </label>
+                                            <select
+                                                value={specs.mimoBandwidth || ""}
+                                                onChange={(e) => handleSpecChange('mimoBandwidth', e.target.value)}
+                                                className={selectClass}
+                                            >
+                                                <option value="">Select Density...</option>
+                                                <option value="2x2">2x2</option>
+                                                <option value="4x4">4x4</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass} title="The required switchport speed. High-end Wi-Fi 7 often requires 10G-Copper.">
+                                                Uplink Type <span className="opacity-50 block font-normal normal-case">Hover for details</span>
+                                            </label>
+                                            <select
+                                                value={specs.uplinkType || ""}
+                                                onChange={(e) => handleSpecChange('uplinkType', e.target.value)}
+                                                className={selectClass}
+                                                disabled={isMetadataLoading}
+                                            >
+                                                {isMetadataLoading ? (
+                                                    <option value="">Loading options...</option>
+                                                ) : (
+                                                    <>
+                                                        <option value="">Select Type...</option>
+                                                        {metadata.interfaceTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass} title="Crucial for switch PoE sizing. (Usually 15W to 45W).">
+                                                Max Power Draw (Watts) <span className="ml-1 opacity-50 block font-normal normal-case">Hover for details</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={specs.powerDrawWatts ?? 0}
+                                                onChange={(e) => handleSpecChange('powerDrawWatts', parseInt(e.target.value) || 0)}
+                                                className={inputClass}
+                                                placeholder="Watts"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Environment</label>
+                                            <select
+                                                value={specs.environment || ""}
+                                                onChange={(e) => handleSpecChange('environment', e.target.value)}
+                                                className={selectClass}
+                                            >
+                                                <option value="">Select Environment...</option>
+                                                <option value="Indoor">Indoor</option>
+                                                <option value="Outdoor">Outdoor</option>
+                                                <option value="Hazardous">Hazardous</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>
+                                                PoE Requirement
+                                                <span className="invisible block normal-case tracking-normal">Spacer</span>
+                                            </label>
+                                            <select
+                                                value={specs.poe_capabilities || ""}
+                                                onChange={(e) => handleSpecChange("poe_capabilities", e.target.value)}
+                                                className={selectClass}
+                                                disabled={isMetadataLoading}
+                                            >
+                                                {isMetadataLoading ? (
+                                                    <option value="">Loading options...</option>
+                                                ) : (
+                                                    <>
+                                                        <option value="">Select PoE Required...</option>
+                                                        {metadata.poeCapabilities?.map((p: string) => (
+                                                            <option key={p} value={p}>{p}</option>
+                                                        ))}
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
+
+
+
+
+                            {/* Modular Components Sections - LAN and WAN purposes */}
+                            {(activePurposes.includes('LAN') || activePurposes.includes('WAN')) && (
                                 <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
                                     <h4 className={sectionTitleClass}>Modular Components & Accessories</h4>
 
@@ -1154,7 +1078,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                             )}
 
                             {/* Security / Fallback section */}
-                            {formData.role === 'SECURITY' && (
+                            {activePurposes.includes('Security') && (
                                 <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
                                     <h4 className={sectionTitleClass}>Security Specifications</h4>
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Security equipment attributes are managed via the raw JSON tab until a dedicated schema is finalized.</p>

@@ -22,7 +22,9 @@ export default function FeatureList({ features, services, packages, onRefresh }:
 
     const filteredFeatures = features.filter(f =>
         f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (Array.isArray(f.category)
+            ? (f.category as string[]).some((cat: string) => cat.toLowerCase().includes(searchQuery.toLowerCase()))
+            : (f.category as string).toLowerCase().includes(searchQuery.toLowerCase())) ||
         f.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -226,18 +228,28 @@ export default function FeatureList({ features, services, packages, onRefresh }:
                                     )}
                                     {visibleColumns.includes('category') && (
                                         <td className="px-6 py-4">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                                                {feature.category}
-                                            </span>
+                                            <div className="flex flex-wrap gap-1">
+                                                {Array.isArray(feature.category) ? (
+                                                    feature.category.map(cat => (
+                                                        <span key={cat} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                                                            {cat}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                                                        {feature.category}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                     )}
                                     {visibleColumns.includes('status') && (
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${feature.status === 'Supported' || !feature.status
-                                                    ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
-                                                    : feature.status === 'In development'
-                                                        ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
-                                                        : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+                                                ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                                                : feature.status === 'In development'
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
+                                                    : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
                                                 }`}>
                                                 {feature.status || "Supported"}
                                             </span>
@@ -331,6 +343,7 @@ export default function FeatureList({ features, services, packages, onRefresh }:
             <FeatureModal
                 key={editingFeature?.id || "new"}
                 feature={editingFeature}
+                services={services}
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSave}

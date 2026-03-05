@@ -299,6 +299,11 @@ export default function EquipmentIngestion() {
                                             {p}
                                         </span>
                                     ))}
+                                    {((item as any).mapped_services || []).map((s: string) => (
+                                        <span key={s} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                                            {s}
+                                        </span>
+                                    ))}
                                     {(item as any).specs.vpn_tunnels && (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                                             {(item as any).specs.vpn_tunnels} VPN Tunnels

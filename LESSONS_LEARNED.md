@@ -328,3 +328,12 @@
 - **Efficiency Sorting**: Updated both primary and fallback sorting to prefer the smallest/most cost-efficient hardware that meets the minimum requirement (e.g., picking 24-port over 48-port for a 12-port site).
 - **Metadata Patching**: Systematically added missing `uplinkPortType` and `poe_capabilities` to the `MS130` series in the database and seed files.
 - **Key Insight**: A rules engine shouldn't be "all-or-nothing" with metadata. Implementing a tiered filtering approach (Strict -> Relaxed -> Best Effort) ensures continuity of the workflow even when data is imperfect, while efficiency-based sorting keeps the suggestions commercially viable.
+## 46. Multi-Service Mapping & Data Normalization
+**Issue**: Features and Equipment were initially mapped to a single "Category" or "Purpose," which failed to reflect reality where a single device (e.g., a Meraki MX) supports SD-WAN, Security, and LAN functionality simultaneously. This also created rigid UI search and filtering.
+**Solution**:
+- **Array-Based Schema Design**: Transitioned from `category: string` to `category: string[]` (for Features) and `mapped_services: string[]` (for Equipment).
+- **Graceful Migration & Normalization**: Implemented normalization layers in both the UI and AI ingestion routes. The system now transparently handles legacy single-string data by converting it to arrays on the fly.
+- **Improved AI Extraction**: Updated the Gemini prompt to request a list of supported services. This allows the AI to "auto-tag" hardware with multiple service affinities based on the datasheet content.
+- **Multi-Select Admin UI**: Built a checkbox-list multi-select pattern for admin modals to replace simple dropdowns, enabling fine-grained mapping control.
+- **Key Insight**: "Categories" are rarely mutually exclusive in enterprise networking. Favoring array-based mapping from the start provides the flexibility needed for discovery, reporting, and rules-based logic that spans multiple technology domains.
+- **Pattern**: When transitioning a schema from string to array, use a "Normalize on Fetch" pattern in hooks to prevent UI crashes while existing database records are still in the old format.

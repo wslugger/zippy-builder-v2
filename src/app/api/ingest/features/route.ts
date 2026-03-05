@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
             For each feature found, extract the following:
             - Feature Name (e.g. "BGP Routing")
             - Description (A clear, concise explanation of what it does)
-            - Category (e.g., "Routing", "Security", "Management", "SD-WAN")
+            - Categories (An array of service categories this feature belongs to, e.g., ["Routing", "Security", "SD-WAN"])
             - Caveats (List of limitations, prerequisites, or constraints mentioned)
             - Assumptions (List of assumptions made for this feature to work)
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
                     {
                         "id": "generated_id_placeholder",
                         "name": "Feature Name",
-                        "category": "Category",
+                        "category": ["Category 1", "Category 2"],
                         "description": "Description text",
                         "caveats": ["Caveat 1", "Caveat 2"],
                         "assumptions": ["Assumption 1", "Assumption 2"]
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
             interface ExtractedFeature {
                 id?: string;
                 name: string;
-                category: string;
+                category: string[] | string;
                 description: string;
                 caveats: string[];
                 assumptions: string[];
@@ -83,7 +83,8 @@ export async function POST(req: NextRequest) {
 
             const finalItems = items.map((item: ExtractedFeature) => ({
                 ...item,
-                id: item.id || item.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+                id: item.id || item.name.toLowerCase().replace(/[^a-z0-9]/g, "_"),
+                category: Array.isArray(item.category) ? item.category : (item.category ? [item.category] : [])
             }));
 
             return NextResponse.json({ data: finalItems });

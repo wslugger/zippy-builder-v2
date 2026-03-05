@@ -146,9 +146,67 @@ const BaseEquipmentSchema = z.object({
   eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
   images: z.array(z.string()).optional(),
+  mapped_services: z.array(z.string()).catch([]).default([]),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
+
+/**
+ * Unified flat specs schema — all fields optional, accommodates any combination of purposes.
+ * A multi-purpose device (e.g. WAN + WLAN) stores fields from both groups in this single object.
+ * Each BOM module reads only the fields it cares about, ignoring the rest.
+ */
+export const UnifiedSpecsSchema = z.object({
+  // --- WAN fields ---
+  rawFirewallThroughputMbps: z.number().optional(),
+  sdwanCryptoThroughputMbps: z.number().optional(),
+  advancedSecurityThroughputMbps: z.number().optional(),
+  vpn_tunnels: z.number().optional(),
+  wanPortCount: z.number().optional(),
+  wanPortType: z.string().nullish(),
+  lanPortCount: z.number().optional(),
+  lanPortType: z.string().nullish(),
+  sfpPortCount: z.number().optional(),
+  integrated_cellular: z.boolean().nullish(),
+  cellular_type: z.string().nullish(),
+  integrated_wifi: z.boolean().nullish(),
+  wifi_standard: z.string().nullish(),
+  modular_cellular: z.boolean().nullish(),
+  // --- LAN fields ---
+  accessPortCount: z.number().optional(),
+  accessPortType: z.string().optional(),
+  poeBudgetWatts: z.number().optional(),
+  uplinkPortCount: z.number().optional(),
+  uplinkPortType: z.string().optional(),
+  isStackable: z.boolean().optional(),
+  // --- WLAN fields ---
+  wifiStandard: z.string().optional(),
+  mimoBandwidth: z.string().optional(),
+  powerDrawWatts: z.number().optional(),
+  uplinkType: z.string().optional(),
+  environment: z.string().optional(),
+  usage: z.string().optional(),
+  radioSpecification: z.string().optional(),
+  spatialStreams: z.string().optional(),
+  aggregateFrame: z.string().optional(),
+  interfaces: z.string().optional(),
+  management: z.string().optional(),
+  power: z.string().optional(),
+  // --- Shared / universal fields ---
+  poe_capabilities: z.string().optional(),
+  poe_budget: z.number().optional(),
+  ports: z.number().optional(),
+  rack_units: z.number().optional(),
+  mounting_options: z.array(z.string()).optional(),
+  stacking_supported: z.boolean().optional(),
+  stacking_bandwidth_gbps: z.number().optional(),
+  forwarding_rate_mpps: z.number().optional(),
+  switching_capacity_gbps: z.number().optional(),
+  primary_power_supply: z.string().nullish(),
+  secondary_power_supply: z.string().nullish(),
+  power_load_max_watts: z.number().nullish(),
+  recommended_use_case: z.string().optional(),
+}).passthrough();
 
 export const EquipmentSchema = z.preprocess(
   (data: unknown) => {
@@ -172,31 +230,24 @@ export const EquipmentSchema = z.preprocess(
     }
     return data;
   },
-  z.discriminatedUnion("role", [
-    BaseEquipmentSchema.extend({
-      role: z.literal("WAN"),
-      specs: WANSpecsSchema,
-    }),
-    BaseEquipmentSchema.extend({
-      role: z.literal("LAN"),
-      specs: LANSpecsSchema,
-    }),
-    BaseEquipmentSchema.extend({
-      role: z.literal("WLAN"),
-      specs: WLANSpecsSchema,
-    }),
-    BaseEquipmentSchema.extend({
-      role: z.literal("SECURITY"),
-      specs: z.record(z.string(), z.unknown()),
-    }),
-  ])
+  BaseEquipmentSchema.extend({
+    role: z.enum(["WAN", "LAN", "WLAN", "SECURITY"]),
+    specs: UnifiedSpecsSchema,
+  })
 );
 
 export type Equipment = z.infer<typeof EquipmentSchema>;
 export type BaseEquipment = z.infer<typeof BaseEquipmentSchema>;
+// Keep individual spec types as documentation aliases for BOM modules
 export type WANSpecs = z.infer<typeof WANSpecsSchema>;
 export type LANSpecs = z.infer<typeof LANSpecsSchema>;
 export type WLANSpecs = z.infer<typeof WLANSpecsSchema>;
+export type UnifiedSpecs = z.infer<typeof UnifiedSpecsSchema>;
+
+/** Returns all active purposes for a piece of equipment (primary + additional). */
+export function getActivePurposes(equip: { primary_purpose: string; additional_purposes?: string[] }): string[] {
+  return [equip.primary_purpose, ...(equip.additional_purposes || [])];
+}
 
 // ============================================================
 // Service & Package Types
@@ -220,7 +271,7 @@ export const DESIGN_OPTION_CATEGORIES = [
 export interface TechnicalFeature extends Timestamps {
   id: string; // e.g. "bgp"
   name: string; // "BGP Routing"
-  category: string; // "Routing", "Security", etc.
+  category: string[]; // Map to one or more Services (e.g. ["SD-WAN Service", "Managed LAN"])
   status?: string;
   description: string;
   caveats?: string[];
