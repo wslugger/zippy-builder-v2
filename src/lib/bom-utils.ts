@@ -178,12 +178,8 @@ export function calculateThroughputOverhead(
  */
 export function hasEquipmentPurpose(equip: Equipment, purpose: string): boolean {
     const purposes = [
-        String((equip as any).primary_purpose || ""),
-        ...((equip as any).additional_purposes || []).map(String),
-        // Legacy support: flat purpose string or array
-        ...(Array.isArray((equip as any).purpose)
-            ? (equip as any).purpose.map(String)
-            : [String((equip as any).purpose || "")]),
+        String(equip.primary_purpose || ""),
+        ...(equip.additional_purposes || []).map(String),
     ];
     return purposes.some(p => p === purpose || p.includes(purpose));
 }
