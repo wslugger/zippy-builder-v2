@@ -11,17 +11,37 @@ import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 
 import { useServices } from "@/src/hooks/useServices";
 
+const BLANK_EQUIPMENT: Equipment = {
+    id: "",
+    model: "",
+    make: "",
+    vendor_id: "meraki",
+    role: "LAN",
+    primary_purpose: "LAN" as any,
+    additional_purposes: [] as any,
+    family: "",
+    description: "",
+    status: "Supported",
+    active: true,
+    mapped_services: [],
+    specs: {} as any,
+    managementSize: "None" as any,
+};
+
 interface EquipmentModalProps {
-    equipment: Equipment;
+    equipment: Equipment | null;
     isOpen: boolean;
     onClose: () => void;
     onSave: () => void;
 }
 
 export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: EquipmentModalProps) {
+    const isCreating = !equipment;
+
     const [formData, setFormData] = useState<Equipment>(() => {
+        const base = equipment ?? BLANK_EQUIPMENT;
         // Deep copy specs to avoid mutating prop
-        const data = { ...equipment, specs: { ...equipment.specs } } as any;
+        const data = { ...base, specs: { ...base.specs } } as any;
 
         // Migration logic: if rack_units > 0 but no mounting_options, assume Rack
         if (!data.specs.mounting_options && data.specs.rack_units && data.specs.rack_units > 0) {
@@ -71,8 +91,17 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
     if (!isOpen) return null;
 
     const handleSave = async () => {
+        if (!formData.model.trim()) {
+            alert("Model name is required.");
+            return;
+        }
         setIsSaving(true);
         try {
+            // Auto-generate ID for new equipment
+            if (isCreating && !formData.id) {
+                const slug = `${formData.vendor_id}_${formData.model.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()}`;
+                (formData as any).id = slug;
+            }
             const metadataUpdates: { field: string, value: string | string[] }[] = [
                 { field: 'mounting_options', value: specs.mounting_options || [] },
                 { field: 'recommended_use_cases', value: specs.recommended_use_case || "" },
@@ -204,8 +233,8 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                 {/* Header */}
                 <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-100 dark:border-zinc-800">
                     <div>
-                        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Equipment Details</h3>
-                        <p className="text-xs text-zinc-400 mt-1 font-mono">{formData.id}</p>
+                        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{isCreating ? "Add Equipment" : "Equipment Details"}</h3>
+                        <p className="text-xs text-zinc-400 mt-1 font-mono">{isCreating ? "New record" : formData.id}</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400">
                         ✕
@@ -1105,7 +1134,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                         disabled={isSaving}
                         className="px-8 py-2.5 bg-blue-600 text-white text-sm font-black rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 disabled:opacity-50"
                     >
-                        {isSaving ? "Saving..." : "Save Changes"}
+                        {isSaving ? "Saving..." : isCreating ? "Add Equipment" : "Save Changes"}
                     </button>
                 </div >
             </div >

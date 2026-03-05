@@ -8,7 +8,6 @@ import { useCatalogMetadata } from "@/src/hooks";
 import EquipmentTable from "@/src/components/admin/EquipmentTable";
 import EquipmentFilters from "@/src/components/admin/EquipmentFilters";
 import EquipmentModal from "@/src/components/admin/EquipmentModal";
-import Link from "next/link";
 
 export default function CatalogPage() {
     const { equipment: data, loading, refreshEquipment: fetchData } = useEquipment();
@@ -57,6 +56,11 @@ export default function CatalogPage() {
 
         return matchesSearch && matchesVendor && matchesPurpose;
     });
+
+    const handleAddNew = () => {
+        setSelectedItem(null);
+        setIsModalOpen(true);
+    };
 
     const handleEdit = (item: Equipment) => {
         setSelectedItem(item);
@@ -169,12 +173,12 @@ export default function CatalogPage() {
                         <h1 className="text-3xl font-bold tracking-tight">Equipment Catalog</h1>
                         <p className="mt-1 text-zinc-500 dark:text-zinc-400">Manage standard hardware profiles and specifications.</p>
                     </div>
-                    <Link
-                        href="/admin/ingest"
+                    <button
+                        onClick={handleAddNew}
                         className="inline-flex items-center justify-center rounded-md bg-zinc-900 dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 shadow-sm hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
                     >
                         + Add Equipment
-                    </Link>
+                    </button>
                 </div>
 
                 <EquipmentFilters
@@ -253,8 +257,8 @@ export default function CatalogPage() {
                 )}
             </main>
 
-            {/* Edit Modal */}
-            {selectedItem && isModalOpen && (
+            {/* Add / Edit Modal */}
+            {isModalOpen && (
                 <EquipmentModal
                     isOpen={isModalOpen}
                     equipment={selectedItem}
