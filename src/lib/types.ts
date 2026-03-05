@@ -28,7 +28,7 @@ export const VENDOR_LABELS: Record<typeof VENDOR_IDS[number], string> = {
   hpe_aruba_sdbranch: "HPE Aruba SD BRANCH"
 };
 
-export const EQUIPMENT_PURPOSES = ["WAN", "LAN", "WLAN", "Security"] as const;
+export const EQUIPMENT_PURPOSES = ["WAN", "LAN", "WLAN"] as const;
 export const CELLULAR_TYPES = ["LTE", "5G", "LTE/5G"] as const;
 export const WIFI_STANDARDS = ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"] as const;
 export const EQUIPMENT_STATUSES = ["Supported", "In development", "Not supported", "eos"] as const;
@@ -780,7 +780,7 @@ export const SystemConfigSchema = z.object({
     regions: ['North America', 'Europe', 'Asia Pacific', 'Latin America'],
     siteTypes: ['Small Branch', 'Medium Branch', 'Large Branch', 'Headquarters', 'Data Center', 'Remote/Home Office'],
     vendors: ['Cisco Catalyst', 'Meraki', 'HPE Aruba'],
-    purposes: ['WAN', 'LAN', 'WLAN', 'SECURITY'],
+    purposes: ['WAN', 'LAN', 'WLAN'],
     cellular_types: ['LTE', '5G', 'LTE/5G'],
     wifi_standards: ['Wi-Fi 5', 'Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7'],
     mounting_options: ['Rack', 'Wall', 'Desktop', 'Ceiling'],

@@ -252,7 +252,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                                     const purposes = [
                                                         itemWithAny.primary_purpose,
                                                         ...(itemWithAny.additional_purposes || [])
-                                                    ].filter(Boolean);
+                                                    ].filter((p): p is string => Boolean(p) && EQUIPMENT_PURPOSES.includes(p as any));
 
                                                     return purposes.map((p) => (
                                                         <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">

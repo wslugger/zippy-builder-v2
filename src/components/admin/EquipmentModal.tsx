@@ -145,7 +145,6 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
             "WAN": "WAN",
             "LAN": "LAN",
             "WLAN": "WLAN",
-            "Security": "SECURITY"
         };
         const newRole = (ROLE_MAP[purpose] || "LAN") as Equipment['role'];
         // Keep existing specs — changing purpose does not wipe spec data.
@@ -1077,13 +1076,6 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 </section>
                             )}
 
-                            {/* Security / Fallback section */}
-                            {activePurposes.includes('Security') && (
-                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                    <h4 className={sectionTitleClass}>Security Specifications</h4>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Security equipment attributes are managed via the raw JSON tab until a dedicated schema is finalized.</p>
-                                </section>
-                            )}
                         </div>
                     ) : (
                         <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
