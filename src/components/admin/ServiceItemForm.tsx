@@ -349,7 +349,7 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
                         {features
                             .filter(f => {
                                 const matchesSearch = f.name.toLowerCase().includes(featureSearch.toLowerCase()) ||
-                                    f.category.some(cat => cat.toLowerCase().includes(featureSearch.toLowerCase()));
+                                    (Array.isArray(f.category) ? f.category : [f.category]).some(cat => cat.toLowerCase().includes(featureSearch.toLowerCase()));
                                 const isSelected = item.supported_features?.includes(f.id) || false;
 
                                 if (showSelectedOnly) return matchesSearch && isSelected;
@@ -386,14 +386,14 @@ export default function ServiceItemForm({ item, onChange, title, showDesignField
                                         />
                                         <div className="min-w-0">
                                             <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 truncate">{feature.name}</div>
-                                            <div className="text-xs text-zinc-500 font-medium">{feature.category.join(", ")}</div>
+                                            <div className="text-xs text-zinc-500 font-medium">{Array.isArray(feature.category) ? feature.category.join(", ") : feature.category}</div>
                                         </div>
                                     </label>
                                 );
                             })}
                         {features.length > 0 && features.filter(f => {
                             const matchesSearch = f.name.toLowerCase().includes(featureSearch.toLowerCase()) ||
-                                f.category.some(cat => cat.toLowerCase().includes(featureSearch.toLowerCase()));
+                                (Array.isArray(f.category) ? f.category : [f.category]).some(cat => cat.toLowerCase().includes(featureSearch.toLowerCase()));
                             const isSelected = item.supported_features?.includes(f.id) || false;
                             if (showSelectedOnly) return matchesSearch && isSelected;
                             return matchesSearch;

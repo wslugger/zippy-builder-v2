@@ -202,20 +202,26 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
     };
 
     const handleMountingChange = (option: string) => {
-        const currentOptions = specs.mounting_options || [];
-        let newOptions;
+        const currentOptions: string[] = (specs.mounting_options as string[]) || [];
+        let newOptions: string[];
         let newRackUnits = specs.rack_units;
 
         if (currentOptions.includes(option)) {
             newOptions = currentOptions.filter((o: string) => o !== option);
-            if (option === "Rack") {
-                newRackUnits = undefined;
-            }
+            if (option === "Rack") newRackUnits = undefined;
         } else {
             newOptions = [...currentOptions, option];
         }
-        handleSpecChange("mounting_options", newOptions);
-        handleSpecChange("rack_units", newRackUnits);
+
+        // Single state update to avoid stale closure overwrite from two handleSpecChange calls
+        setFormData(prev => ({
+            ...prev,
+            specs: {
+                ...(prev.specs as any),
+                mounting_options: newOptions,
+                rack_units: newRackUnits,
+            },
+        } as unknown as Equipment));
     };
 
 
