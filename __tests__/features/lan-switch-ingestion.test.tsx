@@ -48,7 +48,7 @@ describe('LAN Switch Specifications Schema', () => {
         const result = EquipmentSchema.safeParse(legacyDevice);
         expect(result.success).toBe(true);
         if (result.success && result.data.role === 'LAN') {
-            expect(result.data.specs.accessPortCount).toBe(24); // Handled by catch fallback
+            expect(result.data.specs.accessPortCount).toBeUndefined(); // No longer handled by schema-level catch
             expect((result.data.specs as any).ports).toBe(8); // Passthrough field
         }
     });

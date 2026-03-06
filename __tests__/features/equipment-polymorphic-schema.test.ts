@@ -94,7 +94,7 @@ describe("Equipment Polymorphic Schema", () => {
         }
     });
 
-    it("should gracefully handle specs that lack required keys via catch defaults", () => {
+    it("should gracefully handle specs that lack keys by allowing them to be optional", () => {
         const invalidLanData = {
             id: "invalid_lan",
             model: "Invalid LAN",
@@ -108,7 +108,7 @@ describe("Equipment Polymorphic Schema", () => {
         const result = EquipmentSchema.safeParse(invalidLanData);
         expect(result.success).toBe(true);
         if (result.success && result.data.role === 'LAN') {
-            expect(result.data.specs.poeBudgetWatts).toBe(0); // Handled by fallback
+            expect(result.data.specs.poeBudgetWatts).toBeUndefined(); // Fields are optional in UnifiedSpecsSchema
             expect((result.data.specs as Record<string, unknown>).wifi_standard).toBe("Wi-Fi 6"); // Passthrough string
         }
     });
