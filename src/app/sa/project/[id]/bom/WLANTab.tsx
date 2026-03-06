@@ -2,6 +2,7 @@ import { Site, BOMLineItem } from "@/src/lib/bom-types";
 import { Equipment } from "@/src/lib/types";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
 import { useState, useEffect, useMemo } from "react";
+import { getEquipmentRole } from "@/src/lib/bom-utils";
 
 interface WLANTabProps {
     selectedSite: Site;
@@ -56,7 +57,7 @@ export function WLANTab({
 
     const availableAPs = useMemo(() => {
         return catalog
-            .filter(eq => eq.role === 'WLAN' && eq.vendor_id === resolvedVendor)
+            .filter(eq => getEquipmentRole(eq) === 'WLAN' && eq.vendor_id === resolvedVendor)
             .sort((a, b) => a.model.localeCompare(b.model));
     }, [catalog, resolvedVendor]);
 

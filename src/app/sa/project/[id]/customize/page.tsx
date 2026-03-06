@@ -5,6 +5,19 @@ import { useRouter } from 'next/navigation';
 import { Project, Package, PackageItem, Service, InclusionType } from '@/src/lib/types';
 import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
 
+// Helper to determine if a service is considered a "Primary" network service
+// (SDWAN, LAN, WLAN) vs a secondary service (DIA, Broadband).
+const isPrimaryService = (svc: Service | undefined) => {
+    if (!svc) return false;
+    const name = svc.name.toLowerCase();
+    const id = svc.id.toLowerCase();
+    // Exclude basic connectivity
+    if (name.includes('dia') || name.includes('broadband') || name.includes('internet') || id.includes('dia') || id.includes('broadband')) return false;
+    // Include primary networking
+    if (name.includes('sd-wan') || name.includes('sdwan') || name.includes('lan') || name.includes('wlan') || name.includes('wifi')) return true;
+    return ['sdwan', 'lan', 'wlan', 'mwlan'].includes(id);
+};
+
 export default function CustomizeProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const resolvedParams = use(params);
@@ -104,7 +117,14 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
         const isTopLevelToggle = !optionId && !designId;
         const baseService = isTopLevelToggle ? services.find(s => s.id === serviceId) : undefined;
         const attachmentServices = baseService && !baseService.is_attachment
-            ? services.filter(s => s.is_attachment && s.attaches_to?.includes(serviceId))
+            ? services.filter(s => {
+                if (!s.is_attachment || !s.attaches_to?.includes(serviceId)) return false;
+                // Specifically restrict Zippy Managed Services to Primary Services
+                if (s.id === 'zippy_managed_services') {
+                    return isPrimaryService(baseService);
+                }
+                return true;
+            })
             : [];
 
         if (existsIdx > -1) {
@@ -236,7 +256,14 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
 
                         if (!hasWhitelistedContent) return null;
 
-                        const attachmentServices = services.filter(s => s.is_attachment && s.attaches_to?.includes(service.id));
+                        const attachmentServices = services.filter(s => {
+                            if (!s.is_attachment || !s.attaches_to?.includes(service.id)) return false;
+                            // Specifically restrict Zippy Managed Services to Primary Services
+                            if (s.id === 'zippy_managed_services') {
+                                return isPrimaryService(service);
+                            }
+                            return true;
+                        });
 
                         const isServiceActive = isItemActive(service.id);
                         const isServiceRequired = serviceRule === 'required';
