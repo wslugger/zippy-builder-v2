@@ -14,8 +14,8 @@ describe("Bug Reproduction: BOM Throughput Basis", () => {
     });
 
     const mockServiceSDWAN: Service = {
-        id: "managed_sdwan",
-        name: "Managed SD-WAN",
+        id: "sdwan",
+        name: "SD-WAN",
         short_description: "SD-WAN",
         detailed_description: "",
         caveats: [],
@@ -50,7 +50,7 @@ describe("Bug Reproduction: BOM Throughput Basis", () => {
         defaults: {
             redundancy: { cpe: "Single", circuit: "Single" },
             slo: 99.9,
-            requiredServices: ["managed_sdwan"]
+            requiredServices: ["sdwan"]
         }
     };
 
@@ -64,7 +64,7 @@ describe("Bug Reproduction: BOM Throughput Basis", () => {
             throughput_basis: "rawFirewallThroughputMbps",
             items: [
                 {
-                    service_id: "managed_sdwan",
+                    service_id: "sdwan",
                     inclusion_type: "required",
                     enabled_features: []
                 }
@@ -88,12 +88,12 @@ describe("Bug Reproduction: BOM Throughput Basis", () => {
         // Test with VPN basis
         const pkgVPN: Package = { ...pkg, throughput_basis: "sdwanCryptoThroughputMbps" };
         const bomVPN = calculateBOM({ projectId: "proj", sites: [highLoadSite], selectedPackage: pkgVPN, services: [mockServiceSDWAN], siteTypes: [mockSiteType], equipmentCatalog: testCatalog, rules: testRules });
-        const itemVPN = bomVPN.items.find(i => i.serviceId === "managed_sdwan");
+        const itemVPN = bomVPN.items.find(i => i.serviceId === "sdwan");
 
         // Test with NGFW basis
         const pkgNGFW: Package = { ...pkg, throughput_basis: "rawFirewallThroughputMbps" };
         const bomNGFW = calculateBOM({ projectId: "proj", sites: [highLoadSite], selectedPackage: pkgNGFW, services: [mockServiceSDWAN], siteTypes: [mockSiteType], equipmentCatalog: testCatalog, rules: testRules });
-        const itemNGFW = bomNGFW.items.find(i => i.serviceId === "managed_sdwan");
+        const itemNGFW = bomNGFW.items.find(i => i.serviceId === "sdwan");
 
         // These should differ if the basis is respected
         console.log(`VPN Basis Item: ${itemVPN?.itemId}`);

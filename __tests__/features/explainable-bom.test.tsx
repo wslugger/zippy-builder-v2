@@ -9,8 +9,8 @@ describe("Explainable BOM Traceability", () => {
 
     const mockServices: Service[] = [
         {
-            id: "managed_sdwan",
-            name: "Managed SD-WAN",
+            id: "sdwan",
+            name: "SD-WAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -21,8 +21,8 @@ describe("Explainable BOM Traceability", () => {
             service_options: []
         },
         {
-            id: "managed_lan",
-            name: "Managed LAN",
+            id: "lan",
+            name: "LAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -42,7 +42,7 @@ describe("Explainable BOM Traceability", () => {
         detailed_description: "test",
         items: [
             {
-                service_id: "managed_sdwan",
+                service_id: "sdwan",
                 inclusion_type: "required",
                 enabled_features: []
             }
@@ -89,7 +89,7 @@ describe("Explainable BOM Traceability", () => {
             rules: [customRule]
         });
 
-        const item = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const item = bom.items.find(i => i.serviceId === "sdwan");
         expect(item?.matchedRules).toBeDefined();
         expect(item?.matchedRules?.[0].ruleId).toBe("special_rule");
         expect(item?.matchedRules?.[0].ruleName).toBe("Special Fiber Rule");
@@ -123,7 +123,7 @@ describe("Explainable BOM Traceability", () => {
             rules: []
         });
 
-        const item = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const item = bom.items.find(i => i.serviceId === "sdwan");
         expect(item?.matchedRules).toBeDefined();
         expect(item?.matchedRules?.[0].ruleId).toBe("dynamic_match");
         expect(item?.matchedRules?.[0].description).toContain("Mbps");
@@ -147,7 +147,7 @@ describe("Explainable BOM Traceability", () => {
         };
 
         const manualSelections = {
-            "Manual Site:managed_sdwan": "meraki_mx105"
+            "Manual Site:sdwan": "meraki_mx105"
         };
 
         const bom = calculateBOM({
@@ -161,7 +161,7 @@ describe("Explainable BOM Traceability", () => {
             manualSelections
         });
 
-        const item = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const item = bom.items.find(i => i.serviceId === "sdwan");
         expect(item?.itemId).toBe("meraki_mx105");
         expect(item?.matchedRules?.[0].ruleId).toBe("manual");
         expect(item?.matchedRules?.[0].ruleName).toBe("Manual Override");

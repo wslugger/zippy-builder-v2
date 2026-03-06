@@ -54,7 +54,7 @@ describe("Edge Device Dropdown Bug", () => {
         catalog: mockCatalog,
         getVendorForService: () => "meraki",
         currentSDWANEquipment: mockCatalog[0],
-        currentSDWANItem: { itemId: "meraki_mx67", quantity: 1, serviceId: "managed_sdwan" },
+        currentSDWANItem: { itemId: "meraki_mx67", quantity: 1, serviceId: "sdwan" },
         setSelectedSpecsItem: jest.fn(),
         utilization: 60,
         totalLoad: 120,

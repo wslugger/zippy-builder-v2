@@ -245,7 +245,7 @@ export function SiteSidebar({
                             {!isCollapsed && (
                                 <div className="bg-white dark:bg-slate-900">
                                     {group.items.map(({ site, index }) => {
-                                        const siteBOM = bom?.items.filter((i) => i.siteName === site.name && i.serviceId === "managed_sdwan" && i.itemType === "equipment");
+                                        const siteBOM = bom?.items.filter((i) => i.siteName === site.name && i.serviceId === "sdwan" && i.itemType === "equipment");
                                         const qty = siteBOM?.[0]?.quantity || 1;
 
                                         const isSelected = selectedSiteIndex === index;

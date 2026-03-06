@@ -11,7 +11,7 @@ describe("Save WIP BOM Builder Logic", () => {
     it("should correctly structure the bomState extracted from the BOM Builder", () => {
         // Mock current builder state
         const manualSelections = {
-            "managed_lan": { vendor: "cisco_catalyst" }
+            "lan": { vendor: "cisco_catalyst" }
         };
         const globalDiscount = 15;
         const acquisitionModel = "rental" as const;
@@ -31,7 +31,7 @@ describe("Save WIP BOM Builder Logic", () => {
         expect(updatePayload.bomState).toBeDefined();
 
         const bomState = updatePayload.bomState!;
-        expect(bomState.manualSelections).toEqual({ "managed_lan": { vendor: "cisco_catalyst" } });
+        expect(bomState.manualSelections).toEqual({ "lan": { vendor: "cisco_catalyst" } });
         expect(bomState.globalDiscount).toBe(15);
         expect(bomState.acquisitionModel).toBe("rental");
         expect(bomState.projectManagementLevel).toBe("Standard");

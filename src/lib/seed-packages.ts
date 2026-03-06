@@ -9,17 +9,17 @@ export const SEED_PACKAGES: Package[] = [
         active: true,
         items: [
             {
-                service_id: "managed_sdwan",
+                service_id: "sdwan",
                 inclusion_type: "required",
                 enabled_features: []
             },
             {
-                service_id: "managed_lan",
+                service_id: "lan",
                 inclusion_type: "standard",
                 enabled_features: []
             },
             {
-                service_id: "managed_wifi",
+                service_id: "wlan",
                 inclusion_type: "standard",
                 enabled_features: []
             }
@@ -37,12 +37,12 @@ export const SEED_PACKAGES: Package[] = [
         active: true,
         items: [
             {
-                service_id: "managed_sdwan",
+                service_id: "sdwan",
                 inclusion_type: "required",
                 enabled_features: []
             },
             {
-                service_id: "managed_wifi",
+                service_id: "wlan",
                 inclusion_type: "standard",
                 enabled_features: []
             }

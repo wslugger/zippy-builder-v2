@@ -92,8 +92,8 @@ describe("sanitisePrice", () => {
 describe("BOM Engine pricing snapshot", () => {
     const mockServices: Service[] = [
         {
-            id: "managed_sdwan",
-            name: "Managed SD-WAN",
+            id: "sdwan",
+            name: "SD-WAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -110,7 +110,7 @@ describe("BOM Engine pricing snapshot", () => {
         active: true,
         short_description: "test",
         detailed_description: "test",
-        items: [{ service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [] }],
+        items: [{ service_id: "sdwan", inclusion_type: "required", enabled_features: [] }],
     };
 
     it("injects pricing snapshot when equipment has a listPrice", () => {
@@ -147,7 +147,7 @@ describe("BOM Engine pricing snapshot", () => {
             rules: SEED_BOM_RULES,
         });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx67");
         expect(sdwanItem?.pricing).toBeDefined();
@@ -184,7 +184,7 @@ describe("BOM Engine pricing snapshot", () => {
             rules: SEED_BOM_RULES,
         });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
         expect(sdwanItem).toBeDefined();
         // pricing should be undefined when no listPrice is present
         expect(sdwanItem?.pricing).toBeUndefined();

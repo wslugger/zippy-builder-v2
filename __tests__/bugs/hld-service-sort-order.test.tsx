@@ -51,9 +51,9 @@ describe("Bug: HLD service sort order", () => {
     it("getAllServices() should return services sorted by sortOrder, not insertion order", async () => {
         // Simulate Firestore returning services in an arbitrary/random order
         const mockDocs = [
-            { id: "managed_wifi", data: () => mockService({ id: "managed_wifi", name: "Managed Wi-Fi", sortOrder: 2 }) },
-            { id: "managed_sdwan", data: () => mockService({ id: "managed_sdwan", name: "Managed SD-WAN", sortOrder: 0 }) },
-            { id: "managed_lan", data: () => mockService({ id: "managed_lan", name: "Managed LAN", sortOrder: 1 }) },
+            { id: "wlan", data: () => mockService({ id: "wlan", name: "Wireless LAN", sortOrder: 2 }) },
+            { id: "sdwan", data: () => mockService({ id: "sdwan", name: "SD-WAN", sortOrder: 0 }) },
+            { id: "lan", data: () => mockService({ id: "lan", name: "LAN", sortOrder: 1 }) },
         ];
 
         (getDocs as jest.Mock).mockResolvedValue({ docs: mockDocs });
@@ -62,13 +62,13 @@ describe("Bug: HLD service sort order", () => {
         const allServices = await ServiceService.getAllServices();
 
         // Filter to services referenced by a hypothetical project
-        const projectServiceIds = new Set(["managed_sdwan", "managed_lan", "managed_wifi"]);
+        const projectServiceIds = new Set(["sdwan", "lan", "wlan"]);
         const servicesForHld = allServices.filter(s => projectServiceIds.has(s.id));
 
         // HLD services should now appear in sortOrder: SD-WAN(0), LAN(1), Wi-Fi(2)
-        expect(servicesForHld[0].id).toBe("managed_sdwan");
-        expect(servicesForHld[1].id).toBe("managed_lan");
-        expect(servicesForHld[2].id).toBe("managed_wifi");
+        expect(servicesForHld[0].id).toBe("sdwan");
+        expect(servicesForHld[1].id).toBe("lan");
+        expect(servicesForHld[2].id).toBe("wlan");
     });
 
     it("filtering getAllServices() preserves sort order regardless of Set iteration order", async () => {

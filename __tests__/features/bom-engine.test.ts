@@ -12,8 +12,8 @@ describe("BOM Engine Logic", () => {
 
     const mockServices: Service[] = [
         {
-            id: "managed_sdwan",
-            name: "Managed SD-WAN",
+            id: "sdwan",
+            name: "SD-WAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -24,8 +24,8 @@ describe("BOM Engine Logic", () => {
             service_options: []
         },
         {
-            id: "managed_lan",
-            name: "Managed LAN",
+            id: "lan",
+            name: "LAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -36,8 +36,8 @@ describe("BOM Engine Logic", () => {
             service_options: []
         },
         {
-            id: "managed_wifi",
-            name: "Managed Wi-Fi",
+            id: "wlan",
+            name: "Wireless LAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -57,7 +57,7 @@ describe("BOM Engine Logic", () => {
         detailed_description: "test",
         items: [
             {
-                service_id: "managed_sdwan",
+                service_id: "sdwan",
                 inclusion_type: "required",
                 enabled_features: []
             }
@@ -83,7 +83,7 @@ describe("BOM Engine Logic", () => {
 
         const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx67");
     });
@@ -107,7 +107,7 @@ describe("BOM Engine Logic", () => {
 
         const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx68");
     });
@@ -131,7 +131,7 @@ describe("BOM Engine Logic", () => {
 
         const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx105");
     });
@@ -158,7 +158,7 @@ describe("BOM Engine Logic", () => {
             items: [
                 ...mockPackage.items,
                 {
-                    service_id: "managed_wifi",
+                    service_id: "wlan",
                     inclusion_type: "standard",
                     enabled_features: []
                 }
@@ -167,7 +167,7 @@ describe("BOM Engine Logic", () => {
 
         const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: wifiPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
 
-        const wifiItem = bom.items.find(i => i.serviceId === "managed_wifi");
+        const wifiItem = bom.items.find(i => i.serviceId === "wlan");
         expect(wifiItem).toBeDefined();
         expect(wifiItem?.quantity).toBe(5);
         expect(wifiItem?.itemId).toBe("meraki_mr44");
@@ -192,7 +192,7 @@ describe("BOM Engine Logic", () => {
 
         const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_c8455_g2_mx");
     });

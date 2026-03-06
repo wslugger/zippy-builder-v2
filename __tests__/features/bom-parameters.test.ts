@@ -30,17 +30,17 @@ describe("BOM Parameters Feature", () => {
             active: true,
             throughput_basis: "sdwanCryptoThroughputMbps",
             items: [
-                { service_id: "managed_sdwan", enabled_features: [], inclusion_type: "required" },
-                { service_id: "managed_lan", enabled_features: [], inclusion_type: "required" }
+                { service_id: "sdwan", enabled_features: [], inclusion_type: "required" },
+                { service_id: "lan", enabled_features: [], inclusion_type: "required" }
             ],
         };
 
         const mockServices: Service[] = [
             {
-                id: "managed_sdwan", name: "Managed SD-WAN", active: true, service_options: [], short_description: "", detailed_description: "", caveats: [], assumptions: [], metadata: { category: "wan" }
+                id: "sdwan", name: "SD-WAN", active: true, service_options: [], short_description: "", detailed_description: "", caveats: [], assumptions: [], metadata: { category: "wan" }
             },
             {
-                id: "managed_lan", name: "Managed LAN", active: true, service_options: [], short_description: "", detailed_description: "", caveats: [], assumptions: [], metadata: { category: "lan" }
+                id: "lan", name: "LAN", active: true, service_options: [], short_description: "", detailed_description: "", caveats: [], assumptions: [], metadata: { category: "lan" }
             }
         ];
 
@@ -86,7 +86,7 @@ describe("BOM Parameters Feature", () => {
         // By default maxPortUtilization is 100%, 52 > 48, so it will recommend qty = 2 of switch 48, 
         // wait, switch 48 has 48 ports. At 100%, we need 2 switches. Let's see.
         const bom = calculateBOM(mockInput);
-        const lanSwitches = bom.items.filter(i => i.serviceId === "managed_lan" && i.itemType === "equipment");
+        const lanSwitches = bom.items.filter(i => i.serviceId === "lan" && i.itemType === "equipment");
         expect(lanSwitches[0].quantity).toBe(2);
     });
 
@@ -98,7 +98,7 @@ describe("BOM Parameters Feature", () => {
             maxPortUtilization: 50
         };
         const bom = calculateBOM(mockInput);
-        const lanSwitches = bom.items.filter(i => i.serviceId === "managed_lan" && i.itemType === "equipment");
+        const lanSwitches = bom.items.filter(i => i.serviceId === "lan" && i.itemType === "equipment");
         expect(lanSwitches[0].quantity).toBe(3);
     });
 
@@ -113,7 +113,7 @@ describe("BOM Parameters Feature", () => {
             id: "rule1",
             name: "Override Util",
             priority: 100,
-            condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+            condition: { "==": [{ "var": "serviceId" }, "lan"] },
             actions: [
                 { type: "set_parameter", targetId: "maxPortUtilization", actionValue: 100 }
             ]
@@ -121,7 +121,7 @@ describe("BOM Parameters Feature", () => {
         mockInput.rules = [overrideRule];
 
         const bom = calculateBOM(mockInput);
-        const lanSwitches = bom.items.filter(i => i.serviceId === "managed_lan" && i.itemType === "equipment");
+        const lanSwitches = bom.items.filter(i => i.serviceId === "lan" && i.itemType === "equipment");
         expect(lanSwitches[0].quantity).toBe(2);
     });
 
@@ -132,7 +132,7 @@ describe("BOM Parameters Feature", () => {
             defaultAccessSpeed: "10G-Copper"
         };
         const bom = calculateBOM(mockInput);
-        const lanSwitches = bom.items.filter(i => i.serviceId === "managed_lan" && i.itemType === "equipment");
+        const lanSwitches = bom.items.filter(i => i.serviceId === "lan" && i.itemType === "equipment");
 
         // Since no 10G-Copper switch exists for 52 users, it should use a fallback or not select the standard 1G-Copper one 
         // Note: We check that "10G-Copper" required type correctly prevents the standard 'eq2'/'eq3' matches

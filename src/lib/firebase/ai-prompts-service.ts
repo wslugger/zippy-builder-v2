@@ -156,7 +156,7 @@ Available site fields for conditions (use via JSON Logic "var" operator prefixed
   indoorAPs, outdoorAPs, userCount, lanPorts, poePorts, bandwidthDownMbps,
   bandwidthUpMbps, redundancyModel, primaryCircuit, wanLinks, siteTypeId
 
-Available serviceId values for conditions: managed_sdwan, managed_lan, managed_wifi
+Available serviceId values for conditions: sdwan, lan, wlan
 
 Available action types:
 - select_equipment: Selects a hardware device by its SKU
@@ -167,7 +167,7 @@ Available action types:
 
 Rules:
 - Use {"var": "site.<field>"} for site data in JSON Logic conditions.
-- Use {"==": [{"var": "serviceId"}, "managed_lan"]} to scope a rule to a specific service.
+- Use {"==": [{"var": "serviceId"}, "lan"]} to scope a rule to a specific service.
 - Do NOT include id or createdAt in the response; these are set by the system.
 - Respond ONLY with the raw JSON object, no markdown fences, no explanation.`,
         userPromptTemplate: `Service Category: {serviceCategory}

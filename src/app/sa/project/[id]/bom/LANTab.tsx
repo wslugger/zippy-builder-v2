@@ -52,7 +52,7 @@ export function LANTab({
         setShowRequirementsEditor(false);
     };
 
-    const selectionKey = `${selectedSite.name}:managed_lan`;
+    const selectionKey = `${selectedSite.name}:lan`;
     const rawValue = manualSelections[selectionKey];
 
     // Normalize any legacy single selection or string into an array [{ itemId, quantity }]

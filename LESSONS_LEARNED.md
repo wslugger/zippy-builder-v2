@@ -346,3 +346,10 @@
 - **Strictly Optional Schema**: Refactored `UnifiedSpecsSchema` to make all domain-specific fields `.optional()` with no schema-level defaults.
 - **Consumer-Held Defaults**: Moved the responsibility for "sane defaults" (e.g., assuming 24 ports if unspecified) into the specific logic modules (`lan-logic.ts`) or UI components that consume those fields.
 **Key Insight**: A polymorphic schema should be a "loose" container. Forcing defaults at the validation boundary creates friction in development workflows (like seeding or manual entry) and violates the principle of least astonishment. Responsibility for interpreting missing data belongs to the domain-specific consumer, not the general-purpose validator.
+
+## 48. Service-Specific Feature Scoping & Data Leakage Prevention
+**Issue**: The "Package Selection" flow (ServiceItemForm) was displaying all available features (e.g., WAN features, LAN features, Maintenance tiers) in a single flat list, even when the user was only configuring a specific service. This created clutter and allowed "data leakage" where a user could accidentally add a WAN feature to a LAN service.
+**Solution**:
+- **Categorical Visibility Filtering**: Updated the `ServiceItemForm` to dynamically filter the global feature catalog based on the active service name.
+- **Strict Service Affinity**: Combined with the multi-category schema (Lesson 46), this ensures that a feature only appears in contexts where it is semantically valid.
+- **Key Insight**: UI visibility should be strictly tied to service affinity. Filtering at the entry point reduces the possibility of invalid configurations and streamlines the user experience by only presenting relevant choices.

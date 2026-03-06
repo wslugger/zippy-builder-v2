@@ -132,6 +132,13 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
             i.design_option_id === designId
         );
 
+        // Top-level service toggle: also handle attachment services
+        const isTopLevelToggle = !optionId && !designId;
+        const baseService = isTopLevelToggle ? services.find(s => s.id === serviceId) : undefined;
+        const attachmentServices = baseService && !baseService.is_attachment
+            ? services.filter(s => s.is_attachment && s.attaches_to?.includes(serviceId))
+            : [];
+
         if (exists) {
             // Find all items that are either the exact item, or a child of the item being removed.
             // A child has the same service_id, and if optionId is provided, the same service_option_id.
@@ -142,10 +149,12 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                 return true;
             });
 
-            setPkg({
-                ...pkg,
-                items: current.filter(i => !itemsToRemove.includes(i))
-            });
+            // Also remove attachment service items when deselecting a base service
+            const attachmentIdsToRemove = attachmentServices.map(a => a.id);
+            const withoutBase = current.filter(i => !itemsToRemove.includes(i));
+            const withoutAttachments = withoutBase.filter(i => !attachmentIdsToRemove.includes(i.service_id));
+
+            setPkg({ ...pkg, items: withoutAttachments });
         } else {
             const newItem: PackageItem = {
                 service_id: serviceId,
@@ -154,9 +163,20 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                 enabled_features: [],
                 inclusion_type: 'required'
             };
+
+            // Auto-add default tier for each attachment service when selecting a base service
+            const attachmentDefaults: PackageItem[] = attachmentServices
+                .filter(a => a.service_options?.length > 0)
+                .map(a => ({
+                    service_id: a.id,
+                    service_option_id: a.service_options[0].id,
+                    enabled_features: [],
+                    inclusion_type: 'required' as const,
+                }));
+
             setPkg({
                 ...pkg,
-                items: [...current, newItem]
+                items: [...current, newItem, ...attachmentDefaults]
             });
         }
     };
@@ -418,9 +438,10 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                         </div>
 
                         <div className="space-y-6">
-                            {services.map(service => {
+                            {services.filter(s => !s.is_attachment).map(service => {
                                 const isServiceSelected = pkg.items?.some(i => i.service_id === service.id && !i.service_option_id);
                                 const serviceItem = pkg.items?.find(i => i.service_id === service.id && !i.service_option_id);
+                                const attachmentServices = services.filter(s => s.is_attachment && s.attaches_to?.includes(service.id));
 
                                 return (
                                     <div key={service.id} className={`border rounded-2xl transition-all overflow-hidden ${isServiceSelected ? 'border-blue-200 dark:border-blue-900 shadow-sm' : 'border-zinc-100 dark:border-zinc-800'}`}>
@@ -463,6 +484,48 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                 </div>
                                             )}
                                         </div>
+
+                                        {isServiceSelected && attachmentServices.length > 0 && (
+                                            <div className="px-5 pb-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 bg-purple-50/30 dark:bg-purple-900/5">
+                                                <p className="text-[10px] font-black text-purple-500 uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                                                    Attached Services
+                                                </p>
+                                                <div className="space-y-3">
+                                                    {attachmentServices.map(attachment => {
+                                                        const selectedTierItem = pkg.items?.find(i => i.service_id === attachment.id && i.service_option_id && !i.design_option_id);
+                                                        const selectedTierId = selectedTierItem?.service_option_id || attachment.service_options?.[0]?.id || "";
+                                                        return (
+                                                            <div key={attachment.id} className="flex items-center gap-3">
+                                                                <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 min-w-[120px]">
+                                                                    {attachment.name}
+                                                                </label>
+                                                                <select
+                                                                    value={selectedTierId}
+                                                                    onChange={(e) => {
+                                                                        const current = pkg.items || [];
+                                                                        const withoutOld = current.filter(i => i.service_id !== attachment.id);
+                                                                        const newItem: PackageItem = {
+                                                                            service_id: attachment.id,
+                                                                            service_option_id: e.target.value,
+                                                                            enabled_features: [],
+                                                                            inclusion_type: 'required',
+                                                                        };
+                                                                        setPkg({ ...pkg, items: [...withoutOld, newItem] });
+                                                                    }}
+                                                                    className="flex-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-purple-500/20"
+                                                                >
+                                                                    {attachment.service_options?.map(opt => (
+                                                                        <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <span className="text-[10px] font-bold text-purple-600 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded">REQUIRED</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {isServiceSelected && service.service_options?.length > 0 && (
                                             <div className="px-10 pb-5 pt-2 space-y-6 border-t border-zinc-50 dark:border-zinc-800/50">

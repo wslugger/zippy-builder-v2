@@ -241,12 +241,12 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             {activeTab === "LAN" && (
                                 <LANTab
                                     selectedSite={selectedSite}
-                                    lanItems={state.siteBOMItems.filter(i => i.serviceId === "managed_lan" && i.itemType === "equipment")}
+                                    lanItems={state.siteBOMItems.filter(i => (i.serviceId === "lan" || i.serviceId === "managed_lan") && i.itemType === "equipment")}
                                     manualSelections={manualSelections}
                                     setManualSelections={setManualSelections}
                                     catalog={catalog}
                                     setSelectedSpecsItem={setSelectedSpecsItem}
-                                    resolvedVendor={getVendorForService("managed_lan")}
+                                    resolvedVendor={getVendorForService("lan")}
                                     handleSiteUpdate={state.handleSiteUpdate}
                                 />
                             )}
@@ -254,12 +254,12 @@ function BOMBuilderContent({ projectId }: { projectId: string }) {
                             {activeTab === "WLAN" && (
                                 <WLANTab
                                     selectedSite={selectedSite}
-                                    wlanItems={state.siteBOMItems.filter(i => i.serviceId === "managed_wifi" && i.itemType === "equipment")}
+                                    wlanItems={state.siteBOMItems.filter(i => (i.serviceId === "wlan" || i.serviceId === "managed_wifi") && i.itemType === "equipment")}
                                     manualSelections={manualSelections}
                                     setManualSelections={setManualSelections}
                                     catalog={catalog}
                                     setSelectedSpecsItem={setSelectedSpecsItem}
-                                    resolvedVendor={getVendorForService("managed_wifi")}
+                                    resolvedVendor={getVendorForService("wlan")}
                                     handleSiteUpdate={state.handleSiteUpdate}
                                 />
                             )}

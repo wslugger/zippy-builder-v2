@@ -88,11 +88,11 @@ export function WANTab({
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Edge Device</h3>
                     <div className="flex items-center space-x-2 relative z-10 w-full max-w-[200px]">
                         <ManualDeviceSelector
-                            value={manualSelections[`${selectedSite.name}:managed_sdwan`] || ""}
+                            value={manualSelections[`${selectedSite.name}:sdwan`] || ""}
                             onChange={(val) => {
                                 setManualSelections((prev) => {
                                     const next = { ...prev };
-                                    const key = `${selectedSite.name}:managed_sdwan`;
+                                    const key = `${selectedSite.name}:sdwan`;
                                     if (val) next[key] = val;
                                     else delete next[key];
                                     return next;
@@ -102,7 +102,7 @@ export function WANTab({
                                 .filter((e) => {
                                     if (getEquipmentRole(e) !== "WAN") return false;
                                     if ((e as unknown as Record<string, unknown>).status === 'eos') return false;
-                                    return e.vendor_id === getVendorForService("managed_sdwan");
+                                    return e.vendor_id === getVendorForService("sdwan");
                                 })
                                 .map((e) => ({ value: e.id, label: e.model }))}
 
@@ -134,7 +134,7 @@ export function WANTab({
                                 </button>
                             </div>
                             <p className="text-sm text-slate-600 mt-1">{currentSDWANEquipment.description}</p>
-                            {manualSelections[`${selectedSite.name}:managed_sdwan`] && (
+                            {manualSelections[`${selectedSite.name}:sdwan`] && (
                                 <p className="text-xs text-amber-600 mt-2 font-semibold flex items-center">
                                     <span className="mr-1">⚠️</span> Manually Selected
                                 </p>

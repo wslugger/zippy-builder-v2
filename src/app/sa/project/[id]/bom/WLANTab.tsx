@@ -41,7 +41,7 @@ export function WLANTab({
         }
     }, [wlanItems.length, wlanItems.map(i => i.itemId + i.quantity).join(',')]);
 
-    const selectionKey = `${selectedSite.name}:managed_wifi`;
+    const selectionKey = `${selectedSite.name}:wlan`;
     const rawValue = manualSelections[selectionKey];
 
     const selections = useMemo<Array<{ itemId: string; quantity: number }>>(() => {

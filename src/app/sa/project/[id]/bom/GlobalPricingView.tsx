@@ -21,7 +21,7 @@ export function GlobalPricingView({ state }: { state: BOMBuilderState }) {
     const [importTab, setImportTab] = useState<"api" | "csv">("api");
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan", "managed_circuit"]);
+    const SITE_TAB_SERVICE_IDS = new Set(["sdwan", "lan", "wlan", "managed_circuit", "managed_sdwan", "managed_lan"]);
 
     if (!bom) return <div className="p-8 text-slate-500">No BOM data available to price.</div>;
 

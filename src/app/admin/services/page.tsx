@@ -106,8 +106,15 @@ export default function ServicesPage() {
                         orderedServices.map((service, index) => (
                             <div key={service.id} className="group relative bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm hover:shadow-md transition-all flex flex-col">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${service.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                                        {service.active ? 'Active' : 'Draft'}
+                                    <div className="flex items-center gap-2">
+                                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${service.active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                            {service.active ? 'Active' : 'Draft'}
+                                        </div>
+                                        {service.is_attachment && (
+                                            <div className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                                                Attachment
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {/* Sort Order Controls */}

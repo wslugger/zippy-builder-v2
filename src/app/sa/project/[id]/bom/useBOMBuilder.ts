@@ -294,9 +294,9 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     const availableTabs = useMemo<BOMTab[]>(() => {
         if (!pkg || services.length === 0) {
             return [
-                { id: "WAN", label: "WAN", serviceIds: ["managed_sdwan"], primaryServiceId: "managed_sdwan", icon: "🌐" },
-                { id: "LAN", label: "LAN", serviceIds: ["managed_lan"], primaryServiceId: "managed_lan", icon: "🔌" },
-                { id: "WLAN", label: "WLAN", serviceIds: ["managed_wifi"], primaryServiceId: "managed_wifi", icon: "📶" },
+                { id: "WAN", label: "WAN", serviceIds: ["sdwan"], primaryServiceId: "sdwan", icon: "🌐" },
+                { id: "LAN", label: "LAN", serviceIds: ["lan"], primaryServiceId: "lan", icon: "🔌" },
+                { id: "WLAN", label: "WLAN", serviceIds: ["wlan"], primaryServiceId: "wlan", icon: "📶" },
                 { id: "Pricing", label: "Pricing", serviceIds: [], primaryServiceId: "", icon: "💰" },
             ];
         }
@@ -312,6 +312,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
             const rawServiceId = pItem.service_id;
             const service = services.find((s) => s.id === rawServiceId);
             if (!service) return;
+            // Attachment services don't get their own tab — they ride with base service tabs
+            if (service.is_attachment) return;
             // Use canonical (normalized) ID so it matches what the BOM engine emits
             const serviceId = normalizeServiceId(rawServiceId);
             const name = service.name.toLowerCase();
@@ -324,13 +326,14 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 category.includes("wifi") ||
                 category.includes("wlan") ||
                 category.includes("wireless") ||
+                serviceId === "wlan" ||
                 serviceId === "managed_wifi" ||
                 serviceId === "managed_wlan"
             ) {
                 if (!buckets.WLAN.services.includes(serviceId)) buckets.WLAN.services.push(serviceId);
-            } else if (name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || category.includes("wan")) {
+            } else if (name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || category.includes("wan") || serviceId === "sdwan") {
                 if (!buckets.WAN.services.includes(serviceId)) buckets.WAN.services.push(serviceId);
-            } else if (name.includes("lan") || name.includes("switch") || category.includes("lan")) {
+            } else if (name.includes("lan") || name.includes("switch") || category.includes("lan") || serviceId === "lan") {
                 if (!buckets.LAN.services.includes(serviceId)) buckets.LAN.services.push(serviceId);
             } else {
                 if (!buckets.SERVICES.services.includes(serviceId)) buckets.SERVICES.services.push(serviceId);
@@ -348,13 +351,13 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
             }));
 
         // Failsafe: Ensure WAN tab is visible if the package includes sdwan
-        const hasSDWAN = pkg.items.some(i => normalizeServiceId(i.service_id) === 'managed_sdwan');
+        const hasSDWAN = pkg.items.some(i => normalizeServiceId(i.service_id) === 'sdwan');
         if (hasSDWAN && !tabs.some(t => t.id === "WAN")) {
             tabs.unshift({
                 id: "WAN",
                 label: "WAN",
-                serviceIds: ["managed_sdwan"],
-                primaryServiceId: "managed_sdwan",
+                serviceIds: ["sdwan"],
+                primaryServiceId: "sdwan",
                 icon: "🌐"
             });
         }
@@ -365,20 +368,20 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
             tabs.push({
                 id: "WLAN",
                 label: "WLAN",
-                serviceIds: ["managed_wifi"],
-                primaryServiceId: "managed_wifi",
+                serviceIds: ["wlan"],
+                primaryServiceId: "wlan",
                 icon: "📶"
             });
         }
 
-        // Failsafe: Ensure LAN tab is visible if the package includes managed_lan
-        const hasLAN = pkg.items.some(i => normalizeServiceId(i.service_id) === 'managed_lan');
+        // Failsafe: Ensure LAN tab is visible if the package includes lan
+        const hasLAN = pkg.items.some(i => normalizeServiceId(i.service_id) === 'lan');
         if (hasLAN && !tabs.some(t => t.id === "LAN")) {
             tabs.splice(1, 0, {
                 id: "LAN",
                 label: "LAN",
-                serviceIds: ["managed_lan"],
-                primaryServiceId: "managed_lan",
+                serviceIds: ["lan"],
+                primaryServiceId: "lan",
                 icon: "🔌"
             });
         }
@@ -523,9 +526,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         if (!bom) return summary;
 
         // Only count items from the canonical managed services that the site tabs render.
-        // WAN tab: managed_sdwan, LAN tab: managed_lan
-        // include "managed_wifi" now that WLAN features are built out.
-        const SITE_TAB_SERVICE_IDS = new Set(["managed_sdwan", "managed_lan", "managed_wifi", "managed_circuit"]);
+        // WAN tab: sdwan, LAN tab: lan, WLAN tab: wlan
+        const SITE_TAB_SERVICE_IDS = new Set(["sdwan", "lan", "wlan", "managed_circuit", "managed_sdwan", "managed_lan", "managed_wifi"]);
         bom.items
             .filter(item => SITE_TAB_SERVICE_IDS.has(item.serviceId))
             .forEach(item => {
@@ -642,9 +644,9 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     // -------------------------------------------------------
     // Derived utilization values
     // -------------------------------------------------------
-    const currentSDWANItem = siteBOMItems.find((i) => i.serviceId === "managed_sdwan" && i.itemType === "equipment");
+    const currentSDWANItem = siteBOMItems.find((i) => (i.serviceId === "sdwan" || i.serviceId === "managed_sdwan") && i.itemType === "equipment");
     const currentSDWANEquipment = catalog.find((e) => e.id === currentSDWANItem?.itemId);
-    const sdwanOverhead = pkg ? calculateThroughputOverhead(pkg, "managed_sdwan", services) : 0;
+    const sdwanOverhead = pkg ? calculateThroughputOverhead(pkg, "sdwan", services) : 0;
     const utilization = selectedSite && currentSDWANEquipment
         ? calculateUtilization(selectedSite, currentSDWANEquipment, pkg?.throughput_basis, sdwanOverhead)
         : 0;

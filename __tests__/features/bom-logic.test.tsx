@@ -48,15 +48,15 @@ describe("BOM Engine - Extended Logic Rules", () => {
         detailed_description: "",
         active: true,
         items: [
-            { service_id: "managed_lan", inclusion_type: "required", enabled_features: [] }
+            { service_id: "lan", inclusion_type: "required", enabled_features: [] }
         ],
         throughput_basis: "sdwanCryptoThroughputMbps"
     };
 
     const mockServices: Service[] = [
         {
-            id: "managed_lan",
-            name: "Managed LAN",
+            id: "lan",
+            name: "LAN",
             short_description: "",
             detailed_description: "",
             caveats: [],
@@ -73,7 +73,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
             category: "SD-WAN",
             description: "",
             constraints: [],
-            defaults: { redundancy: { cpe: "Single", circuit: "Single" }, slo: 99.9, requiredServices: ["managed_lan"] }
+            defaults: { redundancy: { cpe: "Single", circuit: "Single" }, slo: 99.9, requiredServices: ["lan"] }
         }
     ];
 
@@ -132,7 +132,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 id: "r2",
                 name: "Dynamic Switch Ratio",
                 priority: 10,
-                condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+                condition: { "==": [{ "var": "serviceId" }, "lan"] },
                 actions: [
                     { type: "modify_quantity", targetId: "calculate_qty", quantityMultiplierField: "userCount", actionValue: 24 }
                 ]
@@ -169,7 +169,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 id: "rOverhead",
                 name: "High Overhead Security",
                 priority: 100,
-                condition: { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                condition: { "==": [{ "var": "serviceId" }, "sdwan"] },
                 actions: [
                     { type: "set_parameter", targetId: "throughput_overhead_mbps", actionValue: 500 }
                 ]
@@ -180,8 +180,8 @@ describe("BOM Engine - Extended Logic Rules", () => {
         // We'll use managed_sdwan for this test to check throughput logic.
         const sdwanServices: Service[] = [
             {
-                id: "managed_sdwan",
-                name: "Managed SD-WAN",
+                id: "sdwan",
+                name: "SD-WAN",
                 short_description: "",
                 detailed_description: "",
                 active: true,
@@ -191,7 +191,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
         ];
         const sdwanPackage: Package = {
             ...mockPackage,
-            items: [{ service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [] }]
+            items: [{ service_id: "sdwan", inclusion_type: "required", enabled_features: [] }]
         };
         const sdwanCatalog: Equipment[] = [
             {
@@ -260,7 +260,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
                 priority: 100,
                 condition: {
                     "and": [
-                        { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                        { "==": [{ "var": "serviceId" }, "sdwan"] },
                         { "contains": [{ "var": "site.redundancyModel" }, "dual"] }
                     ]
                 },
@@ -272,8 +272,8 @@ describe("BOM Engine - Extended Logic Rules", () => {
 
         const sdwanServices: Service[] = [
             {
-                id: "managed_sdwan",
-                name: "Managed SD-WAN",
+                id: "sdwan",
+                name: "SD-WAN",
                 short_description: "",
                 detailed_description: "",
                 active: true,
@@ -283,7 +283,7 @@ describe("BOM Engine - Extended Logic Rules", () => {
         ];
         const sdwanPackage: Package = {
             ...mockPackage,
-            items: [{ service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [] }]
+            items: [{ service_id: "sdwan", inclusion_type: "required", enabled_features: [] }]
         };
         const sdwanCatalog: Equipment[] = [
             {

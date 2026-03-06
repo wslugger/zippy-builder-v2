@@ -22,7 +22,7 @@ const basePackage: Package = {
     short_description: '',
     detailed_description: '',
     active: true,
-    items: [{ service_id: 'managed_lan', inclusion_type: 'required', enabled_features: [], design_option_id: 'cisco_catalyst_do' }],
+    items: [{ service_id: 'lan', inclusion_type: 'required', enabled_features: [], design_option_id: 'cisco_catalyst_do' }],
     throughput_basis: 'sdwanCryptoThroughputMbps',
 };
 
@@ -75,13 +75,13 @@ const siteTypes: SiteType[] = [
         defaults: {
             redundancy: { cpe: 'Single', circuit: 'Single' },
             slo: 99.9,
-            requiredServices: ['managed_lan'],
+            requiredServices: ['lan'],
         },
     },
 ];
 
 const services: Service[] = [
-    { id: 'managed_lan', name: 'Managed LAN', short_description: '', detailed_description: '', caveats: [], assumptions: [], active: true, service_options: [] },
+    { id: 'lan', name: 'LAN', short_description: '', detailed_description: '', caveats: [], assumptions: [], active: true, service_options: [] },
 ];
 
 // ─── Test suite ──────────────────────────────────────────────────────────────
@@ -207,7 +207,7 @@ describe('BOM Engine strict LAN filtering', () => {
             poeCapabilities: 'PoE+',
             needsManualReview: false,
         });
-        const lanItems = bom.items.filter(i => i.serviceId === 'managed_lan');
+        const lanItems = bom.items.filter(i => i.serviceId === 'lan');
         expect(lanItems.every(i => i.itemId === 'sw_1g')).toBe(true);
         expect(lanItems.some(i => i.itemId === 'sw_mgig')).toBe(false);
     });
@@ -219,13 +219,13 @@ describe('BOM Engine strict LAN filtering', () => {
             poeCapabilities: 'PoE+',
             needsManualReview: false,
         });
-        const lanItems = bom.items.filter(i => i.serviceId === 'managed_lan');
+        const lanItems = bom.items.filter(i => i.serviceId === 'lan');
         expect(lanItems.every(i => i.itemId === 'sw_mgig')).toBe(true);
     });
 
     it('skips LAN auto-selection entirely when needsManualReview is true', () => {
         const bom = makeBOM({ needsManualReview: true });
-        const lanItems = bom.items.filter(i => i.serviceId === 'managed_lan');
+        const lanItems = bom.items.filter(i => i.serviceId === 'lan');
         expect(lanItems).toHaveLength(0);
     });
 
@@ -242,7 +242,7 @@ describe('BOM Engine strict LAN filtering', () => {
             equipmentCatalog: [largeSwitch, smallSwitch], // Intentionally out of order
             rules: [],
         });
-        const lanItems = bom.items.filter(i => i.serviceId === 'managed_lan');
+        const lanItems = bom.items.filter(i => i.serviceId === 'lan');
         expect(lanItems[0].itemId).toBe('sw_24');
     });
 
@@ -264,7 +264,7 @@ describe('BOM Engine strict LAN filtering', () => {
             rules: [],
         });
 
-        const lanItems = bom.items.filter(i => i.serviceId === 'managed_lan');
+        const lanItems = bom.items.filter(i => i.serviceId === 'lan');
         // Will select poePlusSwitch or poePlusPlusSwitch, but let's just make sure neither 'none' nor 'poe' is selected
         expect(lanItems[0].itemId).not.toBe('sw_none');
         expect(lanItems[0].itemId).not.toBe('sw_poe');

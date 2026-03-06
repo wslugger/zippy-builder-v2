@@ -74,6 +74,8 @@ export const ServiceSchema = ServiceItemBaseSchema.extend({
     active: z.boolean().default(true),
     sortOrder: z.number().optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
+    is_attachment: z.boolean().optional(),
+    attaches_to: z.array(z.string()).optional(),
 });
 
 // --- Package ---

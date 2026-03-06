@@ -33,7 +33,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
             <RuleEditorModal
                 isOpen={true}
                 ruleToEdit={null}
-                serviceCategory="managed_lan"
+                serviceCategory="lan"
                 onClose={mockOnClose}
                 onSave={mockOnSave}
             />
@@ -70,7 +70,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
                 contextType: 'bom_logic_rule',
                 promptData: {
                     instruction: "Require mGig-Copper if there are 5 indoor APs",
-                    serviceCategory: "managed_lan"
+                    serviceCategory: "lan"
                 }
             })
         }));
