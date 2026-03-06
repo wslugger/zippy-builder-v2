@@ -14,8 +14,8 @@ describe("BOM Engine - Throughput Calculation", () => {
     });
 
     const mockServiceSDWAN: Service = {
-        id: "managed_sdwan",
-        name: "Managed SD-WAN",
+        id: "sdwan",
+        name: "SD-WAN",
         short_description: "SD-WAN",
         detailed_description: "",
         caveats: [],
@@ -33,7 +33,7 @@ describe("BOM Engine - Throughput Calculation", () => {
         throughput_overhead_mbps: 100, // 100 Mbps Overhead
         items: [
             {
-                service_id: "managed_sdwan",
+                service_id: "sdwan",
                 inclusion_type: "required",
                 enabled_features: []
             }
@@ -65,7 +65,7 @@ describe("BOM Engine - Throughput Calculation", () => {
         defaults: {
             redundancy: { cpe: "Single", circuit: "Single" },
             slo: 99.9,
-            requiredServices: ["managed_sdwan"]
+            requiredServices: ["sdwan"]
         }
     };
 
@@ -82,7 +82,7 @@ describe("BOM Engine - Throughput Calculation", () => {
             , equipmentCatalog: testCatalog, rules: testRules
         });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
 
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx105");
@@ -101,7 +101,7 @@ describe("BOM Engine - Throughput Calculation", () => {
             , equipmentCatalog: testCatalog, rules: testRules
         });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
 
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx85");

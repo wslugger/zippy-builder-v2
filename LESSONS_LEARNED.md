@@ -346,3 +346,16 @@
 - **Strictly Optional Schema**: Refactored `UnifiedSpecsSchema` to make all domain-specific fields `.optional()` with no schema-level defaults.
 - **Consumer-Held Defaults**: Moved the responsibility for "sane defaults" (e.g., assuming 24 ports if unspecified) into the specific logic modules (`lan-logic.ts`) or UI components that consume those fields.
 **Key Insight**: A polymorphic schema should be a "loose" container. Forcing defaults at the validation boundary creates friction in development workflows (like seeding or manual entry) and violates the principle of least astonishment. Responsibility for interpreting missing data belongs to the domain-specific consumer, not the general-purpose validator.
+
+## 48. Service-Specific Feature Scoping & Data Leakage Prevention
+**Issue**: The "Package Selection" flow (ServiceItemForm) was displaying all available features (e.g., WAN features, LAN features, Maintenance tiers) in a single flat list, even when the user was only configuring a specific service. This created clutter and allowed "data leakage" where a user could accidentally add a WAN feature to a LAN service.
+**Solution**:
+- **Categorical Visibility Filtering**: Updated the `ServiceItemForm` to dynamically filter the global feature catalog based on the active service name.
+- **Strict Service Affinity**: Combined with the multi-category schema (Lesson 46), this ensures that a feature only appears in contexts where it is semantically valid.
+- **Key Insight**: UI visibility should be strictly tied to service affinity. Filtering at the entry point reduces the possibility of invalid configurations and streamlines the user experience by only presenting relevant choices.
+
+## 49. Data Compatibility and Fallback Accessors
+**Issue**: Strict checks like `eq.role === 'LAN'` silently failed when dealing with legacy database entries or ingested equipment catalogs that used `primary_purpose` or `purpose` instead of the newly standardized `role` field. This caused empty equipment lists in manual selection menus.
+**Solution**:
+- **Utility Abstraction**: Replaced direct property access with a shared utility function `getEquipmentRole(eq)` that safely evaluates the equipment object against multiple possible fields (`role`, `primary_purpose`, `purpose`) using fallback logic.
+- **Key Insight**: When data schemas evolve, the UI filtering logic must use robust accessors/utilities rather than direct property reads to ensure backward compatibility with older data records, preventing silent UI failures in lists and dropdowns.

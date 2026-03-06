@@ -101,15 +101,15 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
         detailed_description: "",
         active: true,
         items: [
-            { service_id: "managed_wlan", inclusion_type: "required", enabled_features: [] },
-            { service_id: "managed_lan", inclusion_type: "required", enabled_features: [] }
+            { service_id: "wlan", inclusion_type: "required", enabled_features: [] },
+            { service_id: "lan", inclusion_type: "required", enabled_features: [] }
         ],
         throughput_basis: "sdwanCryptoThroughputMbps"
     };
 
     const mockServices: Service[] = [
-        { id: "managed_lan", name: "Managed LAN", short_description: "", detailed_description: "", caveats: [], assumptions: [], active: true, service_options: [] },
-        { id: "managed_wlan", name: "Managed WLAN", short_description: "", detailed_description: "", caveats: [], assumptions: [], active: true, service_options: [] }
+        { id: "lan", name: "LAN", short_description: "", detailed_description: "", caveats: [], assumptions: [], active: true, service_options: [] },
+        { id: "wlan", name: "Managed WLAN", short_description: "", detailed_description: "", caveats: [], assumptions: [], active: true, service_options: [] }
     ];
 
     const mockSiteTypes: SiteType[] = [
@@ -119,7 +119,7 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
             category: "SD-WAN",
             description: "",
             constraints: [],
-            defaults: { redundancy: { cpe: "Single", circuit: "Single" }, slo: 99.9, requiredServices: ["managed_lan", "managed_wlan"] }
+            defaults: { redundancy: { cpe: "Single", circuit: "Single" }, slo: 99.9, requiredServices: ["lan", "wlan"] }
         }
     ];
 
@@ -157,7 +157,7 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
         // For WLAN, it currently just picks the first one matching role.
 
         // Find the WLAN item
-        const wlanItem = bom.items.find(i => i.serviceId === "managed_wlan");
+        const wlanItem = bom.items.find(i => i.serviceId === "wlan");
         // Manually setting the scenario where AP mGig is selected if we want to test switch matching
         // Actually, the automatic logic should pick 'ap_standard' first since it's first in catalog.
 
@@ -174,7 +174,7 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
             rules: []
         });
 
-        const lanItem = bomMgig.items.find(i => i.serviceId === "managed_lan");
+        const lanItem = bomMgig.items.find(i => i.serviceId === "lan");
         expect(lanItem?.itemId).toBe("sw_24p_poe_mgig");
     });
 
@@ -217,7 +217,7 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
             rules: []
         });
 
-        const lanItem = bom.items.find(i => i.serviceId === "managed_lan");
+        const lanItem = bom.items.find(i => i.serviceId === "lan");
 
         // It should NOT pick sw_single_non_stackable because 600W > 100W and it can't stack.
         // It SHOULD pick sw_24p_poe_1g.
@@ -253,7 +253,7 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
             rules: []
         });
 
-        const lanItem = bom.items.find(i => i.serviceId === "managed_lan");
+        const lanItem = bom.items.find(i => i.serviceId === "lan");
         // sw_24p_poe_1g has uplinkPortType: '10G-Fiber'
         expect(lanItem?.reasoning?.toLowerCase()).toContain("transceiver");
     });
@@ -279,7 +279,7 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
             id: "rule_60_utilization",
             name: "60% Utilization Rule",
             priority: 100,
-            condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+            condition: { "==": [{ "var": "serviceId" }, "lan"] },
             actions: [{ type: "set_parameter" as const, targetId: "maxPortUtilization", actionValue: 60 }]
         };
 
@@ -293,7 +293,7 @@ describe("BOM Engine - LAN/WLAN Sizing Logic", () => {
             rules: [rule60Percent]
         });
 
-        const lanItem = bom.items.find(i => i.serviceId === "managed_lan");
+        const lanItem = bom.items.find(i => i.serviceId === "lan");
 
         // 18 ports @ 60% utilization means:
         // 24-port switch capacity = 14 ports (Disqualified if non-stackable, or needs 2 if stackable)

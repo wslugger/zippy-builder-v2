@@ -24,11 +24,16 @@ import { SiteType } from "./site-types";
  * the non-identity entries (like "sd_wan_service") can be removed.
  */
 const SERVICE_ID_ALIASES: Record<string, string> = {
-    "sd_wan_service": "managed_sdwan",
-    "managed_sdwan": "managed_sdwan",
-    "managed_lan": "managed_lan",
-    "managed_wifi": "managed_wifi",
-    "managed_wlan": "managed_wifi",
+    // Canonical IDs (new)
+    "sdwan": "sdwan",
+    "lan": "lan",
+    "wlan": "wlan",
+    // Legacy aliases — kept for backward compatibility with Firestore docs and in-flight data
+    "managed_sdwan": "sdwan",
+    "sd_wan_service": "sdwan",
+    "managed_lan": "lan",
+    "managed_wifi": "wlan",
+    "managed_wlan": "wlan",
 };
 
 export function normalizeServiceId(id: string): string {
@@ -41,9 +46,9 @@ export function normalizeServiceId(id: string): string {
 
 /** Maps canonical service IDs to the equipment purpose categories */
 export const SERVICE_TO_PURPOSE: Record<string, (typeof EQUIPMENT_PURPOSES)[number]> = {
-    "managed_sdwan": "WAN",
-    "managed_lan": "LAN",
-    "managed_wifi": "WLAN",
+    "sdwan": "WAN",
+    "lan": "LAN",
+    "wlan": "WLAN",
 };
 
 // ============================================================

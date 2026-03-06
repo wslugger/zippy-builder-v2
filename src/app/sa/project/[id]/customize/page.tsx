@@ -5,6 +5,19 @@ import { useRouter } from 'next/navigation';
 import { Project, Package, PackageItem, Service, InclusionType } from '@/src/lib/types';
 import { ProjectService, PackageService, ServiceService } from '@/src/lib/firebase';
 
+// Helper to determine if a service is considered a "Primary" network service
+// (SDWAN, LAN, WLAN) vs a secondary service (DIA, Broadband).
+const isPrimaryService = (svc: Service | undefined) => {
+    if (!svc) return false;
+    const name = svc.name.toLowerCase();
+    const id = svc.id.toLowerCase();
+    // Exclude basic connectivity
+    if (name.includes('dia') || name.includes('broadband') || name.includes('internet') || id.includes('dia') || id.includes('broadband')) return false;
+    // Include primary networking
+    if (name.includes('sd-wan') || name.includes('sdwan') || name.includes('lan') || name.includes('wlan') || name.includes('wifi')) return true;
+    return ['sdwan', 'lan', 'wlan', 'mwlan'].includes(id);
+};
+
 export default function CustomizeProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
     const resolvedParams = use(params);
@@ -100,10 +113,24 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
             i.design_option_id === designId
         );
 
+        // Top-level service toggle: also manage attachment services
+        const isTopLevelToggle = !optionId && !designId;
+        const baseService = isTopLevelToggle ? services.find(s => s.id === serviceId) : undefined;
+        const attachmentServices = baseService && !baseService.is_attachment
+            ? services.filter(s => {
+                if (!s.is_attachment || !s.attaches_to?.includes(serviceId)) return false;
+                // Specifically restrict Zippy Managed Services to Primary Services
+                if (s.id === 'zippy_managed_services') {
+                    return isPrimaryService(baseService);
+                }
+                return true;
+            })
+            : [];
+
         if (existsIdx > -1) {
-            // Remove (Opt-out)
-            const newItems = [...items];
-            newItems.splice(existsIdx, 1);
+            // Remove (Opt-out) — also remove attachment items for this service
+            const attachmentIds = new Set(attachmentServices.map(a => a.id));
+            const newItems = items.filter((i, idx) => idx !== existsIdx && !attachmentIds.has(i.service_id));
             setItems(newItems);
         } else {
             // Add (Opt-in)
@@ -145,7 +172,24 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                 enabled_features: [],
                 inclusion_type: pkgInclusionType
             };
-            setItems([...updatedItems, newItem]);
+
+            // Auto-add default tier for each attachment service when activating a base service
+            const attachmentDefaults: PackageItem[] = isTopLevelToggle
+                ? attachmentServices
+                    .filter(a => a.service_options?.length > 0)
+                    .map(a => {
+                        // Use package-defined tier if specified, else default to first option
+                        const pkgTierId = pkg?.items.find(i => i.service_id === a.id && i.service_option_id)?.service_option_id;
+                        return {
+                            service_id: a.id,
+                            service_option_id: pkgTierId || a.service_options[0].id,
+                            enabled_features: [],
+                            inclusion_type: 'required' as const,
+                        };
+                    })
+                : [];
+
+            setItems([...updatedItems, newItem, ...attachmentDefaults]);
         }
     };
 
@@ -197,11 +241,11 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Main Configurator */}
                 <div className="lg:col-span-3 space-y-8">
-                    {services.map(service => {
+                    {services.filter(s => !s.is_attachment).map(service => {
                         const serviceRule = getPackageRule(service.id);
 
-                        // If the service itself is not in the package, skip it? 
-                        // Actually, some packages might not have the "Service" itself as a rule, 
+                        // If the service itself is not in the package, skip it?
+                        // Actually, some packages might not have the "Service" itself as a rule,
                         // but have sub-items. But usually the service is the top level.
                         // Let's check if ANY sub-item is in the package if the service itself is null.
                         const hasWhitelistedContent = serviceRule !== null ||
@@ -211,6 +255,15 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                             );
 
                         if (!hasWhitelistedContent) return null;
+
+                        const attachmentServices = services.filter(s => {
+                            if (!s.is_attachment || !s.attaches_to?.includes(service.id)) return false;
+                            // Specifically restrict Zippy Managed Services to Primary Services
+                            if (s.id === 'zippy_managed_services') {
+                                return isPrimaryService(service);
+                            }
+                            return true;
+                        });
 
                         const isServiceActive = isItemActive(service.id);
                         const isServiceRequired = serviceRule === 'required';
@@ -245,6 +298,55 @@ export default function CustomizeProjectPage({ params }: { params: Promise<{ id:
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Attached Services — mandatory options when service is active */}
+                                {isServiceActive && attachmentServices.length > 0 && (
+                                    <div className="border-t border-purple-100 dark:border-purple-900/30 p-6 bg-purple-50/30 dark:bg-purple-900/5">
+                                        <p className="text-[10px] font-black text-purple-500 uppercase tracking-[0.15em] mb-4 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                                            Attached Services
+                                        </p>
+                                        <div className="space-y-4">
+                                            {attachmentServices.map(attachment => {
+                                                const pkgAttachItem = pkg?.items.find(i => i.service_id === attachment.id && i.service_option_id && !i.design_option_id);
+                                                const isAttachmentRequired = pkgAttachItem?.inclusion_type === 'required';
+                                                const currentTierItem = items.find(i => i.service_id === attachment.id && i.service_option_id && !i.design_option_id);
+                                                const currentTierId = currentTierItem?.service_option_id || pkgAttachItem?.service_option_id || attachment.service_options?.[0]?.id || "";
+                                                return (
+                                                    <div key={attachment.id} className="flex items-center gap-4">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2 mb-1.5">
+                                                                <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{attachment.name}</span>
+                                                                <span className="text-[10px] font-bold text-purple-600 bg-purple-100 dark:bg-purple-900/30 px-1.5 py-0.5 rounded">REQUIRED</span>
+                                                            </div>
+                                                            <select
+                                                                value={currentTierId}
+                                                                disabled={isAttachmentRequired}
+                                                                onChange={(e) => {
+                                                                    const withoutOld = items.filter(i => i.service_id !== attachment.id);
+                                                                    setItems([...withoutOld, {
+                                                                        service_id: attachment.id,
+                                                                        service_option_id: e.target.value,
+                                                                        enabled_features: [],
+                                                                        inclusion_type: 'required',
+                                                                    }]);
+                                                                }}
+                                                                className="w-full bg-white dark:bg-neutral-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                            >
+                                                                {attachment.service_options?.map(opt => (
+                                                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                                                ))}
+                                                            </select>
+                                                            {isAttachmentRequired && (
+                                                                <p className="text-[10px] text-neutral-400 mt-1">Tier locked by package definition.</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Service Options */}
                                 {isServiceActive && service.service_options?.length > 0 && (

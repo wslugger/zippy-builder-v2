@@ -4,6 +4,7 @@ import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover
 import { LANRequirementsEditor } from "@/src/components/sa/LANRequirementsEditor";
 import { useState, useEffect, useMemo } from "react";
 import { SiteLANRequirements } from "@/src/lib/types";
+import { getEquipmentRole } from "@/src/lib/bom-utils";
 
 interface LANTabProps {
     selectedSite: Site;
@@ -52,7 +53,7 @@ export function LANTab({
         setShowRequirementsEditor(false);
     };
 
-    const selectionKey = `${selectedSite.name}:managed_lan`;
+    const selectionKey = `${selectedSite.name}:lan`;
     const rawValue = manualSelections[selectionKey];
 
     // Normalize any legacy single selection or string into an array [{ itemId, quantity }]
@@ -70,7 +71,7 @@ export function LANTab({
 
     const availableSwitches = useMemo(() => {
         return catalog
-            .filter(eq => eq.role === 'LAN' && eq.vendor_id === resolvedVendor)
+            .filter(eq => getEquipmentRole(eq) === 'LAN' && eq.vendor_id === resolvedVendor)
             .sort((a, b) => {
                 const aSpecs = a.specs as Record<string, unknown>;
                 const bSpecs = b.specs as Record<string, unknown>;

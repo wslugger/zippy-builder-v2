@@ -62,13 +62,27 @@ export default function StandaloneServiceSelectionPage({ params }: { params: Pro
 
     const toggleService = (serviceId: string) => {
         const alreadySelected = isServiceSelected(serviceId);
+        const baseService = services.find(s => s.id === serviceId);
+        const attachmentServices = baseService && !baseService.is_attachment
+            ? services.filter(s => s.is_attachment && s.attaches_to?.includes(serviceId))
+            : [];
+
         if (alreadySelected) {
-            // Deselect: remove service and all sub-items
-            setItems(prev => prev.filter(i => i.service_id !== serviceId));
+            // Deselect: remove service, all sub-items, and any attachment items
+            const attachmentIds = new Set(attachmentServices.map(a => a.id));
+            setItems(prev => prev.filter(i => i.service_id !== serviceId && !attachmentIds.has(i.service_id)));
             setExpandedServices(prev => { const s = new Set(prev); s.delete(serviceId); return s; });
         } else {
-            // Select: add service-level item and expand
-            setItems(prev => [...prev, { service_id: serviceId, enabled_features: [], inclusion_type: 'optional' }]);
+            // Select: add service-level item, expand, and auto-add default attachment tiers
+            const attachmentDefaults: PackageItem[] = attachmentServices
+                .filter(a => a.service_options?.length > 0)
+                .map(a => ({
+                    service_id: a.id,
+                    service_option_id: a.service_options[0].id,
+                    enabled_features: [],
+                    inclusion_type: 'required' as const,
+                }));
+            setItems(prev => [...prev, { service_id: serviceId, enabled_features: [], inclusion_type: 'optional' }, ...attachmentDefaults]);
             setExpandedServices(prev => new Set([...prev, serviceId]));
         }
     };
@@ -186,10 +200,11 @@ export default function StandaloneServiceSelectionPage({ params }: { params: Pro
                 <div className="text-center py-20 text-neutral-400">No active services in catalog.</div>
             ) : (
                 <div className="space-y-4">
-                    {services.map(service => {
+                    {services.filter(s => !s.is_attachment).map(service => {
                         const selected = isServiceSelected(service.id);
                         const expanded = expandedServices.has(service.id);
                         const selectedOptionId = getSelectedOptionId(service.id);
+                        const attachmentServices = services.filter(s => s.is_attachment && s.attaches_to?.includes(service.id));
 
                         return (
                             <div
@@ -249,6 +264,47 @@ export default function StandaloneServiceSelectionPage({ params }: { params: Pro
                                         </button>
                                     )}
                                 </div>
+
+                                {/* Attached Services — mandatory when service is selected */}
+                                {selected && attachmentServices.length > 0 && (
+                                    <div className="border-t border-purple-100 dark:border-purple-900/30 px-5 py-4 bg-purple-50/30 dark:bg-purple-900/5">
+                                        <p className="text-[10px] font-black text-purple-500 uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                                            Attached Services
+                                        </p>
+                                        <div className="space-y-3">
+                                            {attachmentServices.map(attachment => {
+                                                const currentTierItem = items.find(i => i.service_id === attachment.id && i.service_option_id && !i.design_option_id);
+                                                const currentTierId = currentTierItem?.service_option_id || attachment.service_options?.[0]?.id || "";
+                                                return (
+                                                    <div key={attachment.id} className="flex items-center gap-3">
+                                                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 min-w-[130px]">{attachment.name}</span>
+                                                        <select
+                                                            value={currentTierId}
+                                                            onChange={(e) => {
+                                                                setItems(prev => {
+                                                                    const without = prev.filter(i => i.service_id !== attachment.id);
+                                                                    return [...without, {
+                                                                        service_id: attachment.id,
+                                                                        service_option_id: e.target.value,
+                                                                        enabled_features: [],
+                                                                        inclusion_type: 'required',
+                                                                    }];
+                                                                });
+                                                            }}
+                                                            className="flex-1 bg-white dark:bg-neutral-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-purple-500/20"
+                                                        >
+                                                            {attachment.service_options?.map(opt => (
+                                                                <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <span className="text-[10px] font-bold text-purple-600 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded shrink-0">REQUIRED</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Expanded: service options & design options */}
                                 {selected && expanded && service.service_options?.length > 0 && (

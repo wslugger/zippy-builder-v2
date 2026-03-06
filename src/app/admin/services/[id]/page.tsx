@@ -8,6 +8,7 @@ import Link from "next/link";
 import ServiceItemForm from "@/src/components/admin/ServiceItemForm";
 import ServiceOptionList from "@/src/components/admin/ServiceOptionList";
 import { useSystemConfig } from "@/src/hooks/useSystemConfig";
+import { useServices } from "@/src/hooks/useServices";
 
 export default function ServiceEditorPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
@@ -31,7 +32,11 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
     const [activeTab, setActiveTab] = useState<"general" | "service-options">("general");
 
     const { config, updateConfigAsync } = useSystemConfig();
+    const { services: allServices } = useServices();
     const categories: string[] = (config?.taxonomy as Record<string, string[]>)?.service_categories || [...DEFAULT_CATEGORIES];
+
+    // Non-attachment base services for the attaches_to multi-select
+    const baseServices = allServices.filter(s => !s.is_attachment && s.id !== (service.id || ""));
 
     useEffect(() => {
         if (!isNew) {
@@ -234,6 +239,59 @@ export default function ServiceEditorPage({ params }: { params: Promise<{ id: st
                                     />
                                     {isNew && <p className="text-[10px] text-zinc-400 mt-1">Leave blank to auto-generate from name.</p>}
                                 </div>
+                            </div>
+
+                            {/* Attachment Service Configuration */}
+                            <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">This is an Attachment Service</h4>
+                                        <p className="text-xs text-zinc-500 mt-0.5">Enable this only if this service itself is an add-on that attaches to other base services (e.g. a management tier like &quot;Zippy Managed Services&quot;). Do NOT enable on base services like SD-WAN or LAN.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setService(s => ({ ...s, is_attachment: !s.is_attachment, attaches_to: s.is_attachment ? [] : s.attaches_to }))}
+                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${service.is_attachment ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}
+                                    >
+                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${service.is_attachment ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+
+                                {service.is_attachment && (
+                                    <div className="animate-in fade-in slide-in-from-top-1">
+                                        <label className="block text-xs font-medium text-zinc-500 mb-2">Attaches To (select base services)</label>
+                                        <div className="space-y-2">
+                                            {baseServices.length === 0 && (
+                                                <p className="text-xs text-zinc-400 italic">No base services found.</p>
+                                            )}
+                                            {baseServices.map(s => {
+                                                const isChecked = service.attaches_to?.includes(s.id) ?? false;
+                                                return (
+                                                    <label key={s.id} className="flex items-center gap-3 cursor-pointer group">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => {
+                                                                const current = service.attaches_to || [];
+                                                                setService(svc => ({
+                                                                    ...svc,
+                                                                    attaches_to: isChecked
+                                                                        ? current.filter(id => id !== s.id)
+                                                                        : [...current, s.id]
+                                                                }));
+                                                            }}
+                                                            className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/10"
+                                                        />
+                                                        <span className="text-sm text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100">
+                                                            {s.name}
+                                                            <span className="ml-2 text-xs text-zinc-400 font-mono">{s.id}</span>
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

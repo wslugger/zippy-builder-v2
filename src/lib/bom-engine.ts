@@ -124,7 +124,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 defaults: {
                     redundancy: { cpe: "Single", circuit: "Single" },
                     slo: 99.9,
-                    requiredServices: ["managed_sdwan"]
+                    requiredServices: ["sdwan"]
                 }
             } as SiteType;
         }
@@ -150,6 +150,23 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 continue;
             }
             processedServices.add(canonicalServiceId);
+
+            // Attachment services produce a managed_service line item, not equipment
+            if (service.is_attachment) {
+                const tier = service.service_options?.find(o => o.id === pkgItem.service_option_id);
+                bomItems.push({
+                    id: `${site.name}_${canonicalServiceId}_${pkgItem.service_option_id || 'default'}`,
+                    siteName: site.name,
+                    serviceId: canonicalServiceId,
+                    serviceName: service.name,
+                    itemId: pkgItem.service_option_id || canonicalServiceId,
+                    itemName: tier?.name || service.name,
+                    itemType: "managed_service",
+                    quantity: 1,
+                    reasoning: `${service.name} — ${tier?.name || 'default tier'} for ${site.name}`,
+                } as BOMLineItem);
+                continue;
+            }
 
             const requiredPurpose = SERVICE_TO_PURPOSE[canonicalServiceId];
 

@@ -347,6 +347,8 @@ export interface Service extends ServiceItem, Timestamps {
     category?: string;
     [key: string]: unknown;
   };
+  is_attachment?: boolean;   // true = attaches to base services rather than standing alone
+  attaches_to?: string[];    // canonical base service IDs this can attach to (e.g. ["sdwan", "lan"])
 }
 
 export interface CatalogField {

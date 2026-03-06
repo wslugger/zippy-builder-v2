@@ -77,7 +77,7 @@ describe('LANTab Features', () => {
         // Need at least one selection to show the dropdown
         const props = {
             ...defaultProps,
-            manualSelections: { "Test Site:managed_lan": [{ itemId: "poe_switch", quantity: 1 }] }
+            manualSelections: { "Test Site:lan": [{ itemId: "poe_switch", quantity: 1 }] }
         };
         render(<LANTab {...props} />);
         const dropdown = screen.getByRole('combobox');
@@ -94,7 +94,7 @@ describe('LANTab Features', () => {
         const props = {
             ...defaultProps,
             selectedSite: poeSite,
-            manualSelections: { "Test Site:managed_lan": [{ itemId: "poe_switch", quantity: 1 }] }
+            manualSelections: { "Test Site:lan": [{ itemId: "poe_switch", quantity: 1 }] }
         };
         render(<LANTab {...props} />);
         const dropdown = screen.getByRole('combobox');
@@ -108,8 +108,8 @@ describe('LANTab Features', () => {
 
     it('displays multiple selected switches in the BOM output', () => {
         const lanItems = [
-            { id: '1', itemId: 'poe_switch', itemName: 'PoE Switch', serviceName: 'Managed LAN', itemType: 'equipment', quantity: 2, serviceId: 'managed_lan', siteName: 'Test Site', matchedRules: [], reasoning: 'Manual Selection' },
-            { id: '2', itemId: 'non_poe_switch', itemName: 'Non-PoE Switch', serviceName: 'Managed LAN', itemType: 'equipment', quantity: 1, serviceId: 'managed_lan', siteName: 'Test Site', matchedRules: [], reasoning: 'Manual Selection' }
+            { id: '1', itemId: 'poe_switch', itemName: 'PoE Switch', serviceName: 'LAN', itemType: 'equipment', quantity: 2, serviceId: 'managed_lan', siteName: 'Test Site', matchedRules: [], reasoning: 'Manual Selection' },
+            { id: '2', itemId: 'non_poe_switch', itemName: 'Non-PoE Switch', serviceName: 'LAN', itemType: 'equipment', quantity: 1, serviceId: 'managed_lan', siteName: 'Test Site', matchedRules: [], reasoning: 'Manual Selection' }
         ];
         render(<LANTab {...defaultProps} lanItems={lanItems as BOMLineItem[]} />);
 

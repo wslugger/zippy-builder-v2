@@ -1,9 +1,14 @@
 import { Service } from "./types";
 
+/**
+ * Bootstrap seed data for the service catalog.
+ * Firestore is the single source of truth — this file is only used for initial database seeding.
+ * Run the seed API endpoint once, then manage services via the admin UI.
+ */
 export const SEED_SERVICES: Service[] = [
     {
-        id: "managed_sdwan",
-        name: "Managed SD-WAN",
+        id: "sdwan",
+        name: "SD-WAN",
         short_description: "Cloud-delivered overlay network.",
         detailed_description: "Intelligent path selection and centralized management.",
         active: true,
@@ -15,8 +20,8 @@ export const SEED_SERVICES: Service[] = [
         updatedAt: new Date().toISOString(),
     },
     {
-        id: "managed_lan",
-        name: "Managed LAN",
+        id: "lan",
+        name: "LAN",
         short_description: "High-performance switching.",
         detailed_description: "Enterprise-grade wired connectivity.",
         active: true,
@@ -28,8 +33,8 @@ export const SEED_SERVICES: Service[] = [
         updatedAt: new Date().toISOString(),
     },
     {
-        id: "managed_wifi",
-        name: "Managed Wi-Fi",
+        id: "wlan",
+        name: "Wireless LAN",
         short_description: "Enterprise wireless coverage.",
         detailed_description: "High-density Wi-Fi 6 coverage for indoor and outdoor environments.",
         active: true,
@@ -39,5 +44,48 @@ export const SEED_SERVICES: Service[] = [
         metadata: { category: "WLAN" },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-    }
+    },
+    {
+        id: "zippy_managed_services",
+        name: "Zippy Managed Services",
+        short_description: "Proactive management and monitoring for Zippy-managed infrastructure.",
+        detailed_description: "Tiered management offerings covering monitoring, hardware replacement, and full lifecycle management.",
+        active: true,
+        caveats: [],
+        assumptions: [],
+        service_options: [
+            {
+                id: "watch_and_alert",
+                name: "Watch & Alert",
+                short_description: "Continuous monitoring with alerting.",
+                detailed_description: "24/7 monitoring with automated alerting. No proactive remediation — notifications only.",
+                caveats: [],
+                assumptions: [],
+                design_options: [],
+            },
+            {
+                id: "hardware_plus",
+                name: "Hardware Plus",
+                short_description: "Monitoring plus next-business-day hardware replacement.",
+                detailed_description: "Includes Watch & Alert coverage plus next-business-day hardware swap for failed equipment.",
+                caveats: [],
+                assumptions: [],
+                design_options: [],
+            },
+            {
+                id: "total_care",
+                name: "Total Care",
+                short_description: "Full lifecycle management and proactive remediation.",
+                detailed_description: "Comprehensive management including proactive remediation, change management, and dedicated support.",
+                caveats: [],
+                assumptions: [],
+                design_options: [],
+            },
+        ],
+        metadata: { category: "Managed Services" },
+        is_attachment: true,
+        attaches_to: ["sdwan", "lan", "wlan"],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
 ];

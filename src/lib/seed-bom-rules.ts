@@ -11,7 +11,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         condition: {
             "and": [
                 { "==": [{ "var": "packageId" }, "cost_centric"] },
-                { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                { "==": [{ "var": "serviceId" }, "sdwan"] },
                 { "<": [{ "var": "site.bandwidthDownMbps" }, 200] }
             ]
         },
@@ -26,7 +26,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         condition: {
             "and": [
                 { "==": [{ "var": "packageId" }, "cost_centric"] },
-                { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                { "==": [{ "var": "serviceId" }, "sdwan"] },
                 { ">=": [{ "var": "site.bandwidthDownMbps" }, 200] },
                 { "<": [{ "var": "site.bandwidthDownMbps" }, 500] }
             ]
@@ -42,7 +42,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         condition: {
             "and": [
                 { "==": [{ "var": "packageId" }, "cost_centric"] },
-                { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                { "==": [{ "var": "serviceId" }, "sdwan"] },
                 { ">=": [{ "var": "site.bandwidthDownMbps" }, 500] },
                 { "<": [{ "var": "site.bandwidthDownMbps" }, 1000] }
             ]
@@ -58,7 +58,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         condition: {
             "and": [
                 { "==": [{ "var": "packageId" }, "cost_centric"] },
-                { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                { "==": [{ "var": "serviceId" }, "sdwan"] },
                 { ">=": [{ "var": "site.bandwidthDownMbps" }, 1000] },
                 { "<": [{ "var": "site.bandwidthDownMbps" }, 2000] }
             ]
@@ -74,7 +74,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         condition: {
             "and": [
                 { "==": [{ "var": "packageId" }, "cost_centric"] },
-                { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                { "==": [{ "var": "serviceId" }, "sdwan"] },
                 { ">=": [{ "var": "site.bandwidthDownMbps" }, 2000] },
                 { "<": [{ "var": "site.bandwidthDownMbps" }, 5000] }
             ]
@@ -90,7 +90,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         condition: {
             "and": [
                 { "==": [{ "var": "packageId" }, "cost_centric"] },
-                { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                { "==": [{ "var": "serviceId" }, "sdwan"] },
                 { ">=": [{ "var": "site.bandwidthDownMbps" }, 5000] }
             ]
         },
@@ -105,7 +105,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         priority: 110,
         condition: {
             "and": [
-                { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+                { "==": [{ "var": "serviceId" }, "sdwan"] },
                 { "contains": [{ "var": "site.redundancyModel" }, "dual"] }
             ]
         },
@@ -117,7 +117,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         id: "rule_sdwan_overhead_default",
         name: "SD-WAN Default Overhead",
         priority: 5,
-        condition: { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+        condition: { "==": [{ "var": "serviceId" }, "sdwan"] },
         actions: [
             { type: "set_parameter", targetId: "throughput_overhead_mbps", actionValue: 50 }
         ]
@@ -128,7 +128,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         id: "rule_lan_utilization_limit",
         name: "Managed LAN - 60% Port Utilization Limit",
         priority: 70,
-        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+        condition: { "==": [{ "var": "serviceId" }, "lan"] },
         actions: [
             { type: "set_parameter", targetId: "maxPortUtilization", actionValue: 60 }
         ]
@@ -137,7 +137,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         id: "rule_lan_max_stack_size",
         name: "Managed LAN - Max Stack Size",
         priority: 65,
-        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+        condition: { "==": [{ "var": "serviceId" }, "lan"] },
         actions: [
             { type: "set_parameter", targetId: "maxStackSize", actionValue: 8 }
         ]
@@ -148,7 +148,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         priority: 100,
         condition: {
             "and": [
-                { "==": [{ "var": "serviceId" }, "managed_lan"] },
+                { "==": [{ "var": "serviceId" }, "lan"] },
                 { ">": [{ "var": "site.indoorAPs" }, 0] }
             ]
         },
@@ -171,7 +171,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         priority: 90,
         condition: {
             "and": [
-                { "==": [{ "var": "serviceId" }, "managed_lan"] },
+                { "==": [{ "var": "serviceId" }, "lan"] },
                 { ">": [{ "var": "site.lanPorts" }, 48] }
             ]
         },
@@ -189,7 +189,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         id: "rule_lan_fiber_transceiver_note",
         name: "Managed LAN - Fiber Transceiver Note",
         priority: 50,
-        condition: { "==": [{ "var": "serviceId" }, "managed_lan"] },
+        condition: { "==": [{ "var": "serviceId" }, "lan"] },
         actions: [
             { type: "set_parameter", targetId: "fiberTransceiverNote", actionValue: true }
         ]
@@ -202,7 +202,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         priority: 90,
         condition: {
             "and": [
-                { "==": [{ "var": "serviceId" }, "managed_wifi"] },
+                { "==": [{ "var": "serviceId" }, "wlan"] },
                 {
                     ">": [
                         {
@@ -232,7 +232,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         priority: 95,
         condition: {
             "and": [
-                { "==": [{ "var": "serviceId" }, "managed_wifi"] },
+                { "==": [{ "var": "serviceId" }, "wlan"] },
                 { "==": [{ "+": [{ "var": "site.indoorAPs" }, { "var": "site.outdoorAPs" }] }, 0] }
             ]
         },
@@ -252,7 +252,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         id: "rule_sdwan_ha_lan_port",
         name: "SD-WAN HA - LAN Port Requirement",
         priority: 105,
-        condition: { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+        condition: { "==": [{ "var": "serviceId" }, "sdwan"] },
         actions: [
             { type: "set_parameter", targetId: "haLanPortMinimum", actionValue: 1 }
         ]
@@ -261,7 +261,7 @@ export const SEED_BOM_RULES: BOMLogicRule[] = [
         id: "rule_sdwan_throughput_basis",
         name: "SD-WAN Default Throughput Metric",
         priority: 3,
-        condition: { "==": [{ "var": "serviceId" }, "managed_sdwan"] },
+        condition: { "==": [{ "var": "serviceId" }, "sdwan"] },
         actions: [
             { type: "set_parameter", targetId: "throughputBasis", actionValue: "sdwanCryptoThroughputMbps" }
         ]

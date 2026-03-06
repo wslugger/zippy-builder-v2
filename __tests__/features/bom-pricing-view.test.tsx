@@ -9,8 +9,8 @@ import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 describe("BOM Pricing View Features", () => {
     const mockServices: Service[] = [
         {
-            id: "managed_sdwan",
-            name: "Managed SD-WAN",
+            id: "sdwan",
+            name: "SD-WAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -27,7 +27,7 @@ describe("BOM Pricing View Features", () => {
         active: true,
         short_description: "test",
         detailed_description: "test",
-        items: [{ service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [] }],
+        items: [{ service_id: "sdwan", inclusion_type: "required", enabled_features: [] }],
     };
 
     const site: Site = {
@@ -89,8 +89,8 @@ describe("BOM Pricing View Features", () => {
         const dupePackage: Package = {
             ...mockPackage,
             items: [
-                { service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [] },
-                { service_id: "managed_sdwan", inclusion_type: "required", enabled_features: [] },
+                { service_id: "sdwan", inclusion_type: "required", enabled_features: [] },
+                { service_id: "sdwan", inclusion_type: "required", enabled_features: [] },
             ]
         };
 

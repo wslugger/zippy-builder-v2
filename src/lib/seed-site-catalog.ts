@@ -14,7 +14,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "full_mesh", description: "Enforce 'Full Mesh' topology role", type: "circuit" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Dual", circuit: "Dual" },
             slo: 99.99
         }
@@ -29,7 +29,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "regional_hub", description: "Regional Hub status", type: "circuit" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Dual", circuit: "Dual" },
             slo: 99.99
         }
@@ -44,7 +44,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "local_breakout", description: "Local Breakout (DIA) allowed for SaaS", type: "circuit" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Dual", circuit: "Dual" },
             slo: 99.99
         }
@@ -60,7 +60,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "virtual_ha", description: "Virtual HA (Deployed across Availability Zones)", type: "redundancy" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Dual", circuit: "Dual" },
             slo: 99.9
         }
@@ -77,7 +77,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "sdwan_enforce", description: "Enforce SD-WAN (Cannot fall back to simple routing)", type: "hardware" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Dual", circuit: "Dual" },
             slo: 99.9
         }
@@ -91,7 +91,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "lte_required", description: "Require LTE/5G Option as a secondary/tertiary link", type: "circuit" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Single", circuit: "Dual" },
             slo: 99.9
         }
@@ -106,7 +106,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "lte_usage_cap", description: "Usage-based LTE capping", type: "circuit" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Single", circuit: "Single" },
             slo: 99.5
         }
@@ -123,7 +123,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "hub_spoke_only", description: "Enforce 'Hub and Spoke' only", type: "circuit" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Single", circuit: "Single" },
             slo: 99.0
         }
@@ -138,7 +138,7 @@ export const SDWAN_SITE_TYPES: SiteType[] = [
             { id: "dual_sim", description: "Require Dual-SIM hardware", type: "hardware" }
         ],
         defaults: {
-            requiredServices: ["managed_sdwan"],
+            requiredServices: ["sdwan"],
             redundancy: { cpe: "Single", circuit: "Single" },
             slo: 99.0
         }
@@ -158,7 +158,7 @@ export const LAN_SITE_TYPES: SiteType[] = [
             { id: "stacking_required", description: "Enforce physical hardware stacking", type: "hardware" }
         ],
         defaults: {
-            requiredServices: ["managed_lan"],
+            requiredServices: ["lan"],
             redundancy: { cpe: "Dual", circuit: "Dual" },
             slo: 99.99
         }
@@ -173,7 +173,7 @@ export const LAN_SITE_TYPES: SiteType[] = [
             { id: "poe_plus", description: "High-density PoE+ (30W)", type: "poe" }
         ],
         defaults: {
-            requiredServices: ["managed_lan"],
+            requiredServices: ["lan"],
             redundancy: { cpe: "Dual", circuit: "Dual" },
             slo: 99.9
         }
@@ -189,7 +189,7 @@ export const LAN_SITE_TYPES: SiteType[] = [
             { id: "stacking_required", description: "Must be stacked", type: "hardware" }
         ],
         defaults: {
-            requiredServices: ["managed_lan"],
+            requiredServices: ["lan"],
             redundancy: { cpe: "Dual", circuit: "Dual" },
             slo: 99.5
         }
@@ -204,7 +204,7 @@ export const LAN_SITE_TYPES: SiteType[] = [
             { id: "limited_poe", description: "Limited PoE budget", type: "poe" }
         ],
         defaults: {
-            requiredServices: ["managed_lan"],
+            requiredServices: ["lan"],
             redundancy: { cpe: "Single", circuit: "Single" },
             slo: 99.5
         }
@@ -220,7 +220,7 @@ export const LAN_SITE_TYPES: SiteType[] = [
             { id: "vlan_limit", description: "Limited to <3 VLANs", type: "vlan", rule: { field: "vlanCount", operator: "max", value: 3 } }
         ],
         defaults: {
-            requiredServices: ["managed_lan"],
+            requiredServices: ["lan"],
             redundancy: { cpe: "Single", circuit: "Single" },
             slo: 99.0
         }
@@ -235,7 +235,7 @@ export const LAN_SITE_TYPES: SiteType[] = [
             { id: "industrial_proto", description: "Must support industrial protocols", type: "software" }
         ],
         defaults: {
-            requiredServices: ["managed_lan"],
+            requiredServices: ["lan"],
             redundancy: { cpe: "Single", circuit: "Single" },
             slo: 99.0
         }

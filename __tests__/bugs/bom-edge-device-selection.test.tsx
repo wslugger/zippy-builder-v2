@@ -13,8 +13,8 @@ describe("Bug Reproduction: BOM Edge Device Selection", () => {
 
     const mockServices: Service[] = [
         {
-            id: "managed_sdwan",
-            name: "Managed SD-WAN",
+            id: "sdwan",
+            name: "SD-WAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -34,7 +34,7 @@ describe("Bug Reproduction: BOM Edge Device Selection", () => {
         detailed_description: "test",
         items: [
             {
-                service_id: "managed_sdwan",
+                service_id: "sdwan",
                 inclusion_type: "required",
                 enabled_features: []
             }
@@ -61,7 +61,7 @@ describe("Bug Reproduction: BOM Edge Device Selection", () => {
 
         const bom = calculateBOM({ projectId: "test-project-bug", sites: [site], selectedPackage: costCentricPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
 
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
         expect(sdwanItem).toBeDefined();
 
         // Currently, it likely picks "meraki_mx85" (1 Gbps Raw / 500 Mbps Crypto) due to the >499 rule.

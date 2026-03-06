@@ -11,8 +11,8 @@ describe("BOM Site Type Redundancy Logic", () => {
 
     const mockServices: Service[] = [
         {
-            id: "managed_sdwan",
-            name: "Managed SD-WAN",
+            id: "sdwan",
+            name: "SD-WAN",
             active: true,
             short_description: "test",
             detailed_description: "test",
@@ -32,7 +32,7 @@ describe("BOM Site Type Redundancy Logic", () => {
         detailed_description: "test",
         items: [
             {
-                service_id: "managed_sdwan",
+                service_id: "sdwan",
                 inclusion_type: "required",
                 enabled_features: []
             }
@@ -58,7 +58,7 @@ describe("BOM Site Type Redundancy Logic", () => {
         };
 
         const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
 
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.quantity).toBe(2);
@@ -85,7 +85,7 @@ describe("BOM Site Type Redundancy Logic", () => {
         };
 
         const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
 
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.quantity).toBe(1); // Site override wins
@@ -111,7 +111,7 @@ describe("BOM Site Type Redundancy Logic", () => {
         };
 
         const bom = calculateBOM({ projectId: "test-project", sites: [site], selectedPackage: mockPackage, services: mockServices, siteTypes: ALL_SITE_TYPES, equipmentCatalog: testCatalog, rules: testRules });
-        const sdwanItem = bom.items.find(i => i.serviceId === "managed_sdwan");
+        const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
 
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.quantity).toBe(2); // Site override wins
