@@ -337,3 +337,12 @@
 - **Multi-Select Admin UI**: Built a checkbox-list multi-select pattern for admin modals to replace simple dropdowns, enabling fine-grained mapping control.
 - **Key Insight**: "Categories" are rarely mutually exclusive in enterprise networking. Favoring array-based mapping from the start provides the flexibility needed for discovery, reporting, and rules-based logic that spans multiple technology domains.
 - **Pattern**: When transitioning a schema from string to array, use a "Normalize on Fetch" pattern in hooks to prevent UI crashes while existing database records are still in the old format.
+
+## 47. Unified Polymorphic Schema & Optionality
+**Issue**: Transitioning to a `UnifiedSpecsSchema` to support multi-purpose hardware (e.g., WAN + WLAN) initially included strict `catch()` defaults. This caused two problems:
+1. **Type Contention**: Inferred TypeScript types became rigid, requiring all fields (even irrelevant ones like `accessPortCount` for a WAN-only router) to be present in object literals like `seed-equipment.ts`.
+2. **Data Pollution**: Every equipment record became bloated with irrelevant defaults after parsing.
+**Solution**:
+- **Strictly Optional Schema**: Refactored `UnifiedSpecsSchema` to make all domain-specific fields `.optional()` with no schema-level defaults.
+- **Consumer-Held Defaults**: Moved the responsibility for "sane defaults" (e.g., assuming 24 ports if unspecified) into the specific logic modules (`lan-logic.ts`) or UI components that consume those fields.
+**Key Insight**: A polymorphic schema should be a "loose" container. Forcing defaults at the validation boundary creates friction in development workflows (like seeding or manual entry) and violates the principle of least astonishment. Responsibility for interpreting missing data belongs to the domain-specific consumer, not the general-purpose validator.
