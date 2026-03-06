@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { calculateBOM } from "@/src/lib/bom-engine";
 import { BOMLogicRule, Site, Equipment, Package, Service, SiteType } from "@/src/lib/types";
 import { SERVICE_TO_PURPOSE } from "@/src/lib/bom-utils";
