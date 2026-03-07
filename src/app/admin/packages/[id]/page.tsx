@@ -245,11 +245,11 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
             return;
         }
 
-        console.log("Starting upload process for type:", type);
+
         setUploading(true);
         try {
             const asset = await PackageService.uploadCollateral(pkg.id, file, type);
-            console.log("Upload successful, updating package state...");
+
 
             const updatedCollateral = [...(pkg.collateral || []), asset as PackageCollateral];
             const updatedPkg = {
@@ -260,9 +260,9 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
             setPkg(updatedPkg);
 
             // Persist the change immediately to Firestore
-            console.log("Auto-saving package with new asset...");
+
             await PackageService.savePackage(updatedPkg as Package);
-            console.log("Package auto-saved successfully.");
+
 
         } catch (error: unknown) {
             console.error("Upload or Save failed:", error);

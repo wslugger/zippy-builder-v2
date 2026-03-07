@@ -1,11 +1,12 @@
 "use client";
 
+import { Project, Package, Service, Equipment, PricingItem, ManagementPricingMatrix, TriagedSite, Site, BOM, SiteType } from "@/src/lib/types";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService, PricingService } from "@/src/lib/firebase";
 import { ManagementPricingService } from "@/src/lib/firebase/management-pricing-service";
-import { Project, Package, Service, Equipment, PricingItem, ManagementPricingMatrix, TriagedSite } from "@/src/lib/types";
-import { Site, BOM } from "@/src/lib/bom-types";
-import { SiteType } from "@/src/lib/site-types";
+
+
+
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_PACKAGES } from "@/src/lib/seed-packages";

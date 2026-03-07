@@ -1,4 +1,5 @@
-import { BOMLogicRule } from "./bom-types";
+import { BOMLogicRule } from "@/src/lib/types";
+
 
 export const SEED_BOM_RULES: BOMLogicRule[] = [
     // --- Rule Set 1: Cost Centric SD-WAN Selection used for Meraki ---

@@ -1,3 +1,4 @@
+import { Package, Equipment, PricingItem, EQUIPMENT_PURPOSES, INTERFACE_TYPES, POE_CAPABILITIES, Site, SiteType, BOMLineItem } from "@/src/lib/types";
 /**
  * Shared BOM utility functions.
  * 
@@ -5,9 +6,9 @@
  * and the BOM builder UI. Keeping them in one place prevents logic drift.
  */
 
-import { Package, Equipment, PricingItem, EQUIPMENT_PURPOSES, INTERFACE_TYPES, POE_CAPABILITIES } from "./types";
-import { Site } from "./bom-types";
-import { SiteType } from "./site-types";
+
+
+
 
 /**
  * Canonical service ID normalization.
@@ -286,7 +287,7 @@ export function extractLANTaxonomy(catalog: Equipment[]): LANTaxonomy {
     };
 }
 
-import { BOMLineItem } from "./types";
+
 
 /**
  * Exports detailed BOM items to a CSV file and triggers a browser download.

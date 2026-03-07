@@ -1,7 +1,8 @@
+import { Project, Equipment, Site } from "@/src/lib/types";
 import { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Project, Equipment } from "@/src/lib/types";
-import { Site } from "@/src/lib/bom-types";
+
+
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, storage, PROJECTS_COLLECTION } from "./config";
 import { validateDoc, ProjectSchema } from "./validation";
@@ -130,7 +131,7 @@ export const ProjectService = {
                 updatedAt: now
             }, { merge: true });
 
-            console.log(`[ProjectService] Project ${projectId} finalized with ${embeddedEquipment.length} items cloned.`);
+
         } catch (error) {
             console.error("[ProjectService] Finalization Failed:", error);
             throw error;

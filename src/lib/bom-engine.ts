@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Site, BOM, BOMLineItem, BOMEngineInput, Package, BOMLogicRule, SiteLANRequirements, SiteType, TriagedSite, Equipment, SYSTEM_PARAMETERS } from "@/src/lib/types";
 import jsonLogic from "json-logic-js";
-import { Site, BOM, BOMLineItem, BOMEngineInput, Package, BOMLogicRule, SiteLANRequirements } from "./types";
-import { Equipment } from "./types";
-import { SiteType } from "./site-types";
-import { SYSTEM_PARAMETERS } from "./types";
+
+
+
+
 import {
     normalizeServiceId,
     SERVICE_TO_PURPOSE,
     getEquipmentPerformanceValue
 } from "./bom-utils";
-import {
-    TriagedSite
-} from "./types";
+
 
 /**
  * Generates a Bill of Materials based on pure JSON input via a declarative Rules Engine.
@@ -109,7 +108,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
     const bomItems: BOMLineItem[] = [];
 
     for (const site of sites) {
-        console.log(`[BOMEngine] Processing site: ${site.name}`, { siteTypeId: site.siteTypeId });
+
         let siteDef = siteTypes.find(t => t.id === site.siteTypeId);
 
         // Fallback to a generic site definition if not found or not provided
@@ -146,7 +145,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
 
             const canonicalServiceId = normalizeServiceId(service.id);
             if (processedServices.has(canonicalServiceId)) {
-                console.log(`[BOMEngine] Skipping duplicate service ${canonicalServiceId} in package for site ${site.name}`);
+
                 continue;
             }
             processedServices.add(canonicalServiceId);

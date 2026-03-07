@@ -1,7 +1,8 @@
+import { Equipment, Package, Site, BOMLineItem, SiteType } from "@/src/lib/types";
 import React from "react";
-import { Site, BOMLineItem } from "@/src/lib/bom-types";
-import { SiteType } from "@/src/lib/site-types";
-import { Equipment, Package } from "@/src/lib/types";
+
+
+
 import { isDualRedundancy, isDualCircuit, getEquipmentRole } from "@/src/lib/bom-utils";
 import { ManualDeviceSelector } from "./ManualDeviceSelector";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";

@@ -2,7 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import FirebaseDebug from "./FirebaseDebug";
 import { VENDOR_IDS, VENDOR_LABELS, Equipment, EQUIPMENT_PURPOSES } from "@/src/lib/types";
 import { getEquipmentRole } from "@/src/lib/bom-utils";
 
@@ -333,7 +332,6 @@ export default function EquipmentIngestion() {
                 </div>
             )}
 
-            <FirebaseDebug />
         </div>
     );
 }

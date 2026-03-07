@@ -1,10 +1,11 @@
 "use client";
 
+import { SiteType, SiteConstraint } from "@/src/lib/types";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { SiteDefinitionService } from "@/src/lib/firebase";
-import { SiteType, SiteConstraint } from "@/src/lib/site-types";
+
 import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 
 export default function EditSiteDefinitionPage() {

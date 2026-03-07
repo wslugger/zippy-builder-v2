@@ -1,6 +1,7 @@
+import { Site } from "@/src/lib/types";
 import { render, screen } from '@testing-library/react';
 import { ProjectSummaryDashboard } from '@/src/app/sa/project/[id]/bom/ProjectSummaryDashboard';
-import { Site } from '@/src/lib/bom-types';
+
 import '@testing-library/jest-dom';
 import React from 'react';
 

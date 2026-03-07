@@ -1,8 +1,9 @@
 "use client";
 
+import { Site } from "@/src/lib/types";
 import React from "react";
 import { BOMBuilderState } from "./useBOMBuilder";
-import { Site } from "@/src/lib/bom-types";
+
 
 export function PricingTab({ state, selectedSite }: { state: BOMBuilderState, selectedSite: Site }) {
     const {

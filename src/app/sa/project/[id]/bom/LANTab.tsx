@@ -1,9 +1,10 @@
-import { Site, BOMLineItem } from "@/src/lib/bom-types";
-import { Equipment, LANSpecs } from "@/src/lib/types";
+
+
+import { Equipment, LANSpecs, Site, BOMLineItem, SiteLANRequirements } from "@/src/lib/types";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
 import { LANRequirementsEditor } from "@/src/components/sa/LANRequirementsEditor";
 import { useState, useEffect, useMemo } from "react";
-import { SiteLANRequirements } from "@/src/lib/types";
+
 import { getEquipmentRole } from "@/src/lib/bom-utils";
 
 interface LANTabProps {

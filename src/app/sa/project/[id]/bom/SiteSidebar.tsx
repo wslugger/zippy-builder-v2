@@ -1,9 +1,10 @@
 "use client";
 
+import { Package, Site, BOM, SiteType } from "@/src/lib/types";
 import React, { useMemo, useState } from "react";
-import { Site, BOM } from "@/src/lib/bom-types";
-import { SiteType } from "@/src/lib/site-types";
-import { Package } from "@/src/lib/types";
+
+
+
 
 interface SiteSidebarProps {
     sites: Site[];

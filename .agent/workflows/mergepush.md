@@ -15,7 +15,9 @@ description: merge the current branch into main and push
 // turbo
 6. Merge the source branch: `git merge [source-branch]`
 // turbo
-7. Push to origin: `git push origin [target-branch]`
+7. Run testing safeguards after merge: `npm run test`
+// turbo
+8. Push to origin: `git push origin [target-branch]`
 8. If merged into `develop`:
    // turbo
    - Delete the local feature/fix branch: `git branch -d [source-branch]`

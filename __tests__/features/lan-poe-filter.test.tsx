@@ -1,7 +1,8 @@
+import { Site, Equipment, BOMLineItem } from "@/src/lib/types";
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LANTab } from '@/src/app/sa/project/[id]/bom/LANTab';
-import { Site, Equipment } from '@/src/lib/types';
-import { BOMLineItem } from '@/src/lib/bom-types';
+
+
 import '@testing-library/jest-dom';
 
 const mockSite: Site = {

@@ -1,4 +1,5 @@
-import { Site, SiteSchema } from "./bom-types";
+import { Site, SiteSchema } from "@/src/lib/types";
+
 
 /**
  * Parses a CSV string into a list of Site objects.
