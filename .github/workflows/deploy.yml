@@ -14,9 +14,7 @@ jobs:
       matrix:
         include:
           - target: "Primary (Mac Mini)"
-            runner: [self-hosted, macmini]
-          - target: "Backup (Ubuntu dev-box)"
-            runner: [self-hosted, linux]
+            runner: [self-hosted, macmini]]
     
     steps:
       - name: Checkout Code
