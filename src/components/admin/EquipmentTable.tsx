@@ -177,6 +177,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                 <th className="px-6 py-4">Mapped Services</th>
                                 <th className="px-6 py-4 w-64 max-w-sm">Attributes</th>
                                 <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Licenses</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -276,6 +277,14 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                         </td>
                                         <td className="px-6 py-4">
                                             <StatusBadge status={item.status || "Supported"} />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${((item as any).licenses?.length || 0) > 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/50'}`}>
+                                                    {(item as any).licenses?.length || 0}
+                                                </span>
+                                                <span className="text-[10px] text-zinc-400">SKUs</span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button

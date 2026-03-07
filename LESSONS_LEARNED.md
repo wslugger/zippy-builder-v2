@@ -376,3 +376,12 @@
 - **AI-Assisted Matching**: Implemented AI-driven SKU suggestion and confirmation logic in the Admin UI to handle cases where equipment IDs don't exactly match vendor pricing IDs (e.g., `MX67` vs `MX67-HW`).
 - **Targeted Ingestion**: Updated csv ingestion to only import prices for items present in the equipment catalog, preventing the database from bloating with irrelevant vendor parts.
 - **Key Insight**: Pricing is highly volatile compared to hardware specifications. Separating "Technical Specs" (Equipment) from "Commercial Specs" (Pricing) allows both to evolve independently and enables bulk vendor updates without touching core architecture rules.
+
+## 52. Firestore Document ID Restrictions (The Slash-Safety Pattern)
+**Issue**: Using product SKUs as Firestore document IDs (e.g., `PWR-C6-600WAC/2`) caused fatal errors because Firestore does not allow forward slashes (`/`) in document names. This initially blocked ingestion of various power supplies and license SKUs.
+**Solution**:
+- **Escaped ID Mapping**: Implemented a `getPricingDocId` helper that replaces `/` with a safety token (e.g., `_sl_`) for the Firestore document path.
+- **Data Integrity**: The original SKU is always preserved as a first-class `id` field within the document payload itself.
+- **Service-Level Transparency**: Updated the service layer to automatically apply this escaping logic, ensuring that callers (UI, API) can still use raw SKUs while the database handles the storage-safe version.
+- **Key Insight**: Never assume that external identifiers (SKUs, URLs, user input) are safe for use as direct primary keys in a database. Always implement a sanitization or escaping layer that preserves the original value in the data.
+

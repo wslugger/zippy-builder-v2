@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/src/lib/firebase/config";
-import { PRICING_COLLECTION } from "@/src/lib/firebase/pricing-service";
+import { PRICING_COLLECTION, PricingService } from "@/src/lib/firebase/pricing-service";
 import { parsePricingCSV } from "@/src/lib/pricing-csv-parser";
 import { doc, writeBatch } from "firebase/firestore";
 import { stampUpdate } from "@/src/lib/timestamps";
-import { EquipmentService } from "@/src/lib/firebase/equipment-service";
+
 
 const BATCH_CHUNK_SIZE = 500;
 
@@ -25,15 +25,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No valid pricing rows found in CSV." }, { status: 400 });
         }
 
-        // ── 2. Filter rows against local Equipment Catalog ────────────────────
-        // We only want to import prices for items we actually have in our catalog.
-        const equipment = await EquipmentService.getAllEquipment();
-        const relevantSkus = new Set<string>();
-
-        equipment.forEach(e => {
-            relevantSkus.add(e.id);
-            if (e.pricingSku) relevantSkus.add(e.pricingSku);
-        });
+        // ── 2. Process all rows (No filtering against catalog) ────────────────
+        // We now import the entire list so that we can match them later 
+        // as new equipment is added to the catalog.
 
         interface PricingUpdate {
             id: string; // The SKU
@@ -47,11 +41,6 @@ export async function POST(req: Request) {
         const updates: PricingUpdate[] = [];
 
         for (const row of rows) {
-            // Only include if the product matches an ID or pricingSku in our equipment catalog
-            if (!relevantSkus.has(row.product)) {
-                continue;
-            }
-
             const update: PricingUpdate = {
                 id: row.product,
                 listPrice: row.listPrice,
@@ -76,7 +65,7 @@ export async function POST(req: Request) {
             const batch = writeBatch(db);
 
             for (const update of chunk) {
-                const docRef = doc(db, PRICING_COLLECTION, update.id);
+                const docRef = doc(db, PRICING_COLLECTION, PricingService.getPricingDocId(update.id));
                 const payload = stampUpdate({ ...update });
                 // Merge so we don't overwrite unrelated fields
                 batch.set(docRef, payload, { merge: true });
@@ -91,7 +80,7 @@ export async function POST(req: Request) {
             effectiveDate,
             total: rows.length,
             updated: updates.length,
-            skipped: rows.length - updates.length,
+            skipped: 0, // No filtered out rows anymore
         });
 
     } catch (error) {

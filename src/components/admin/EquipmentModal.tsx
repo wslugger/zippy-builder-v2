@@ -61,6 +61,8 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
     const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
     const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
+    const [isDiscovering, setIsDiscovering] = useState(false);
+    const [licenseSearch, setLicenseSearch] = useState("");
 
     const { pricingItems: pricingCatalog } = usePricing();
 
@@ -129,6 +131,44 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
             console.error("Failed to suggest description", error);
         } finally {
             setIsLoadingDescriptionCopilot(false);
+        }
+    };
+
+    const handleDiscoverLicenses = async () => {
+        setIsDiscovering(true);
+        try {
+            const res = await fetch("/api/admin/equipment/discover-licenses", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    equipmentId: formData.id,
+                    model: formData.model,
+                    vendor_id: formData.vendor_id
+                })
+            });
+
+            if (!res.ok) throw new Error("Failed to discover");
+            const { suggestions } = await res.json();
+
+            if (suggestions && suggestions.length > 0) {
+                // Merge new suggestions with existing, avoiding duplicates by id
+                const existing = (formData as any).licenses || [];
+                const existingIds = new Set(existing.map((l: any) => l.id));
+                const newOnes = suggestions.filter((s: any) => !existingIds.has(s.id));
+
+                if (newOnes.length > 0) {
+                    handleChange("licenses" as any, [...existing, ...newOnes] as any);
+                } else {
+                    alert("AI found duplicates of existing licenses.");
+                }
+            } else {
+                alert("No new compatible licenses found by AI.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Error discovering licenses.");
+        } finally {
+            setIsDiscovering(false);
         }
     };
 
@@ -1197,15 +1237,108 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                     <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Compatible Licenses</h4>
                                     <p className="text-xs text-zinc-500 mt-1">Add licensing SKUs that this equipment supports.</p>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        const newLicenses = [...((formData as any).licenses || []), { id: "", tier: "advanced", termLength: "1YR" }];
-                                        handleChange("licenses" as any, newLicenses as any);
-                                    }}
-                                    className="px-4 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
-                                >
-                                    + Add License
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={handleDiscoverLicenses}
+                                        disabled={isDiscovering}
+                                        className={`px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-purple-900/10 flex items-center gap-2 ${isDiscovering ? 'opacity-50' : ''}`}
+                                    >
+                                        {isDiscovering ? (
+                                            <>
+                                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Discovering...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span>✨</span> Discover with AI
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const newLicenses = [...((formData as any).licenses || []), { id: "", tier: "advanced", termLength: "1YR" }];
+                                            handleChange("licenses" as any, newLicenses as any);
+                                        }}
+                                        className="px-4 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
+                                    >
+                                        + Add Manual
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Manual Search & Attach */}
+                            <div className="bg-zinc-50 dark:bg-zinc-800/20 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-2 block">Quick-Attach from Global Pricing Catalog</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search master pricing list by SKU or description..."
+                                        value={licenseSearch}
+                                        onChange={(e) => setLicenseSearch(e.target.value)}
+                                        className="w-full text-xs p-2.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                    {licenseSearch.length >= 2 && (
+                                        <div className="absolute z-10 top-full left-0 w-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                                            {pricingCatalog
+                                                .filter(p => p.id.toLowerCase().includes(licenseSearch.toLowerCase()) || p.description?.toLowerCase().includes(licenseSearch.toLowerCase()))
+                                                .slice(0, 50)
+                                                .map(p => {
+                                                    const existing = (formData as any).licenses || [];
+                                                    const isAttached = existing.some((l: any) => l.id === p.id);
+
+                                                    return (
+                                                        <button
+                                                            key={p.id}
+                                                            type="button"
+                                                            disabled={isAttached}
+                                                            onClick={() => {
+                                                                if (isAttached) return;
+
+                                                                // Guess tier/term for common Cisco/Meraki patterns
+                                                                let tier = "advanced";
+                                                                let term = "1YR";
+                                                                if (p.id.toLowerCase().includes("3yr")) term = "3YR";
+                                                                else if (p.id.toLowerCase().includes("5yr")) term = "5YR";
+                                                                else if (p.id.toLowerCase().includes("10y")) term = "10Y";
+
+                                                                if (p.id.toLowerCase().includes("ent")) tier = "enterprise";
+                                                                else if (p.id.toLowerCase().includes("sec")) tier = "advanced-security";
+
+                                                                handleChange("licenses" as any, [...existing, { id: p.id, tier, termLength: term }] as any);
+                                                                // Intentionally leaving licenseSearch intact so the dropdown stays open for multiple selections
+                                                            }}
+                                                            className={`w-full text-left px-4 py-3 border-b last:border-0 border-zinc-100 dark:border-zinc-800 transition-colors flex items-center justify-between group ${isAttached
+                                                                    ? "bg-zinc-50 dark:bg-zinc-800/80 cursor-not-allowed opacity-75"
+                                                                    : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                                                }`}
+                                                        >
+                                                            <div className="flex-1 min-w-0 pr-4">
+                                                                <div className={`font-mono text-[11px] font-bold ${isAttached ? "text-zinc-500" : "text-zinc-900 dark:text-zinc-100"}`}>{p.id}</div>
+                                                                <div className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">{p.description}</div>
+                                                            </div>
+                                                            {isAttached ? (
+                                                                <span className="text-emerald-500 flex-shrink-0">
+                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-transparent group-hover:text-blue-500 flex-shrink-0 transition-colors">
+                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                                    </svg>
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })
+                                            }
+                                            {pricingCatalog.filter(p => p.id.toLowerCase().includes(licenseSearch.toLowerCase())).length === 0 && (
+                                                <div className="p-4 text-center text-xs text-zinc-400 italic">No matches found.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="space-y-3">
                                 {(!(formData as any).licenses || (formData as any).licenses.length === 0) && (
