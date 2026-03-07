@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService } from "@/src/lib/firebase";
+import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService, PricingService } from "@/src/lib/firebase";
 import { ManagementPricingService } from "@/src/lib/firebase/management-pricing-service";
-import { Project, Package, Service, Equipment, ManagementPricingMatrix, TriagedSite } from "@/src/lib/types";
+import { Project, Package, Service, Equipment, PricingItem, ManagementPricingMatrix, TriagedSite } from "@/src/lib/types";
 import { Site, BOM } from "@/src/lib/bom-types";
 import { SiteType } from "@/src/lib/site-types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
@@ -14,7 +14,7 @@ import { calculateBOM, calculateUtilization, validatePOE, evaluateSiteComplexity
 import { normalizeServiceId } from "@/src/lib/bom-utils";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
-import { resolveVendorForService, calculateThroughputOverhead } from "@/src/lib/bom-utils";
+import { resolveVendorForService, calculateThroughputOverhead, makePricingSnapshot } from "@/src/lib/bom-utils";
 import { getGlobalParameters } from "@/src/lib/firebase/settings";
 import { AIService } from "@/src/lib/ai-service";
 
@@ -173,6 +173,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     const [catalog, setCatalog] = useState<Equipment[]>(SEED_EQUIPMENT);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [globalParameters, setGlobalParameters] = useState<Record<string, any>>({});
+    const [pricingCatalog, setPricingCatalog] = useState<PricingItem[]>([]);
 
     // ---- Sites ----
     const [rawSites, setRawSites] = useState<Site[]>([]);
@@ -232,17 +233,19 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                     setPkg(pk);
                 }
 
-                const [allPkgs, svcs, eq, globalParams, mgmtMatrix, projectSites] = await Promise.all([
+                const [allPkgs, svcs, eq, globalParams, mgmtMatrix, projectSites, pricingItems] = await Promise.all([
                     PackageService.getAllPackages().catch(() => []),
                     ServiceService.getAllServices().catch(() => []),
                     EquipmentService.getAllEquipment().catch(() => []),
                     getGlobalParameters().catch(() => ({})),
                     ManagementPricingService.getManagementPricing().catch(() => null),
                     ProjectService.getSites(projectId).catch(() => []),
+                    PricingService.getAllPricingItems().catch(() => []),
                 ]);
 
                 setAllPackages(allPkgs);
                 setServices(svcs);
+                setPricingCatalog(pricingItems as PricingItem[]);
                 if (p?.status === "completed" && p?.embeddedEquipment?.length) {
                     setCatalog(p.embeddedEquipment);
                 } else if (eq.length > 0) {
@@ -413,6 +416,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 services,
                 siteTypes,
                 equipmentCatalog: catalog,
+                pricingCatalog: pricingCatalog,
                 rules: SEED_BOM_RULES,
                 manualSelections,
                 globalParameters
@@ -438,7 +442,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                             itemType: 'managed_service',
                             quantity: item.quantity,
                             pricing: {
-                                listPrice: mrcPrice,
+                                purchasePrice: 0,
+                                rentalPrice: mrcPrice,
                                 discountPercent: 0,
                                 netPrice: mrcPrice
                             },
@@ -466,7 +471,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                         itemType: 'service',
                         quantity: 1,
                         pricing: {
-                            listPrice: otc + mrc,
+                            purchasePrice: otc,
+                            rentalPrice: mrc,
                             discountPercent: 0,
                             netPrice: otc + mrc
                         },
@@ -490,7 +496,8 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                         itemType: 'service',
                         quantity: 1,
                         pricing: {
-                            listPrice: otc + mrc,
+                            purchasePrice: otc,
+                            rentalPrice: mrc,
                             discountPercent: 0,
                             netPrice: otc + mrc
                         },
@@ -506,7 +513,7 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
             return calculatedBom;
         }
         return null;
-    }, [sites, pkg, services, siteTypes, catalog, projectId, manualSelections, globalParameters, managementPricingMatrix, projectManagementLevel]);
+    }, [sites, pkg, services, siteTypes, catalog, pricingCatalog, projectId, manualSelections, globalParameters, managementPricingMatrix, projectManagementLevel]);
 
     // -------------------------------------------------------
     // Pricing Analysis
@@ -537,11 +544,11 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
                 if (item.itemType === 'equipment') {
                     if (acquisitionModel === 'purchase') {
-                        unitOTCList = item.pricing?.purchasePrice ?? item.pricing?.listPrice ?? 0;
+                        unitOTCList = item.pricing?.purchasePrice || 0;
                         unitMRCList = 0;
                     } else {
                         unitOTCList = 0;
-                        unitMRCList = item.pricing?.rentalPrice ?? 0;
+                        unitMRCList = item.pricing?.rentalPrice || 0;
                     }
                 } else if (item.itemType === 'managed_service' || item.itemType === 'service') {
                     // Pre-calculated from matrix logic above OR default 0
@@ -612,9 +619,10 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
             // If this item is the one we are swapping FROM
             if (item.itemId === swapSimulation.fromItemId) {
-                // Determine new item prices based on acquisition model
-                const purchase = toEquip.pricing?.purchasePrice ?? toEquip.listPrice ?? toEquip.price ?? 0;
-                const rental = toEquip.pricing?.rentalPrice ?? 0;
+                // Determine new item prices based on acquisition model using the pricing catalog
+                const snapshot = makePricingSnapshot(toEquip, pricingCatalog);
+                const purchase = snapshot?.purchasePrice || 0;
+                const rental = snapshot?.rentalPrice || 0;
 
                 if (acquisitionModel === 'purchase') {
                     unitOTCList = purchase;

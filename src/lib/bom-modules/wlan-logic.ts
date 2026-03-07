@@ -14,6 +14,8 @@ import jsonLogic from "json-logic-js";
 
 export function calculateWLANBOM(input: BOMModuleInput): BOMLineItem[] {
     const {
+        pkgItem,
+        pricingCatalog,
         site,
         siteDef,
         canonicalServiceId,
@@ -85,7 +87,7 @@ export function calculateWLANBOM(input: BOMModuleInput): BOMLineItem[] {
                     quantity: quantity,
                     reasoning: `Manual Selection`,
                     matchedRules: [{ ruleId: 'manual', ruleName: 'Manual Override', description: 'User manually selected this equipment' }],
-                    pricing: makePricingSnapshot(equip),
+                    pricing: makePricingSnapshot(equip, pricingCatalog),
                 });
                 processedAny = true;
             }
@@ -125,7 +127,7 @@ export function calculateWLANBOM(input: BOMModuleInput): BOMLineItem[] {
                             ruleName: r.name,
                             description: `Condition: ${JSON.stringify(r.condition)}`
                         })),
-                        pricing: makePricingSnapshot(equip),
+                        pricing: makePricingSnapshot(equip, pricingCatalog),
                     });
                 }
             } else {
@@ -194,7 +196,7 @@ export function calculateWLANBOM(input: BOMModuleInput): BOMLineItem[] {
                     description: `Selected based on Vendor (${vendorId}).`
                 }
             ],
-            pricing: makePricingSnapshot(bestFit),
+            pricing: makePricingSnapshot(bestFit, pricingCatalog),
         });
     }
 

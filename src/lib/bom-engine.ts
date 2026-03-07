@@ -101,7 +101,7 @@ import { calculateLANBOM } from "./bom-modules/lan-logic";
 import { calculateWLANBOM } from "./bom-modules/wlan-logic";
 
 export function calculateBOM(input: BOMEngineInput): BOM {
-    const { projectId, sites, selectedPackage, services, siteTypes, equipmentCatalog, manualSelections = {}, globalParameters = {} } = input;
+    const { projectId, sites, selectedPackage, services, siteTypes, equipmentCatalog, pricingCatalog, manualSelections = {}, globalParameters = {} } = input;
 
     // Sort rules by priority descending
     const rules = [...input.rules].sort((a, b) => b.priority - a.priority);
@@ -178,6 +178,7 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 service,
                 canonicalServiceId,
                 equipmentCatalog,
+                pricingCatalog,
                 rules,
                 siteParameters,
                 pkgItem

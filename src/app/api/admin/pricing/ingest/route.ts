@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { db, EQUIPMENT_COLLECTION } from "@/src/lib/firebase/config";
-import { EquipmentService } from "@/src/lib/firebase/equipment-service";
+import { db } from "@/src/lib/firebase/config";
+import { PRICING_COLLECTION } from "@/src/lib/firebase/pricing-service";
 import { parsePricingCSV } from "@/src/lib/pricing-csv-parser";
 import { doc, writeBatch } from "firebase/firestore";
 import { stampUpdate } from "@/src/lib/timestamps";
+import { EquipmentService } from "@/src/lib/firebase/equipment-service";
 
 const BATCH_CHUNK_SIZE = 500;
 
@@ -24,47 +25,37 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No valid pricing rows found in CSV." }, { status: 400 });
         }
 
-        // ── 2. Fetch existing catalog ──────────────────────────────────────────
-        const existingEquipment = await EquipmentService.getAllEquipment();
+        // ── 2. Filter rows against local Equipment Catalog ────────────────────
+        // We only want to import prices for items we actually have in our catalog.
+        const equipment = await EquipmentService.getAllEquipment();
+        const relevantSkus = new Set<string>();
 
-        // Build a map from model (case-insensitive) → equipment doc for quick lookup
-        const catalogByModel = new Map<string, (typeof existingEquipment)[number]>();
-        for (const eq of existingEquipment) {
-            catalogByModel.set(eq.model.toLowerCase().trim(), eq);
-        }
+        equipment.forEach(e => {
+            relevantSkus.add(e.id);
+            if (e.pricingSku) relevantSkus.add(e.pricingSku);
+        });
 
-        // ── 3. Diff & collect writes (idempotent) ──────────────────────────────
         interface PricingUpdate {
-            id: string;
+            id: string; // The SKU
             listPrice: number;
+            description?: string;
             pricingEffectiveDate?: string;
             eosDate: string | null;
             status?: string;
         }
 
         const updates: PricingUpdate[] = [];
-        let skipped = 0;
 
         for (const row of rows) {
-            const existing = catalogByModel.get(row.product.toLowerCase().trim());
-            if (!existing) {
-                // Product not in our catalog — skip silently
-                skipped++;
-                continue;
-            }
-
-            const existingAny = existing as Record<string, unknown>;
-            const priceChanged = existingAny.listPrice !== row.listPrice;
-            const eosChanged = existingAny.eosDate !== row.eosDate;
-
-            if (!priceChanged && !eosChanged) {
-                skipped++;
+            // Only include if the product matches an ID or pricingSku in our equipment catalog
+            if (!relevantSkus.has(row.product)) {
                 continue;
             }
 
             const update: PricingUpdate = {
-                id: existing.id,
+                id: row.product,
                 listPrice: row.listPrice,
+                description: row.description,
                 eosDate: row.eosDate,
             };
 
@@ -79,13 +70,13 @@ export async function POST(req: Request) {
             updates.push(update);
         }
 
-        // ── 4. Batch-write in chunks of 500 ───────────────────────────────────
+        // ── 3. Batch-write in chunks of 500 ───────────────────────────────────
         for (let i = 0; i < updates.length; i += BATCH_CHUNK_SIZE) {
             const chunk = updates.slice(i, i + BATCH_CHUNK_SIZE);
             const batch = writeBatch(db);
 
             for (const update of chunk) {
-                const docRef = doc(db, EQUIPMENT_COLLECTION, update.id);
+                const docRef = doc(db, PRICING_COLLECTION, update.id);
                 const payload = stampUpdate({ ...update });
                 // Merge so we don't overwrite unrelated fields
                 batch.set(docRef, payload, { merge: true });
@@ -94,13 +85,13 @@ export async function POST(req: Request) {
             await batch.commit();
         }
 
-        // ── 5. Return summary ──────────────────────────────────────────────────
+        // ── 4. Return summary ──────────────────────────────────────────────────
         return NextResponse.json({
             success: true,
             effectiveDate,
             total: rows.length,
             updated: updates.length,
-            skipped,
+            skipped: rows.length - updates.length,
         });
 
     } catch (error) {

@@ -31,4 +31,5 @@ export { ProjectService } from "./project-service";
 export { SystemDefaultsService } from "./system-defaults-service";
 export { BOMService } from "./bom-service";
 export { SiteDefinitionService } from "./site-definition-service";
+export { PricingService } from "./pricing-service";
 

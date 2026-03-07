@@ -85,6 +85,7 @@ export default function AdminNav() {
 
     const isCatalogActive = [
         '/admin/catalog',
+        '/admin/catalog/pricing',
         '/admin/services',
         '/admin/packages',
         '/admin/features',
@@ -115,6 +116,7 @@ export default function AdminNav() {
                                 active={isCatalogActive}
                                 items={[
                                     { href: '/admin/catalog', label: 'Equipment' },
+                                    { href: '/admin/catalog/pricing', label: 'Pricing' },
                                     { href: '/admin/services', label: 'Services' },
                                     { href: '/admin/packages', label: 'Packages' },
                                     { href: '/admin/features', label: 'Features' },

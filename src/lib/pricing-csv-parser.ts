@@ -12,6 +12,7 @@
 export interface PricingRow {
     /** Matches the equipment `model` / SKU field in Firestore */
     product: string;
+    description?: string;
     /** Sanitised list price in USD */
     listPrice: number;
     /** ISO date string from "End Of Sale Date" column, or null if not present */
@@ -63,7 +64,8 @@ export function parsePricingCSV(csvContent: string): ParsedPricingCSV {
     }
 
     // ── 3. Map header indices ──────────────────────────────────────────
-    const idxProduct = headers.findIndex((h) => h.includes('product'));
+    const idxProduct = headers.findIndex((h) => h.includes('product') && !h.includes('description'));
+    const idxDesc = headers.findIndex((h) => h.includes('description'));
     const idxPrice = headers.findIndex((h) => h.includes('price'));
     const idxEosDate = headers.findIndex((h) => h.includes('end of sale') || h.includes('end-of-sale') || h.includes('eos'));
 
@@ -77,13 +79,15 @@ export function parsePricingCSV(csvContent: string): ParsedPricingCSV {
         const product = cols[idxProduct]?.trim();
         if (!product) continue;
 
+        const description = idxDesc !== -1 ? cols[idxDesc]?.trim() : undefined;
+
         const listPrice = sanitisePrice(cols[idxPrice]);
         if (listPrice === null) continue; // skip rows without valid price
 
         const rawEos = idxEosDate !== -1 ? cols[idxEosDate]?.trim() : '';
         const eosDate = rawEos ? normaliseDate(rawEos) : null;
 
-        rows.push({ product, listPrice, eosDate });
+        rows.push({ product, description, listPrice, eosDate });
     }
 
     return { effectiveDate, rows };

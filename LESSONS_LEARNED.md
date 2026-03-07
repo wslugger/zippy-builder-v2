@@ -366,3 +366,13 @@
 - **Separation of Concerns**: Embedded compatible `licenses` (SKU, Tier, Term Length) directly onto the hardware schemas to dictate *compatibility*.
 - **Dynamic Engine Injection**: Updated the BOM engine to emit dedicated `"license"` `BOMLineItems` by cross-referencing the equipment's compatible licenses with the package's `required_license_tier`.
 - **Key Insight**: Hardware dictates what licenses *can* run on the box, while the Package/Service dictates what tier the customer *needs*. Decoupling these concerns and using the SKU as the binding key allows pricing to be fetched dynamically from the global Vendor Pricing catalog while maintaining strict architectural enforcement.
+
+## 51. Transition to Dedicated Pricing Catalog
+**Issue**: Embedding pricing directly in the `Equipment` records caused data duplication and stale pricing across different projects. It also made vendor price updates (via CSV) difficult, as they had to be mapped back to every individual equipment item.
+**Solution**:
+- **Decoupled Pricing**: Removed all pricing fields (`price`, `listPrice`, `mrc`) from the `Equipment` schema.
+- **Pricing Catalog (Single Source of Truth)**: Created a standalone `Pricing` catalog where each entry is identified by its vendor SKU/ID.
+- **Dynamic Linking**: Hardware and licenses now link to the pricing catalog via a `pricingSku` field (falling back to their own `id`). 
+- **AI-Assisted Matching**: Implemented AI-driven SKU suggestion and confirmation logic in the Admin UI to handle cases where equipment IDs don't exactly match vendor pricing IDs (e.g., `MX67` vs `MX67-HW`).
+- **Targeted Ingestion**: Updated csv ingestion to only import prices for items present in the equipment catalog, preventing the database from bloating with irrelevant vendor parts.
+- **Key Insight**: Pricing is highly volatile compared to hardware specifications. Separating "Technical Specs" (Equipment) from "Commercial Specs" (Pricing) allows both to evolve independently and enables bulk vendor updates without touching core architecture rules.

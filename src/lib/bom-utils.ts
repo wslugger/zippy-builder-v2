@@ -5,7 +5,7 @@
  * and the BOM builder UI. Keeping them in one place prevents logic drift.
  */
 
-import { Package, Equipment, EQUIPMENT_PURPOSES, INTERFACE_TYPES, POE_CAPABILITIES } from "./types";
+import { Package, Equipment, PricingItem, EQUIPMENT_PURPOSES, INTERFACE_TYPES, POE_CAPABILITIES } from "./types";
 import { Site } from "./bom-types";
 import { SiteType } from "./site-types";
 
@@ -331,22 +331,45 @@ export function exportBomToCsv(bomData: BOMLineItem[], projectName: string) {
 }
 
 /**
- * Build a pricing snapshot from catalog equipment data.
+ * Build a pricing snapshot from catalog equipment data or independent Pricing Catalog.
  * Defaults discountPercent to 0 so netPrice equals listPrice.
+ * 
+ * Lookup Logic:
+ * 1. If pricingSku is set on equipment, look it up in pricingCatalog.
+ * 2. If not found, try looking up equipment ID in pricingCatalog.
+ * 3. If still not found, fallback to legacy fields on the Equipment object itself.
  */
-export function makePricingSnapshot(equip: Equipment): BOMLineItem['pricing'] | undefined {
-    const purchase = equip.pricing?.purchasePrice ?? equip.listPrice ?? equip.price ?? 0;
-    const rental = equip.pricing?.rentalPrice ?? 0;
+export function makePricingSnapshot(
+    equip: Equipment,
+    pricingCatalog?: PricingItem[]
+): BOMLineItem['pricing'] | undefined {
+    let purchase = 0;
+    let rental = 0;
+    let effectiveDate = "";
 
+    // 1. Try Pricing Catalog Lookup
+    if (pricingCatalog) {
+        const lookupId = equip.pricingSku || equip.id;
+        const pricingItem = pricingCatalog.find(p => p.id === lookupId);
+
+        if (pricingItem) {
+            purchase = pricingItem.listPrice || 0;
+            rental = pricingItem.rentalPrice || 0;
+            // Overrides from pricing item if available
+            if (pricingItem.purchasePrice) purchase = pricingItem.purchasePrice;
+            if (pricingItem.eosDate) effectiveDate = `EoS: ${pricingItem.eosDate}`;
+        }
+    }
+
+    // 2. Return snapshot if match found
     if (!purchase && !rental) return undefined;
 
     return {
-        listPrice: purchase, // Legacy fallback
         purchasePrice: purchase,
         rentalPrice: rental,
         discountPercent: 0,
         netPrice: purchase,
-        effectiveDate: equip.pricingEffectiveDate,
+        effectiveDate: effectiveDate || "Current",
     };
 }
 

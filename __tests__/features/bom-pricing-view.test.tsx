@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { calculateBOM } from "@/src/lib/bom-engine";
 import { Site } from "@/src/lib/bom-types";
-import { Package, Service, Equipment } from "@/src/lib/types";
+import { Package, Service, Equipment, PricingItem } from "@/src/lib/types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
@@ -47,11 +47,9 @@ describe("BOM Pricing View Features", () => {
     };
 
     it("calculates pricing totals correctly across multiple sites", () => {
-        const catalogWithPrice: Equipment[] = SEED_EQUIPMENT.map(e =>
-            e.id === "meraki_mx67"
-                ? ({ ...e, listPrice: 1000, pricingEffectiveDate: "2024-06-01" } as any)
-                : e
-        );
+        const pricingCatalog: PricingItem[] = [
+            { id: "meraki_mx67", listPrice: 1000, description: "MX67", eosDate: null }
+        ];
 
         const bom = calculateBOM({
             projectId: "test",
@@ -59,21 +57,22 @@ describe("BOM Pricing View Features", () => {
             selectedPackage: mockPackage,
             services: mockServices,
             siteTypes: ALL_SITE_TYPES,
-            equipmentCatalog: catalogWithPrice,
+            equipmentCatalog: SEED_EQUIPMENT,
+            pricingCatalog,
             rules: SEED_BOM_RULES,
         });
 
         // Verify each site has the MX67 (1000 list)
         expect(bom.items.length).toBe(2);
-        const totalListTotal = bom.items.reduce((sum, item) => sum + (item.pricing?.listPrice || 0) * item.quantity, 0);
+        const totalListTotal = bom.items.reduce((sum, item) => sum + (item.pricing?.purchasePrice || 0) * item.quantity, 0);
         expect(totalListTotal).toBe(2000);
     });
 
     it("simulates global discount replacement", () => {
         // This test will verify logic that we will implement in the hook/component
-        const listPrice = 1000;
+        const purchasePrice = 1000;
         const globalDiscount = 20; // 20%
-        const netPrice = listPrice * (1 - globalDiscount / 100);
+        const netPrice = purchasePrice * (1 - globalDiscount / 100);
         expect(netPrice).toBe(800);
     });
 

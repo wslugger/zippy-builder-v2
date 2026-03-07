@@ -15,6 +15,24 @@ export interface Timestamps {
 }
 
 // ============================================================
+// Pricing Catalog Types
+// ============================================================
+
+export const PricingItemSchema = z.object({
+  id: z.string().describe("Unique SKU for pricing (e.g. C9200-DNA-A-24-5Y)"),
+  description: z.string().optional().describe("Product description from the pricing list"),
+  listPrice: z.number().describe("MSRP / List Price in USD"),
+  purchasePrice: z.number().optional().describe("Calculated purchase price or manual override"),
+  rentalPrice: z.number().optional().describe("Calculated rental price or manual override"),
+  eosDate: z.string().nullable().optional().describe("End-Of-Sale date from vendor"),
+  pricingEffectiveDate: z.string().optional().describe("The date this price list became effective"),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+});
+
+export type PricingItem = z.infer<typeof PricingItemSchema>;
+
+// ============================================================
 // Equipment Types
 // ============================================================
 
@@ -143,13 +161,8 @@ const BaseEquipmentSchema = z.object({
   managementSize: z.string().optional().describe("Size bracket for tiered management cost (Small, Medium, Large, X-Large, None)"),
   end_of_life: z.string().optional().describe("ISO Date string or 'Not Announced'"),
   formFactor: z.string().optional(),
-  price: z.number().optional(), // Deprecated in favor of pricing object
-  listPrice: z.number().optional().describe("Vendor list price from pricing CSV ingest"), // Deprecated in favor of pricing object
-  pricing: z.object({
-    purchasePrice: z.number().optional(),
-    rentalPrice: z.number().optional(),
-  }).optional().describe("Detailed dual-axis pricing scheme"),
-  pricingEffectiveDate: z.string().optional().describe("ISO date when this price became effective"),
+  pricingSku: z.string().optional().describe("Explicit SKU used to lookup pricing in the Pricing Catalog. If omitted, falls back to equipment ID."),
+  pricingSkuConfirmed: z.boolean().optional().describe("Whether the mapped pricing SKU has been confirmed by an admin."),
   eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
   images: z.array(z.string()).optional(),
@@ -706,9 +719,8 @@ export interface BOMLineItem {
   totalMRC?: number;
   /** Pricing snapshot captured at BOM generation time. Protects historical BOMs from future price changes. */
   pricing?: {
-    listPrice: number; // Legacy
-    purchasePrice?: number;
-    rentalPrice?: number;
+    purchasePrice: number;
+    rentalPrice: number;
     discountPercent: number;
     netPrice: number;
     effectiveDate?: string;
@@ -738,6 +750,7 @@ export interface BOMEngineInput {
   rules: BOMLogicRule[];
   manualSelections?: Record<string, string>;
   globalParameters?: Record<string, any>;
+  pricingCatalog?: PricingItem[];
 }
 
 export interface BOMModuleInput {
@@ -751,6 +764,7 @@ export interface BOMModuleInput {
   rules: BOMLogicRule[];
   siteParameters: Record<string, any>;
   pkgItem: PackageItem;
+  pricingCatalog?: PricingItem[];
 }
 
 export interface InfrastructureOptions {

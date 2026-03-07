@@ -21,7 +21,8 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
         equipmentCatalog,
         rules,
         siteParameters,
-        selectedPackage
+        selectedPackage,
+        pricingCatalog
     } = input;
 
     const bomItems: BOMLineItem[] = [];
@@ -102,7 +103,7 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
                     quantity: quantity,
                     reasoning: `Manual Selection`,
                     matchedRules: [{ ruleId: 'manual', ruleName: 'Manual Override', description: 'User manually selected this equipment' }],
-                    pricing: makePricingSnapshot(equip),
+                    pricing: makePricingSnapshot(equip, pricingCatalog),
                 });
                 processedAny = true;
             }
@@ -140,7 +141,7 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
                     ruleName: r.name,
                     description: `Condition: ${JSON.stringify(r.condition)}`
                 })),
-                pricing: makePricingSnapshot(equip),
+                pricing: makePricingSnapshot(equip, pricingCatalog),
             });
             return bomItems;
         } else {
@@ -348,7 +349,7 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
                 }
             ],
             alternatives: alternatives.length > 0 ? alternatives : undefined,
-            pricing: makePricingSnapshot(bestFit),
+            pricing: makePricingSnapshot(bestFit, pricingCatalog),
         });
     }
 

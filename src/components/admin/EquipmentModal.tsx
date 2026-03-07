@@ -10,6 +10,7 @@ import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigg
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
 
 import { useServices } from "@/src/hooks/useServices";
+import { usePricing } from "@/src/hooks/usePricing";
 
 const BLANK_EQUIPMENT: Equipment = {
     id: "",
@@ -60,6 +61,49 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
     const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
     const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
+
+    const { pricingItems: pricingCatalog } = usePricing();
+
+    // Matching logic for pricing SKU suggestion
+    const pricingSuggestion = (!formData.pricingSku && !formData.pricingSkuConfirmed) ? (() => {
+        if (!formData.model && !formData.id) return null;
+        const target = (formData.model || formData.id).toLowerCase();
+
+        // Exact match
+        const exact = pricingCatalog.find(p => p.id.toLowerCase() === target);
+        if (exact) return exact.id;
+
+        // Best fuzzy match: starts with target
+        const matches = pricingCatalog.filter(p => p.id.toLowerCase().startsWith(target));
+        if (matches.length > 0) {
+            return matches.sort((a, b) => a.id.length - b.id.length)[0].id;
+        }
+
+        // Fallback: contains target
+        const contains = pricingCatalog.filter(p => p.id.toLowerCase().includes(target));
+        if (contains.length > 0) {
+            return contains[0].id;
+        }
+
+        return null;
+    })() : null;
+
+    // Direct lookup for ACTIVE price from catalog
+    const activeCatalogItem = (() => {
+        const lookupId = formData.pricingSku || formData.id;
+        if (!lookupId) return null;
+        return pricingCatalog.find(p => p.id === lookupId);
+    })();
+
+    const handleConfirmSuggestion = () => {
+        if (pricingSuggestion) {
+            setFormData({
+                ...formData,
+                pricingSku: pricingSuggestion,
+                pricingSkuConfirmed: true
+            });
+        }
+    };
 
     const handleAskDescriptionCopilot = async () => {
         setIsLoadingDescriptionCopilot(true);
@@ -492,41 +536,66 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
                             {/* Pricing Information Card */}
                             <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h4 className={sectionTitleClass}>Pricing Information</h4>
+                                <h4 className={sectionTitleClass}>Pricing Catalog Linking</h4>
                                 <div className="grid grid-cols-2 gap-x-8 gap-y-8">
                                     <div className="col-span-1">
-                                        <label className={labelClass}>Purchase Price (OTC) ($)</label>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                                            <input
-                                                type="number"
-                                                value={formData.pricing?.purchasePrice ?? formData.listPrice ?? formData.price ?? 0}
-                                                onChange={(e) => setFormData({
-                                                    ...formData,
-                                                    pricing: { ...(formData.pricing || {}), purchasePrice: Number(e.target.value) },
-                                                    listPrice: Number(e.target.value) // Keep legacy field in sync just in case
-                                                } as any)}
-                                                className={`${inputClass} pl-8`}
-                                                placeholder="0.00"
-                                                step="0.01"
-                                            />
-                                        </div>
+                                        <label className={labelClass}>Pricing Catalog SKU</label>
+                                        <input
+                                            type="text"
+                                            value={formData.pricingSku || ""}
+                                            onChange={(e) => setFormData({ ...formData, pricingSku: e.target.value, pricingSkuConfirmed: true })}
+                                            className={`${inputClass} ${!formData.pricingSkuConfirmed && formData.pricingSku ? 'border-amber-500/50 bg-amber-500/5' : ''}`}
+                                            placeholder="e.g. C9200-DNA-A-24-5Y"
+                                        />
+                                        {pricingSuggestion && (
+                                            <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between gap-4 animate-in slide-in-from-top-2 duration-300">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-lg">💁‍♂️</span>
+                                                    <div>
+                                                        <p className="text-[11px] font-semibold text-amber-500 uppercase tracking-wider">Suggested Match</p>
+                                                        <p className="text-sm text-zinc-300 font-mono">{pricingSuggestion}</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={handleConfirmSuggestion}
+                                                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-amber-950 text-[11px] font-bold rounded-lg transition-colors uppercase tracking-tight"
+                                                >
+                                                    Confirm Match
+                                                </button>
+                                            </div>
+                                        )}
+                                        {formData.pricingSku && !formData.pricingSkuConfirmed && !pricingSuggestion && (
+                                            <p className="text-[10px] text-amber-500 mt-2 flex items-center gap-1">
+                                                <span>⚠️</span> Needs Confirmation
+                                            </p>
+                                        )}
+                                        <p className="text-[10px] text-zinc-500 mt-2 italic font-medium">This SKU links the equipment to the global price list. If empty, the system defaults to the Equipment ID.</p>
                                     </div>
                                     <div className="col-span-1">
-                                        <label className={labelClass}>Monthly Rental Price (MRC) ($)</label>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                                            <input
-                                                type="number"
-                                                value={formData.pricing?.rentalPrice ?? 0}
-                                                onChange={(e) => setFormData({
-                                                    ...formData,
-                                                    pricing: { ...(formData.pricing || {}), rentalPrice: Number(e.target.value) }
-                                                } as any)}
-                                                className={`${inputClass} pl-8`}
-                                                placeholder="0.00"
-                                                step="0.01"
-                                            />
+                                        <div className={`p-5 rounded-2xl border transition-all duration-300 ${activeCatalogItem ? 'bg-blue-600/5 dark:bg-blue-600/10 border-blue-600/20' : 'bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-100 dark:border-zinc-800/50 opacity-60'}`}>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Active List Price</label>
+                                                {activeCatalogItem && (
+                                                    <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-md uppercase tracking-tighter">Active</span>
+                                                )}
+                                            </div>
+                                            {activeCatalogItem ? (
+                                                <div>
+                                                    <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-mono tracking-tighter">
+                                                        ${activeCatalogItem.listPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                                    </div>
+                                                    <div className="text-[11px] text-zinc-500 mt-2 line-clamp-2 leading-relaxed" title={activeCatalogItem.description}>
+                                                        {activeCatalogItem.description}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="py-2">
+                                                    <div className="text-xl font-bold text-zinc-400 dark:text-zinc-600 font-mono italic">
+                                                        Unlinked
+                                                    </div>
+                                                    <p className="text-[10px] text-zinc-400 mt-2 italic font-medium leading-relaxed">No match found in the current Pricing Catalog. Please upload a price list or link a valid SKU.</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

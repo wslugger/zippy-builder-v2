@@ -9,7 +9,7 @@
 import { parsePricingCSV, sanitisePrice } from "@/src/lib/pricing-csv-parser";
 import { calculateBOM } from "@/src/lib/bom-engine";
 import { Site } from "@/src/lib/bom-types";
-import { Package, Service, Equipment } from "@/src/lib/types";
+import { Package, Service, Equipment, PricingItem } from "@/src/lib/types";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
@@ -113,13 +113,15 @@ describe("BOM Engine pricing snapshot", () => {
         items: [{ service_id: "sdwan", inclusion_type: "required", enabled_features: [] }],
     };
 
-    it("injects pricing snapshot when equipment has a listPrice", () => {
-        // Augment one catalog item with a listPrice
-        const catalogWithPrice: Equipment[] = SEED_EQUIPMENT.map(e =>
-            e.id === "meraki_mx67"
-                ? ({ ...e, listPrice: 595.00, pricingEffectiveDate: "2024-06-01" } as any)
-                : e
-        );
+    it("injects pricing snapshot when pricing catalog has a match", () => {
+        const pricingCatalog: PricingItem[] = [
+            {
+                id: "meraki_mx67",
+                listPrice: 595.00,
+                description: "Meraki MX67 HW",
+                eosDate: null,
+            }
+        ];
 
         const site: Site = {
             name: "Small Site",
@@ -143,7 +145,8 @@ describe("BOM Engine pricing snapshot", () => {
             selectedPackage: mockPackage,
             services: mockServices,
             siteTypes: ALL_SITE_TYPES,
-            equipmentCatalog: catalogWithPrice,
+            equipmentCatalog: SEED_EQUIPMENT,
+            pricingCatalog: pricingCatalog,
             rules: SEED_BOM_RULES,
         });
 
@@ -151,13 +154,12 @@ describe("BOM Engine pricing snapshot", () => {
         expect(sdwanItem).toBeDefined();
         expect(sdwanItem?.itemId).toBe("meraki_mx67");
         expect(sdwanItem?.pricing).toBeDefined();
-        expect(sdwanItem?.pricing?.listPrice).toBe(595.00);
+        expect(sdwanItem?.pricing?.purchasePrice).toBe(595.00);
         expect(sdwanItem?.pricing?.netPrice).toBe(595.00);
         expect(sdwanItem?.pricing?.discountPercent).toBe(0);
-        expect(sdwanItem?.pricing?.effectiveDate).toBe("2024-06-01");
     });
 
-    it("omits pricing snapshot when equipment has no listPrice", () => {
+    it("omits pricing snapshot when pricing catalog has no match", () => {
         const site: Site = {
             name: "Small Site",
             bandwidthDownMbps: 50,
@@ -180,13 +182,14 @@ describe("BOM Engine pricing snapshot", () => {
             selectedPackage: mockPackage,
             services: mockServices,
             siteTypes: ALL_SITE_TYPES,
-            equipmentCatalog: SEED_EQUIPMENT, // no listPrice on any seed item
+            equipmentCatalog: SEED_EQUIPMENT,
+            pricingCatalog: [], // Empty catalog
             rules: SEED_BOM_RULES,
         });
 
         const sdwanItem = bom.items.find(i => i.serviceId === "sdwan");
         expect(sdwanItem).toBeDefined();
-        // pricing should be undefined when no listPrice is present
+        // pricing should be undefined when no match is found
         expect(sdwanItem?.pricing).toBeUndefined();
     });
 });
