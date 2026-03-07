@@ -359,3 +359,10 @@
 **Solution**:
 - **Utility Abstraction**: Replaced direct property access with a shared utility function `getEquipmentRole(eq)` that safely evaluates the equipment object against multiple possible fields (`role`, `primary_purpose`, `purpose`) using fallback logic.
 - **Key Insight**: When data schemas evolve, the UI filtering logic must use robust accessors/utilities rather than direct property reads to ensure backward compatibility with older data records, preventing silent UI failures in lists and dropdowns.
+
+## 50. Intelligent Hybrid Approach to Hardware Licensing
+**Issue**: Managing equipment licenses natively on hardware profiles led to stale pricing, while keeping them purely in a standalone pricing catalog detached them from hardware compatibility logic.
+**Solution**:
+- **Separation of Concerns**: Embedded compatible `licenses` (SKU, Tier, Term Length) directly onto the hardware schemas to dictate *compatibility*.
+- **Dynamic Engine Injection**: Updated the BOM engine to emit dedicated `"license"` `BOMLineItems` by cross-referencing the equipment's compatible licenses with the package's `required_license_tier`.
+- **Key Insight**: Hardware dictates what licenses *can* run on the box, while the Package/Service dictates what tier the customer *needs*. Decoupling these concerns and using the SKU as the binding key allows pricing to be fetched dynamically from the global Vendor Pricing catalog while maintaining strict architectural enforcement.

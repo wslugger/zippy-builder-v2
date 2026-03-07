@@ -43,7 +43,7 @@ export function useCatalogMetadata() {
         regions: getTaxonomyField('regions', []),
         siteTypes: getTaxonomyField('siteTypes', []),
         vendors: getTaxonomyField('vendors', VENDOR_IDS),
-        purposes: getTaxonomyField('purposes', EQUIPMENT_PURPOSES).filter(p => EQUIPMENT_PURPOSES.includes(p as any)),
+        purposes: getTaxonomyField('purposes', EQUIPMENT_PURPOSES).filter(p => EQUIPMENT_PURPOSES.includes(p as typeof EQUIPMENT_PURPOSES[number])),
         cellularTypes: getTaxonomyField('cellular_types', CELLULAR_TYPES),
         wifiStandards: getTaxonomyField('wifi_standards', WIFI_STANDARDS),
         mountingOptions: getTaxonomyField('mounting_options', []),

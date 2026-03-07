@@ -120,6 +120,13 @@ export const WLANSpecsSchema = z.object({
   management: z.string().optional(),
   power: z.string().optional(),
 }).passthrough();
+export const EquipmentLicenseSchema = z.object({
+  id: z.string().describe("The exact License SKU (must match the ID in vendor_pricing catalog)"),
+  tier: z.string().describe("The capability tier (e.g., 'SEC', 'ENT', 'SDW', 'advanced', etc.)"),
+  termLength: z.string().describe("Duration string or number (e.g., '1D', '1YR', '3YR', '10Y')"),
+});
+export type EquipmentLicense = z.infer<typeof EquipmentLicenseSchema>;
+
 export const MANAGEMENT_SIZES = ['X-Small', 'Small', 'Medium', 'Large', 'X-Large', 'None'] as const;
 
 const BaseEquipmentSchema = z.object({
@@ -146,7 +153,8 @@ const BaseEquipmentSchema = z.object({
   eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
   images: z.array(z.string()).optional(),
-  mapped_services: z.array(z.string()).catch([]).default([]),
+  mapped_services: z.array(z.string()).optional(),
+  licenses: z.array(EquipmentLicenseSchema).optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
@@ -298,6 +306,7 @@ export interface PackageItem {
   service_id: string; // Reference to Service.id
   service_option_id?: string; // Reference to ServiceOption.id
   design_option_id?: string; // Reference to DesignOption.id
+  required_license_tier?: string; // e.g. "advanced" or "premier"
   enabled_features: PackageFeature[]; // List of enabled features with inclusion rules
   inclusion_type: InclusionType;
 }

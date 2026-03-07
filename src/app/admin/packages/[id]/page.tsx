@@ -195,6 +195,19 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
         }
     };
 
+    const updateLicenseTier = (serviceId: string, tier: string, optionId?: string, designId?: string) => {
+        const current = [...(pkg.items || [])];
+        const idx = current.findIndex(i =>
+            i.service_id === serviceId &&
+            i.service_option_id === optionId &&
+            i.design_option_id === designId
+        );
+        if (idx > -1) {
+            current[idx] = { ...current[idx], required_license_tier: tier || undefined };
+            setPkg({ ...pkg, items: current });
+        }
+    };
+
     const updateFeatureInclusion = (featureId: string, type: InclusionType | 'none') => {
         if (!editingItem) return;
 
@@ -461,6 +474,13 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
 
                                             {isServiceSelected && (
                                                 <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="License Tier (e.g. SEC)"
+                                                        value={serviceItem?.required_license_tier || ''}
+                                                        onChange={(e) => updateLicenseTier(service.id, e.target.value)}
+                                                        className="text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 w-32 outline-none focus:ring-1 focus:ring-blue-500/50"
+                                                    />
                                                     {service.supported_features && service.supported_features.length > 0 && (
                                                         <button
                                                             onClick={(e) => {
@@ -547,6 +567,13 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                 </div>
                                                                 {isOptionSelected && (
                                                                     <div className="flex items-center gap-3">
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="License Tier"
+                                                                            value={optionItem?.required_license_tier || ''}
+                                                                            onChange={(e) => updateLicenseTier(service.id, e.target.value, option.id)}
+                                                                            className="text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 w-28 outline-none focus:ring-1 focus:ring-blue-500/50"
+                                                                        />
                                                                         {option.supported_features && option.supported_features.length > 0 && (
                                                                             <button
                                                                                 onClick={(e) => {
@@ -607,6 +634,13 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                                             </div>
                                                                                             {isDesignSelected && (
                                                                                                 <div className="flex items-center gap-2 shrink-0 ml-2">
+                                                                                                    <input
+                                                                                                        type="text"
+                                                                                                        placeholder="License"
+                                                                                                        value={designItem?.required_license_tier || ''}
+                                                                                                        onChange={(e) => updateLicenseTier(service.id, e.target.value, option.id, design.id)}
+                                                                                                        className="text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 w-20 outline-none focus:ring-1 focus:ring-blue-500/50"
+                                                                                                    />
                                                                                                     {design.supported_features && design.supported_features.length > 0 && (
                                                                                                         <button
                                                                                                             onClick={(e) => {

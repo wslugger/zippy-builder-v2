@@ -49,7 +49,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
         }
         return data as Equipment;
     });
-    const [activeTab, setActiveTab] = useState<"details" | "json">("details");
+    const [activeTab, setActiveTab] = useState<"details" | "licenses" | "json">("details");
     const [isSaving, setIsSaving] = useState(false);
 
     const { config, updateConfigAsync } = useSystemConfig();
@@ -262,11 +262,18 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                     >
                         Raw JSON
                     </button>
+                    <button
+                        onClick={() => setActiveTab("licenses")}
+                        className={`pb-4 border-b-2 transition-all ${activeTab === "licenses" ? "border-blue-500 text-blue-600 font-bold" : "border-transparent text-zinc-400 hover:text-zinc-800"
+                            }`}
+                    >
+                        Licenses
+                    </button>
                 </div>
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto bg-slate-50/80 dark:bg-zinc-950/50 p-8 space-y-8">
-                    {activeTab === "details" ? (
+                    {activeTab === "details" && (
                         <div className="space-y-8">
                             {/* General Information Card */}
                             <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
@@ -1112,14 +1119,96 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                             )}
 
                         </div>
-                    ) : (
+                    )}
+
+                    {activeTab === "licenses" && (
+                        <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 space-y-8">
+                            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                                <div>
+                                    <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Compatible Licenses</h4>
+                                    <p className="text-xs text-zinc-500 mt-1">Add licensing SKUs that this equipment supports.</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        const newLicenses = [...((formData as any).licenses || []), { id: "", tier: "advanced", termLength: "1YR" }];
+                                        handleChange("licenses" as any, newLicenses as any);
+                                    }}
+                                    className="px-4 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
+                                >
+                                    + Add License
+                                </button>
+                            </div>
+                            <div className="space-y-3">
+                                {(!(formData as any).licenses || (formData as any).licenses.length === 0) && (
+                                    <div className="text-center py-8 text-zinc-400 text-xs italic bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700">
+                                        No licenses added yet.
+                                    </div>
+                                )}
+                                {(formData as any).licenses?.map((lic: any, i: number) => (
+                                    <div key={i} className="grid grid-cols-12 gap-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
+                                        <div className="col-span-5 relative">
+                                            <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1 block">License SKU / ID</label>
+                                            <input
+                                                type="text" placeholder="e.g. LIC-MX68-SEC-3YR"
+                                                value={lic.id}
+                                                onChange={(e) => {
+                                                    const newLic = [...((formData as any).licenses || [])];
+                                                    newLic[i].id = e.target.value;
+                                                    handleChange("licenses" as any, newLic as any);
+                                                }}
+                                                className="w-full text-sm p-3 rounded-lg border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                            />
+                                        </div>
+                                        <div className="col-span-3">
+                                            <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1 block">Tier (e.g. advanced)</label>
+                                            <input
+                                                type="text" placeholder="Tier"
+                                                value={lic.tier}
+                                                onChange={(e) => {
+                                                    const newLic = [...((formData as any).licenses || [])];
+                                                    newLic[i].tier = e.target.value;
+                                                    handleChange("licenses" as any, newLic as any);
+                                                }}
+                                                className="w-full text-sm p-3 rounded-lg border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                            />
+                                        </div>
+                                        <div className="col-span-3">
+                                            <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1 block">Term Length</label>
+                                            <input
+                                                type="text" placeholder="e.g. 1YR, 3YR"
+                                                value={lic.termLength}
+                                                onChange={(e) => {
+                                                    const newLic = [...((formData as any).licenses || [])];
+                                                    newLic[i].termLength = e.target.value;
+                                                    handleChange("licenses" as any, newLic as any);
+                                                }}
+                                                className="w-full text-sm p-3 rounded-lg border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                            />
+                                        </div>
+                                        <div className="col-span-1 flex items-end justify-center pb-2">
+                                            <button
+                                                onClick={() => {
+                                                    const newLic = [...((formData as any).licenses || [])];
+                                                    newLic.splice(i, 1);
+                                                    handleChange("licenses" as any, newLic as any);
+                                                }}
+                                                className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 flex items-center justify-center transition-colors"
+                                                title="Remove License"
+                                            >✕</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === "json" && (
                         <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
                             <pre className="text-xs p-8 overflow-x-auto text-zinc-500 dark:text-zinc-400 font-mono leading-loose">
                                 {JSON.stringify(formData, null, 2)}
                             </pre>
                         </div>
-                    )
-                    }
+                    )}
                 </div >
 
                 {/* Footer */}

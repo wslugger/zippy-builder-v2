@@ -4,9 +4,9 @@ import { TechnicalFeature, Service, Package } from '@/src/lib/types';
 import '@testing-library/jest-dom';
 
 const mockFeatures: TechnicalFeature[] = [
-    { id: 'bgp', name: 'BGP Routing', category: 'Routing', description: 'Border Gateway Protocol' },
-    { id: 'ha', name: 'High Availability', category: 'General', description: 'Dual path' },
-    { id: 'fw', name: 'Next-Gen Firewall', category: 'Security', description: 'L7 inspection' },
+    { id: 'bgp', name: 'BGP Routing', category: ['Routing'], description: 'Border Gateway Protocol' },
+    { id: 'ha', name: 'High Availability', category: ['General'], description: 'Dual path' },
+    { id: 'fw', name: 'Next-Gen Firewall', category: ['Security'], description: 'L7 inspection' },
 ];
 
 const mockServices: Service[] = [];

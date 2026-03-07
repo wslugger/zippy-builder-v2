@@ -194,6 +194,42 @@ export function calculateBOM(input: BOMEngineInput): BOM {
                 console.warn(`[BOMEngine] Unsupported equipment purpose: ${requiredPurpose}`);
             }
 
+            // Inject matching licenses for calculated hardware items
+            const licenseItems: BOMLineItem[] = [];
+            for (const item of items) {
+                if (item.itemType === "equipment") {
+                    const eq = equipmentCatalog.find(e => e.id === item.itemId);
+                    if (eq && eq.licenses && eq.licenses.length > 0) {
+                        const requiredTier = pkgItem.required_license_tier?.toLowerCase();
+
+                        let matchedLicense = requiredTier
+                            ? eq.licenses.find(l => l.tier.toLowerCase() === requiredTier)
+                            : eq.licenses[0];
+
+                        // Fallback to first license if requested tier doesn't exist on this hardware
+                        if (requiredTier && !matchedLicense) {
+                            console.warn(`[BOMEngine] Requested license tier '${requiredTier}' not found on equipment '${eq.model}'. Falling back to default.`);
+                            matchedLicense = eq.licenses[0];
+                        }
+
+                        if (matchedLicense) {
+                            licenseItems.push({
+                                id: `${item.id}_license_${matchedLicense.id}`,
+                                siteName: item.siteName,
+                                serviceId: item.serviceId,
+                                serviceName: item.serviceName,
+                                itemId: matchedLicense.id, // Vendor Pricing SKU
+                                itemName: `${eq.make ? eq.make + ' ' : ''}${eq.model} ${matchedLicense.tier.toUpperCase()} License (${matchedLicense.termLength})`,
+                                itemType: "license",
+                                quantity: item.quantity,
+                                reasoning: `Associated license for ${eq.model} (Tier: ${matchedLicense.tier.toUpperCase()})`,
+                            });
+                        }
+                    }
+                }
+            }
+            items.push(...licenseItems);
+
             bomItems.push(...items);
         }
     }

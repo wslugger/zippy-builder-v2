@@ -7,18 +7,21 @@ const mockSite = {
     name: "Test Site",
     lanPorts: 10,
     poePorts: 5,
-};
+} as unknown as import("@/src/lib/types").Site;
 
 test("Add Switch Model button adds a switch to selections", () => {
-    let manualSelections = {};
-    const setManualSelections = (valOrFn) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let manualSelections: Record<string, any[]> = {};
+    const setManualSelections = (valOrFn: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (typeof valOrFn === 'function') {
             manualSelections = valOrFn(manualSelections);
         } else {
-            manualSelections = valOrFn;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            manualSelections = valOrFn as Record<string, any[]>;
         }
     };
-    
+
     const { rerender } = render(
         <LANTab
             selectedSite={mockSite}
@@ -26,9 +29,9 @@ test("Add Switch Model button adds a switch to selections", () => {
             manualSelections={manualSelections}
             setManualSelections={setManualSelections}
             catalog={SEED_EQUIPMENT}
-            setSelectedSpecsItem={() => {}}
+            setSelectedSpecsItem={() => { }}
             resolvedVendor="meraki"
-            handleSiteUpdate={() => {}}
+            handleSiteUpdate={() => { }}
         />
     );
 
