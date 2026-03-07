@@ -46,7 +46,7 @@ export default function SADashboard() {
         e.preventDefault();
         try {
             const newProject: Project = {
-                id: crypto.randomUUID(),
+                id: self.crypto.randomUUID(),
                 userId: MOCK_USER_ID,
                 name: newProjectName,
                 customerName: customerName,
