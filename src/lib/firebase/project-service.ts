@@ -40,11 +40,12 @@ export const ProjectService = {
             const projectsRef = collection(db, PROJECTS_COLLECTION);
             const q = query(
                 projectsRef,
-                where("userId", "==", userId),
-                orderBy("updatedAt", "desc")
+                where("userId", "==", userId)
             );
             const snapshot = await getDocs(q);
-            return snapshot.docs.map(d => validateDoc(ProjectSchema, d.data(), d.id));
+            return snapshot.docs
+                .map(d => validateDoc(ProjectSchema, d.data(), d.id))
+                .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
         } catch (error) {
             // Fallback to client-side filtering if index is missing
             console.warn("[ProjectService] Server-side query failed (missing index?), falling back to client-side filter:", error);
