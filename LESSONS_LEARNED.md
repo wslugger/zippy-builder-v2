@@ -385,3 +385,9 @@
 - **Service-Level Transparency**: Updated the service layer to automatically apply this escaping logic, ensuring that callers (UI, API) can still use raw SKUs while the database handles the storage-safe version.
 - **Key Insight**: Never assume that external identifiers (SKUs, URLs, user input) are safe for use as direct primary keys in a database. Always implement a sanitization or escaping layer that preserves the original value in the data.
 
+## 53. Intent-Based Input for Technical Configurations
+**Issue**: Technical SAs often struggle with detailed port and PoE spec definitions, while non-technical SAs are overwhelmed by jargon (e.g., "PoE+ 802.3at").
+**Solution**: Replaced the technical requirements editor with an **Intent Collector** (Wizard).
+- **Key Insight**: Users think in terms of "what connects here" (Workstations, IP Phones, etc.) rather than technical specs. Mapping these simple intents to backend technical requirements simplifies the UX without losing technical accuracy.
+- **Pattern**: Implemented a hybrid design where intent-based input auto-resolves a default "Hero Card" recommendation, with an explicit "Find Your Own" (Catalog Browser) escape hatch for manual overrides.
+- **Validation**: Replaced large, confusing usage gauges with a compact, color-coded **Validation Bar** that provides real-time feedback on port coverage and capacity without obstructing the configuration flow.
