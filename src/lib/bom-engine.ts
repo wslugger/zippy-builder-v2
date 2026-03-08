@@ -140,10 +140,11 @@ export function calculateBOM(input: BOMEngineInput): BOM {
 
         const processedServices = new Set<string>();
         for (const pkgItem of sortedPackageItems) {
-            const service = services.find(s => s.id === pkgItem.service_id);
+            const serviceId = normalizeServiceId(pkgItem.service_id);
+            const service = services.find(s => normalizeServiceId(s.id) === serviceId);
             if (!service) continue;
 
-            const canonicalServiceId = normalizeServiceId(service.id);
+            const canonicalServiceId = serviceId;
             if (processedServices.has(canonicalServiceId)) {
 
                 continue;

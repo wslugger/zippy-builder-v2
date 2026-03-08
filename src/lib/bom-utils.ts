@@ -73,11 +73,12 @@ export function resolveVendorForService(
     serviceId: string,
     services?: { id: string; service_options: { id: string; vendor_id?: string; design_options: { id: string; vendor_id?: string }[] }[] }[]
 ): string {
-    const pkgItem = pkg.items.find(i => i.service_id === serviceId);
+    const normalizedId = normalizeServiceId(serviceId);
+    const pkgItem = pkg.items.find(i => normalizeServiceId(i.service_id) === normalizedId);
 
     // 1. Try explicit vendor_id from design option data
     if (pkgItem?.design_option_id && services) {
-        const service = services.find(s => s.id === serviceId);
+        const service = services.find(s => normalizeServiceId(s.id) === normalizedId);
         const designOption = service?.service_options
             .flatMap(so => so.design_options)
             .find(d => d.id === pkgItem.design_option_id);
@@ -86,7 +87,7 @@ export function resolveVendorForService(
 
     // 2. Try explicit vendor_id from service option data
     if (pkgItem?.service_option_id && services) {
-        const service = services.find(s => s.id === serviceId);
+        const service = services.find(s => normalizeServiceId(s.id) === normalizedId);
         const serviceOption = service?.service_options.find(so => so.id === pkgItem.service_option_id);
         if (serviceOption?.vendor_id) return serviceOption.vendor_id;
     }
@@ -183,11 +184,12 @@ export function calculateThroughputOverhead(
  * Use this for multi-purpose equipment filtering (e.g. WAN+WLAN router).
  */
 export function hasEquipmentPurpose(equip: Equipment, purpose: string): boolean {
+    const targetPurpose = purpose.toUpperCase();
     const purposes = [
-        String(equip.primary_purpose || ""),
-        ...(equip.additional_purposes || []).map(String),
+        String(equip.primary_purpose || "").toUpperCase(),
+        ...(equip.additional_purposes || []).map(p => String(p).toUpperCase()),
     ];
-    return purposes.some(p => p === purpose || p.includes(purpose));
+    return purposes.some(p => p === targetPurpose || p.includes(targetPurpose));
 }
 
 /**
