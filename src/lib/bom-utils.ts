@@ -385,3 +385,80 @@ export function matchesConstraints(equipment: Equipment, constraints: { type: st
     }
     return true;
 }
+
+/**
+ * Translates a JSON Logic condition object into a human-readable English string.
+ * Used for admin displays and audit logs.
+ */
+export function formatLogicCondition(condition: unknown): string {
+    if (!condition || typeof condition !== 'object' || Object.keys(condition).length === 0) return 'Always fires';
+
+    const operators: Record<string, string> = {
+        '==': 'is',
+        '===': 'is',
+        '!=': 'is not',
+        '!==': 'is not',
+        '>': 'is greater than',
+        '<': 'is less than',
+        '>=': 'is at least',
+        '<=': 'is at most',
+        'in': 'is in',
+        'contains': 'contains',
+    };
+
+    const fieldLabels: Record<string, string> = {
+        'serviceId': 'Service',
+        'packageId': 'Package',
+        'site.category': 'Site Category',
+        'site.userCount': 'User Count',
+        'site.bandwidthDownMbps': 'Download Speed',
+        'site.bandwidthUpMbps': 'Upload Speed',
+        'site.wanLinks': 'WAN Links',
+        'site.redundancyModel': 'Redundancy',
+        'site.lanPorts': 'LAN Ports',
+        'site.poePorts': 'PoE Ports',
+        'site.indoorAPs': 'Indoor APs',
+        'site.outdoorAPs': 'Outdoor APs',
+        'site.lanRequirements.poeCapabilities': 'PoE Capability',
+        'site.lanRequirements.accessPortType': 'Access Port Type',
+        'site.lanRequirements.uplinkPortType': 'Uplink Port Type',
+        'site.lanRequirements.isStackable': 'Stackable Required',
+        'site.lanRequirements.isRugged': 'Rugged / Industrial',
+    };
+
+    const formatVar = (v: unknown): string => {
+        if (typeof v === 'object' && v !== null && 'var' in v) {
+            const varName = (v as { var: string }).var;
+            return fieldLabels[varName] || varName;
+        }
+        return JSON.stringify(v);
+    };
+
+    const walk = (node: unknown): string => {
+        if (!node || typeof node !== 'object') return String(node);
+
+        const op = Object.keys(node)[0];
+        const args = (node as Record<string, unknown>)[op];
+
+        if (op === 'and' && Array.isArray(args)) {
+            return args.map(walk).join(' AND ');
+        }
+        if (op === 'or' && Array.isArray(args)) {
+            return `(${args.map(walk).join(' OR ')})`;
+        }
+
+        if (operators[op] && Array.isArray(args) && args.length === 2) {
+            const left = formatVar(args[0]);
+            const right = formatVar(args[1]);
+            return `${left} ${operators[op]} ${right}`;
+        }
+
+        return JSON.stringify(node);
+    };
+
+    try {
+        return walk(condition);
+    } catch {
+        return 'Complex Logic';
+    }
+}

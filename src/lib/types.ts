@@ -695,7 +695,10 @@ export interface BOMLogicRule {
   priority: number; // Higher number = higher priority
   condition: Record<string, unknown>; // JSON Logic condition
   actions: BOMLogicAction[];
+  /** Tracks the origin of this rule for list display and audit purposes */
+  source?: "seed" | "manual" | "ai-generated" | "intent";
 }
+
 
 // --- BOM Output ---
 

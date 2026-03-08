@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import jsonLogic from "json-logic-js";
 import { BOMLogicRule, BOMLogicAction, SYSTEM_PARAMETERS } from "@/src/lib/types";
 import { AIService } from "@/src/lib/ai-service";
 
@@ -7,6 +8,12 @@ interface SimpleCondition {
     field: string;
     operator: string;
     value: string | number | boolean | string[];
+}
+
+interface FieldDef {
+    label: string;
+    value: string;
+    hint?: string;  // Value hint shown next to the dropdown
 }
 
 const OPERATORS = [
@@ -19,21 +26,52 @@ const OPERATORS = [
     { label: "In List (in)", value: "in" },
 ];
 
-const FIELDS = [
-    { label: "Service ID", value: "serviceId" },
-    { label: "Package ID", value: "packageId" },
-    { label: "Site: Category", value: "site.category" }, // derived mapping
+// Common fields available in every service context
+const FIELDS_COMMON: FieldDef[] = [
+    { label: "Service ID", value: "serviceId", hint: '"sdwan" | "lan" | "wlan"' },
+    { label: "Package ID", value: "packageId", hint: '"standard" | "premium" | "cost_centric"' },
+    { label: "Site: Category", value: "site.category" },
+    { label: "Site: User Count", value: "site.userCount" },
+];
+
+// SD-WAN specific fields
+const FIELDS_SDWAN: FieldDef[] = [
     { label: "Site: Bandwidth Down (Mbps)", value: "site.bandwidthDownMbps" },
     { label: "Site: Bandwidth Up (Mbps)", value: "site.bandwidthUpMbps" },
-    { label: "Site: User Count", value: "site.userCount" },
     { label: "Site: WAN Links", value: "site.wanLinks" },
+    { label: "Site: Redundancy Model", value: "site.redundancyModel", hint: "e.g. dual, single" },
+];
+
+// LAN specific fields — includes intent-collector outputs
+const FIELDS_LAN: FieldDef[] = [
     { label: "Site: LAN Ports", value: "site.lanPorts" },
     { label: "Site: PoE Ports", value: "site.poePorts" },
     { label: "Site: Indoor APs", value: "site.indoorAPs" },
-    { label: "Site: Outdoor APs", value: "site.outdoorAPs" },
+    { label: "LAN Intent: PoE Capability", value: "site.lanRequirements.poeCapabilities", hint: '"None" | "PoE" | "PoE+" | "UPOE" | "UPOE+"' },
+    { label: "LAN Intent: Access Port Type", value: "site.lanRequirements.accessPortType", hint: '"1G-Copper" | "10G-Copper" | "mGig-Copper"' },
+    { label: "LAN Intent: Uplink Port Type", value: "site.lanRequirements.uplinkPortType", hint: '"10G-Fiber" | "1G-Fiber" | "25G-Fiber"' },
+    { label: "LAN Intent: Stackable Required", value: "site.lanRequirements.isStackable", hint: 'true | false' },
+    { label: "LAN Intent: Rugged / Industrial", value: "site.lanRequirements.isRugged", hint: 'true | false' },
 ];
 
+// WLAN specific fields
+const FIELDS_WLAN: FieldDef[] = [
+    { label: "Site: Indoor APs", value: "site.indoorAPs" },
+    { label: "Site: Outdoor APs", value: "site.outdoorAPs" },
+    { label: "Site: User Count", value: "site.userCount" },
+];
 
+const FIELDS_BY_SERVICE: Record<string, FieldDef[]> = {
+    managed_sdwan: [...FIELDS_COMMON, ...FIELDS_SDWAN],
+    sdwan: [...FIELDS_COMMON, ...FIELDS_SDWAN],
+    managed_lan: [...FIELDS_COMMON, ...FIELDS_LAN],
+    lan: [...FIELDS_COMMON, ...FIELDS_LAN],
+    managed_wifi: [...FIELDS_COMMON, ...FIELDS_WLAN],
+    wlan: [...FIELDS_COMMON, ...FIELDS_WLAN],
+};
+
+// Flat fallback for all other contexts or dynamic quantity field selector
+const FIELDS_ALL: FieldDef[] = [...FIELDS_COMMON, ...FIELDS_SDWAN, ...FIELDS_LAN, ...FIELDS_WLAN];
 
 // --- Parsers ---
 
@@ -116,7 +154,7 @@ function buildJsonLogic(conditions: SimpleCondition[]): Record<string, unknown> 
 interface RuleEditorModalProps {
     isOpen: boolean;
     ruleToEdit: BOMLogicRule | null;
-    serviceCategory: "managed_sdwan" | "managed_lan" | "managed_wifi";
+    serviceCategory: "sdwan" | "lan" | "wlan";
     onClose: () => void;
     onSave: (rule: BOMLogicRule) => Promise<void>;
 }
@@ -141,6 +179,21 @@ export default function RuleEditorModal({
     const [isJsonImportOpen, setIsJsonImportOpen] = useState(false);
     const [jsonImportValue, setJsonImportValue] = useState("");
     const [verificationRule, setVerificationRule] = useState<Partial<BOMLogicRule> | null>(null);
+    const [showDryRun, setShowDryRun] = useState(false);
+    const [dryRunJson, setDryRunJson] = useState('');
+    const [dryRunResult, setDryRunResult] = useState<{ matched: boolean; error?: string } | null>(null);
+
+    // Evaluate the current rule condition against the dry-run context (client-side, no API)
+    const evaluateDryRun = () => {
+        if (!dryRunJson.trim()) return;
+        try {
+            const context = JSON.parse(dryRunJson);
+            const matched = !!jsonLogic.apply(rule.condition, context);
+            setDryRunResult({ matched });
+        } catch (err) {
+            setDryRunResult({ matched: false, error: err instanceof Error ? err.message : 'Invalid JSON context' });
+        }
+    };
 
     const handleJsonImport = () => {
         if (!jsonImportValue.trim()) return;
@@ -208,6 +261,7 @@ export default function RuleEditorModal({
             description: verificationRule.description || rule.description,
             condition: finalCondition,
             actions: (verificationRule.actions as BOMLogicAction[]) || rule.actions,
+            source: "ai-generated"
         });
 
         setVerificationRule(null);
@@ -246,7 +300,12 @@ export default function RuleEditorModal({
         e.preventDefault();
         setSaving(true);
         try {
-            await onSave(rule);
+            // Default to manual if it's a new rule without a source
+            const ruleWithSource = {
+                ...rule,
+                source: rule.source || "manual"
+            };
+            await onSave(ruleWithSource);
             onClose();
         } catch (err) {
             alert("Failed to save rule.");
@@ -461,8 +520,8 @@ export default function RuleEditorModal({
                         </div>
 
                         <section className="p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
+                            <div className="grid grid-cols-3 gap-6">
+                                <div className="col-span-1">
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                                         Rule Name
                                     </label>
@@ -478,15 +537,31 @@ export default function RuleEditorModal({
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                        Priority &nbsp;<span className="normal-case tracking-normal font-normal text-slate-400">(Higher number = evaluated first)</span>
+                                        Priority &nbsp;<span className="normal-case tracking-normal font-normal text-slate-400">(Higher = fires first)</span>
                                     </label>
                                     <input
                                         type="number"
                                         value={rule.priority}
                                         onChange={(e) => setRule({ ...rule, priority: parseInt(e.target.value) || 0 })}
-                                        className="w-32 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
+                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors"
                                         required
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                        Source Tag
+                                    </label>
+                                    <select
+                                        value={rule.source || "manual"}
+                                        onChange={(e) => setRule({ ...rule, source: e.target.value as import("@/src/lib/types").BOMLogicRule["source"] })}
+                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white transition-colors font-medium text-slate-700"
+                                    >
+                                        <option value="manual">✏️ Manual</option>
+                                        <option value="intent">🎯 Intent</option>
+                                        <option value="ai-generated">✨ AI Generated</option>
+                                        <option value="seed">🌱 Seed Rule</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -521,6 +596,19 @@ export default function RuleEditorModal({
                                 </button>
                             </div>
 
+                            {/* LAN Context Banner */}
+                            {serviceCategory === "lan" && (
+                                <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm flex gap-3 items-start">
+                                    <span className="text-base mt-0.5">🎯</span>
+                                    <div>
+                                        <p className="font-semibold text-blue-900 text-xs uppercase tracking-wide mb-0.5">Intent-Aware LAN Rules</p>
+                                        <p className="text-blue-700 text-xs leading-relaxed">
+                                            LAN rules run <strong>after</strong> the Intent Collector sets requirements. Use <code className="bg-blue-100 px-1 rounded text-[11px]">site.lanRequirements.*</code> fields to match what the SA selected on the LAN tab.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Visual Builder UI */}
                             {!isSimpleMode && !showRawJson ? (
                                 <div className="p-5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm flex justify-between items-center shadow-sm">
@@ -549,8 +637,15 @@ export default function RuleEditorModal({
                                                             onChange={(e) => updateVisualCondition(i, { field: e.target.value })}
                                                             className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 hover:bg-white transition-colors"
                                                         >
-                                                            {FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-                                                            {!FIELDS.find(f => f.value === cond.field) && (
+                                                            <optgroup label="— Common —">
+                                                                {FIELDS_COMMON.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                            </optgroup>
+                                                            <optgroup label="— Service Specific —">
+                                                                {(FIELDS_BY_SERVICE[serviceCategory] ?? FIELDS_ALL)
+                                                                    .filter(f => !FIELDS_COMMON.find(c => c.value === f.value))
+                                                                    .map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                            </optgroup>
+                                                            {!FIELDS_ALL.find(f => f.value === cond.field) && (
                                                                 <option value={cond.field}>{cond.field} (Custom)</option>
                                                             )}
                                                         </select>
@@ -829,8 +924,8 @@ export default function RuleEditorModal({
                                                         className="w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
                                                     >
                                                         <option value="">None (Static)</option>
-                                                        {FIELDS.filter(f => f.value.startsWith("site.")).map(f => (
-                                                            <option key={f.value} value={f.value.split(".")[1]}>{f.label}</option>
+                                                        {FIELDS_ALL.filter(f => f.value.startsWith("site.")).map(f => (
+                                                            <option key={f.value} value={f.value.replace(/^site\./, '')}>{f.label}</option>
                                                         ))}
                                                     </select>
                                                 </div>
@@ -839,6 +934,70 @@ export default function RuleEditorModal({
                                     </div>
                                 ))}
                             </div>
+                        </section>
+
+                        {/* Dry-Run Simulator (Item 6) */}
+                        <section className="pt-6 border-t border-slate-200">
+                            <button
+                                type="button"
+                                onClick={() => { setShowDryRun(!showDryRun); setDryRunResult(null); }}
+                                className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 transition-colors"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Test This Rule (Dry-Run)
+                                </span>
+                                <svg className={`w-4 h-4 text-slate-400 transition-transform ${showDryRun ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {showDryRun && (
+                                <div className="mt-3 space-y-4 p-4 bg-slate-900 rounded-xl border border-slate-700">
+                                    <p className="text-xs text-slate-400">
+                                        Paste a site context JSON below to test if this rule fires. Evaluated 100% client-side — no save required.
+                                    </p>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Context JSON</label>
+                                        <textarea
+                                            value={dryRunJson}
+                                            onChange={e => { setDryRunJson(e.target.value); setDryRunResult(null); }}
+                                            rows={8}
+                                            placeholder={`{\n  "serviceId": "managed_lan",\n  "packageId": "cost_centric",\n  "site": {\n    "lanPorts": 24,\n    "lanRequirements": {\n      "poeCapabilities": "PoE+",\n      "isStackable": false\n    }\n  }\n}`}
+                                            className="w-full font-mono text-xs bg-slate-800 text-emerald-300 border border-slate-700 rounded-lg p-3 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 resize-none outline-none"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={evaluateDryRun}
+                                            disabled={!dryRunJson.trim()}
+                                            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            ▶ Run Test
+                                        </button>
+                                        {dryRunResult && (
+                                            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold ${dryRunResult.error
+                                                ? 'bg-red-900/50 text-red-300 border border-red-700'
+                                                : dryRunResult.matched
+                                                    ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700'
+                                                    : 'bg-slate-700 text-slate-300 border border-slate-600'
+                                                }`}>
+                                                {dryRunResult.error ? (
+                                                    <>⚠ Parse Error: {dryRunResult.error}</>
+                                                ) : dryRunResult.matched ? (
+                                                    <>✓ MATCH — this rule would fire</>
+                                                ) : (
+                                                    <>✗ NO MATCH — rule condition not met</>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </section>
                     </form>
                 </div>

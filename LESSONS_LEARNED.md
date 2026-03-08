@@ -391,3 +391,11 @@
 - **Key Insight**: Users think in terms of "what connects here" (Workstations, IP Phones, etc.) rather than technical specs. Mapping these simple intents to backend technical requirements simplifies the UX without losing technical accuracy.
 - **Pattern**: Implemented a hybrid design where intent-based input auto-resolves a default "Hero Card" recommendation, with an explicit "Find Your Own" (Catalog Browser) escape hatch for manual overrides.
 - **Validation**: Replaced large, confusing usage gauges with a compact, color-coded **Validation Bar** that provides real-time feedback on port coverage and capacity without obstructing the configuration flow.
+
+## 54. Rule Translation Engine & Human-Readable Logic
+**Issue**: The BOM Logic rules were previously displayed as raw JSON Logic payloads (e.g., `{"==": [{"var": "serviceId"}, "lan"]}`). This was difficult for non-technical administrators to audit and lead to a "black box" perception of the logic engine.
+**Solution**: Implemented a **Rule Translation Engine**.
+- **Human-Readable Logic**: Created `formatLogicCondition` in `bom-utils.ts` that recursively translates complex JSON Logic objects into natural English strings.
+- **Improved Metadata Labels**: Used a mapping of internal variable names (`site.bandwidthDownMbps`) to user-friendly labels ("Download Speed") to ensure the generated sentences made sense to business users.
+- **Contextual Visibility**: Added a Dedicated "Human Translation" column in the Admin UI, while preserving the raw JSON in tooltips for technical verification.
+- **Key Insight**: Transparency breeds trust in automated systems. Providing a "Natural Language" view of complex boolean logic allows administrators to confidently manage rules without needing to understand JSON or programming syntax.

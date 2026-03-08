@@ -6,25 +6,31 @@ import RuleList from "@/src/components/admin/bom-logic/RuleList";
 import RuleEditorModal from "@/src/components/admin/bom-logic/RuleEditorModal";
 import { AITriageRuleEditor } from "@/src/components/admin/bom-logic/AITriageRuleEditor";
 import { GlobalTriageParameters } from "@/src/components/admin/bom-logic/GlobalTriageParameters";
+import { RuleCoverageReport } from "@/src/components/admin/bom-logic/RuleCoverageReport";
 import { BOMLogicRule } from "@/src/lib/types";
 import { BOMService } from "@/src/lib/firebase/bom-service";
 
-type TabValues = "managed_sdwan" | "managed_lan" | "managed_wifi" | "ai_triage";
+type TabValues = "sdwan" | "lan" | "wlan" | "ai_triage" | "coverage";
 
 export default function BOMRulesListPage() {
     const { rules, loading, refreshRules: loadRules } = useBOMRules();
     const [seeding, setSeeding] = useState(false);
 
-    const [activeTab, setActiveTab] = useState<TabValues>("managed_sdwan");
+    const [activeTab, setActiveTab] = useState<TabValues>("sdwan");
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [ruleToEdit, setRuleToEdit] = useState<BOMLogicRule | null>(null);
 
     // Filter rules based on active tab. Assuming rule condition has serviceId matching the tab.
-    const filteredRules = rules.filter(r =>
-        JSON.stringify(r.condition || {}).includes(activeTab)
-    );
+    const filteredRules = rules.filter(r => {
+        if (activeTab === "ai_triage" || activeTab === "coverage") return false;
+        const conditionStr = JSON.stringify(r.condition || {});
+        // Match exact serviceId if present, or fallback to fuzzy match for legacy rules
+        return conditionStr.includes(`"serviceId","${activeTab}"`) ||
+            conditionStr.includes(`"serviceId":"${activeTab}"`) ||
+            conditionStr.includes(`"${activeTab}"`);
+    });
 
     async function handleSeed() {
         if (!confirm("This will overwrite existing rules with defaults from code. Are you sure?")) return;
@@ -109,10 +115,11 @@ export default function BOMRulesListPage() {
 
                 <div className="flex space-x-1 border-b">
                     {[
-                        { id: "managed_sdwan", label: "SD-WAN Rules" },
-                        { id: "managed_lan", label: "LAN Rules" },
-                        { id: "managed_wifi", label: "WLAN Rules" },
-                        { id: "ai_triage", label: "AI Extraction Rules" }
+                        { id: "sdwan", label: "SD-WAN Rules" },
+                        { id: "lan", label: "LAN Rules" },
+                        { id: "wlan", label: "WLAN Rules" },
+                        { id: "ai_triage", label: "AI Extraction Rules" },
+                        { id: "coverage", label: "📊 Coverage Report" }
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -131,6 +138,8 @@ export default function BOMRulesListPage() {
                 {/* Content Area */}
                 {activeTab === "ai_triage" ? (
                     <AITriageRuleEditor />
+                ) : activeTab === "coverage" ? (
+                    <RuleCoverageReport rules={rules} />
                 ) : (
                     <>
                         <RuleList rules={filteredRules} onEdit={openEditModal} onDelete={handleDeleteRule} />
