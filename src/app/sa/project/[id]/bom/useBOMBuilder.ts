@@ -314,12 +314,23 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
         pkg.items.forEach((pItem) => {
             const rawServiceId = pItem.service_id;
-            const service = services.find((s) => s.id === rawServiceId);
-            if (!service) return;
-            // Attachment services don't get their own tab — they ride with base service tabs
-            if (service.is_attachment) return;
-            // Use canonical (normalized) ID so it matches what the BOM engine emits
+            // Use normalized ID for lookup and bucketing
             const serviceId = normalizeServiceId(rawServiceId);
+            const service = services.find((s) => normalizeServiceId(s.id) === serviceId);
+
+            if (!service) {
+                // Failsafe for known buckets even if service record is missing
+                if (serviceId === 'sdwan') {
+                    if (!buckets.WAN.services.includes(serviceId)) buckets.WAN.services.push(serviceId);
+                } else if (serviceId === 'lan') {
+                    if (!buckets.LAN.services.includes(serviceId)) buckets.LAN.services.push(serviceId);
+                } else if (serviceId === 'wlan') {
+                    if (!buckets.WLAN.services.includes(serviceId)) buckets.WLAN.services.push(serviceId);
+                }
+                return;
+            }
+            if (service.is_attachment) return;
+
             const name = service.name.toLowerCase();
             const category = (service.metadata?.category || "").toLowerCase();
             if (
@@ -354,9 +365,10 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 icon: data.icon,
             }));
 
-        // Failsafe: Ensure WAN tab is visible if the package includes sdwan
+        // Failsafe: Ensure WAN tab is visible if the package includes sdwan OR if any site has circuits
         const hasSDWAN = pkg.items.some(i => normalizeServiceId(i.service_id) === 'sdwan');
-        if (hasSDWAN && !tabs.some(t => t.id === "WAN")) {
+        const hasCircuits = sites.some(s => s.primaryCircuit || s.secondaryCircuit);
+        if ((hasSDWAN || hasCircuits) && !tabs.some(t => t.id === "WAN")) {
             tabs.unshift({
                 id: "WAN",
                 label: "WAN",
