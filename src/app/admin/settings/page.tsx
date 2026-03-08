@@ -22,7 +22,7 @@ export default function AdminSettingsPage() {
     // Rules Management State
     const { rules, loading: rulesLoading, refreshRules: loadRules } = useBOMRules();
     const [seeding, setSeeding] = useState(false);
-    const [activeRuleCategory, setActiveRuleCategory] = useState<"managed_sdwan" | "managed_lan" | "managed_wifi">("managed_sdwan");
+    const [activeRuleCategory, setActiveRuleCategory] = useState<"sdwan" | "lan" | "wlan">("sdwan");
     const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
     const [ruleToEdit, setRuleToEdit] = useState<BOMLogicRule | null>(null);
 
@@ -517,13 +517,13 @@ export default function AdminSettingsPage() {
                                     {/* Sub-tabs for Rules */}
                                     <div className="flex space-x-1 border-b border-slate-100 mb-6">
                                         {[
-                                            { id: "managed_sdwan", label: "SD-WAN" },
-                                            { id: "managed_lan", label: "LAN" },
-                                            { id: "managed_wifi", label: "WLAN" }
+                                            { id: "sdwan", label: "SD-WAN" },
+                                            { id: "lan", label: "LAN" },
+                                            { id: "wlan", label: "WLAN" }
                                         ].map((tab) => (
                                             <button
                                                 key={tab.id}
-                                                onClick={() => setActiveRuleCategory(tab.id as "managed_sdwan" | "managed_lan" | "managed_wifi")}
+                                                onClick={() => setActiveRuleCategory(tab.id as "sdwan" | "lan" | "wlan")}
                                                 className={`px-4 py-2 font-bold text-xs tracking-tight transition-all rounded-t-xl border-t border-l border-r
                                                     ${activeRuleCategory === tab.id
                                                         ? "bg-white border-slate-100 text-blue-600 -mb-px"

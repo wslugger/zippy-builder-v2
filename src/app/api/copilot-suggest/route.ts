@@ -10,7 +10,7 @@ export async function POST(request: Request) {
             const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const instruction = promptData?.instruction || "Create a standard rule";
-            const serviceCategory = promptData?.serviceCategory || "managed_sdwan";
+            const serviceCategory = promptData?.serviceCategory || "sdwan";
 
             const schemaPrompt = `
 You are an expert network engineer and configuration AI.

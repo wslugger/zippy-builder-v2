@@ -9,13 +9,13 @@ import { GlobalTriageParameters } from "@/src/components/admin/bom-logic/GlobalT
 import { BOMLogicRule } from "@/src/lib/types";
 import { BOMService } from "@/src/lib/firebase/bom-service";
 
-type TabValues = "managed_sdwan" | "managed_lan" | "managed_wifi" | "ai_triage";
+type TabValues = "sdwan" | "lan" | "wlan" | "ai_triage";
 
 export default function BOMRulesListPage() {
     const { rules, loading, refreshRules: loadRules } = useBOMRules();
     const [seeding, setSeeding] = useState(false);
 
-    const [activeTab, setActiveTab] = useState<TabValues>("managed_sdwan");
+    const [activeTab, setActiveTab] = useState<TabValues>("sdwan");
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,9 +109,9 @@ export default function BOMRulesListPage() {
 
                 <div className="flex space-x-1 border-b">
                     {[
-                        { id: "managed_sdwan", label: "SD-WAN Rules" },
-                        { id: "managed_lan", label: "LAN Rules" },
-                        { id: "managed_wifi", label: "WLAN Rules" },
+                        { id: "sdwan", label: "SD-WAN Rules" },
+                        { id: "lan", label: "LAN Rules" },
+                        { id: "wlan", label: "WLAN Rules" },
                         { id: "ai_triage", label: "AI Extraction Rules" }
                     ].map((tab) => (
                         <button

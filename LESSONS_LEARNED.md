@@ -385,3 +385,10 @@
 - **Service-Level Transparency**: Updated the service layer to automatically apply this escaping logic, ensuring that callers (UI, API) can still use raw SKUs while the database handles the storage-safe version.
 - **Key Insight**: Never assume that external identifiers (SKUs, URLs, user input) are safe for use as direct primary keys in a database. Always implement a sanitization or escaping layer that preserves the original value in the data.
 
+## 53. Canonical Service ID Normalization & UI Alignment
+**Issue**: As part of a data migration to standardize service identifiers (e.g., renaming `managed_sdwan` to `sdwan`), legacy IDs remained in UI code (tabs, type guards, and default states). This caused "disappearing" data in administrative views because the UI was filtering for old IDs that no longer existed in the migrated database.
+**Solution**:
+- **Uniform Migration**: When renaming core data identifiers, the migration must include a coordinated update of all frontend "hardcoded" IDs and initial state values.
+- **Strict TypeScript Boundaries**: Updated the `TabValues` and `activeTab` types in the Admin pages to strictly enforce the new canonical IDs. 
+- **AI Rule Copilot Alignment**: Ensured that AI extraction and logic-generation prompts use the new canonical IDs, preventing the creation of new "orphaned" data.
+- **Key Insight**: Disappearing UI elements in a filtered view are often a symptom of ID-mismatches following a data migration. Centralizing these IDs in a typed constant or enum, rather than using raw strings, is critical for catching these issues at build time rather than runtime.

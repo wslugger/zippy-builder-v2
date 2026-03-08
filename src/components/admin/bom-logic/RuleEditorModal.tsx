@@ -116,7 +116,7 @@ function buildJsonLogic(conditions: SimpleCondition[]): Record<string, unknown> 
 interface RuleEditorModalProps {
     isOpen: boolean;
     ruleToEdit: BOMLogicRule | null;
-    serviceCategory: "managed_sdwan" | "managed_lan" | "managed_wifi";
+    serviceCategory: "sdwan" | "lan" | "wlan";
     onClose: () => void;
     onSave: (rule: BOMLogicRule) => Promise<void>;
 }
@@ -313,7 +313,7 @@ export default function RuleEditorModal({
 
     const parseValueFromInput = (val: string) => {
         if (val.trim() === "") return "";
-        if (!isNaN(Number(val))) return Number(val);
+        if (!isNaN(Number(val)) && val.trim() !== "") return Number(val);
         if (val.toLowerCase() === "true") return true;
         if (val.toLowerCase() === "false") return false;
         if (val.includes(",")) return val.split(",").map(s => s.trim());
@@ -619,7 +619,7 @@ export default function RuleEditorModal({
                                             }
                                         }}
                                         className="w-full border-0 px-5 py-4 font-mono text-sm h-48 focus:ring-0 bg-slate-900 text-slate-100"
-                                        placeholder='{ "==": [{ "var": "serviceId" }, "managed_sdwan"] }'
+                                        placeholder='{ "==": [{ "var": "serviceId" }, "sdwan"] }'
                                         required
                                     />
                                 </div>

@@ -37,14 +37,28 @@ export async function POST(req: Request) {
       2. For Cisco Catalyst Switches: Locate "Network Modules" or "Uplink Modules" tables. Extract part numbers, descriptions, port counts, and speeds (e.g. C9300-NM-4G, 4x 1G).
       3. For Cisco Catalyst Switches: Locate "Power Supplies" tables. Extract part numbers, wattages, and the PoE budget they provide (important for BOM sizing).
       4. For Cisco Catalyst Switches: Locate "Stacking" accessories. Extract cables and kit part numbers.
-      5. For Cisco Catalyst: Focus on port density (24/48), PoE standard (PoE+, UPOE), and uplink flexibility.
+      5. For Cisco Catalyst Routers (C8000 series): 
+         - Check if the device has an integrated cellular radio or supports PIM (Pluggable Interface Modules).
+         - Models with integrated cellular should set "integrated_cellular": true.
+         - Models with PIM slots should set "modular_cellular": true.
+      6. For Cisco Catalyst 8000 Series THROUGHPUT MAPPING:
+         - Map "Forwarding (512B)" to rawFirewallThroughputMbps.
+         - Map "IPsec (512B)" to sdwanCryptoThroughputMbps (e.g. 1.5 Gbps -> 1500).
+         - Map "SD-WAN (512B)" to advancedSecurityThroughputMbps (e.g. 900 Mbps -> 900). 
+         - If a value is "-" or missing, set the corresponding Mbps to 0.
+      7. For Cisco Catalyst: Focus on port density (24/48), PoE standard (PoE+, UPOE), and uplink flexibility.
             `
       : vendorId === "meraki"
         ? `
       1. For Meraki Switches (MS Series): Set "performance_rating" to "Wire Rate".
       2. For Meraki Switches: Extract SFP/SFP+ uplink module compatibility if listed.
       3. For Meraki Switches: Extract power supply part numbers and PoE budgets.
-      4. For Meraki Switches: If it's an MX Security appliance, look at "Stateful Firewall Throughput" for rawFirewallThroughputMbps, "VPN Throughput" for sdwanCryptoThroughputMbps, and "Advanced Security Throughput" for advancedSecurityThroughputMbps.
+      4. For Meraki Security appliances (MX):
+         - Look for models ending in "CW" (e.g., MX68CW) which indicate "integrated_cellular": true and "cellular_type": "LTE" or "5G".
+         - Terminology Mapping:
+           - Map "Stateful Firewall Throughput" or "NGFW Throughput" to rawFirewallThroughputMbps.
+           - Map "Maximum Site-to-Site VPN Throughput" (Auto VPN) to sdwanCryptoThroughputMbps.
+           - Map "Advanced Security Services Throughput" to advancedSecurityThroughputMbps.
             `
         : `
       1. Extract performance metrics as found in documentation.
@@ -91,6 +105,9 @@ export async function POST(req: Request) {
               "rawFirewallThroughputMbps": Number,
               "sdwanCryptoThroughputMbps": Number,
               "advancedSecurityThroughputMbps": Number,
+              "integrated_cellular": Boolean,
+              "modular_cellular": Boolean,
+              "cellular_type": "LTE | 5G | LTE/5G",
               "compatible_uplink_modules": [
                 { "part_number": String, "description": String, "ports": Number, "speed": String }
               ],
@@ -104,10 +121,10 @@ export async function POST(req: Request) {
 
       CRITICAL INSTRUCTIONS:
       ${vendorSpecificInstructions}
-      6. MAPPING THROUGHPUT METRICS:
-         - rawFirewallThroughputMbps: Plain stateful firewall / NAT / Forwarding. (Used for DIA-only sites with no advanced security or tunnels).
-         - sdwanCryptoThroughputMbps: IPsec + SD-WAN routing. (Used for sites sending traffic to a Hub/SASE where security is handled off-box).
-         - advancedSecurityThroughputMbps: IPsec + SD-WAN + IDS/IPS/Malware. (Used for sites doing on-box advanced threat protection).
+      6. MAPPING THROUGHPUT METRICS (Units MUST be In Mbps, e.g. "1.5 Gbps" -> 1500):
+         - rawFirewallThroughputMbps: "Forwarding (512B)" [Cisco] OR "Stateful Firewall" [Meraki].
+         - sdwanCryptoThroughputMbps: "IPsec (512B)" [Cisco] OR "Site-to-Site VPN" [Meraki].
+         - advancedSecurityThroughputMbps: "SD-WAN (512B)" [Cisco] OR "Advanced Security" [Meraki].
       7. ESTIMATING MANAGEMENT SIZE:
          - If access switch ports < 8 or micro firewall: "X-Small".
          - If access switch ports < 24 or small firewall: "Small".
