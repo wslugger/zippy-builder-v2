@@ -31,6 +31,8 @@ function AttributeCell({ attributes, role }: { attributes: any, role: string }) 
             const lanType = data.lanPortType ? ` ${data.lanPortType.replace('-Copper', 'C').replace('-Fiber', 'F')}` : '';
             keyAttrs.push({ label: 'Ports', value: `${data.wanPortCount}W${wanType} / ${data.lanPortCount || 0}L${lanType}` });
         }
+        if (data.integrated_cellular) keyAttrs.push({ label: 'Cellular', value: `Int (${data.cellular_type || 'LTE'})` });
+        if (data.modular_cellular) keyAttrs.push({ label: 'Cellular', value: `PIM (${data.cellular_type || 'LTE'})` });
     } else if (role === 'LAN') {
         if (data.accessPortCount) {
             keyAttrs.push({ label: 'Ports', value: `${data.accessPortCount}x ${data.accessPortType ? data.accessPortType.replace('-Copper', ' Copper').replace('-Fiber', ' Fiber') : 'Port'}` });
@@ -222,6 +224,11 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                                             {(item.specs as any).integrated_cellular && (
                                                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800" title="Integrated Cellular">
                                                                     {(item.specs as any).cellular_type || "LTE"}
+                                                                </span>
+                                                            )}
+                                                            {(item.specs as any).modular_cellular && (
+                                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-100 dark:border-orange-800" title="Modular Cellular (PIM)">
+                                                                    PIM
                                                                 </span>
                                                             )}
                                                             {(item.specs as any).integrated_wifi && (

@@ -399,3 +399,11 @@
 - **Improved Metadata Labels**: Used a mapping of internal variable names (`site.bandwidthDownMbps`) to user-friendly labels ("Download Speed") to ensure the generated sentences made sense to business users.
 - **Contextual Visibility**: Added a Dedicated "Human Translation" column in the Admin UI, while preserving the raw JSON in tooltips for technical verification.
 - **Key Insight**: Transparency breeds trust in automated systems. Providing a "Natural Language" view of complex boolean logic allows administrators to confidently manage rules without needing to understand JSON or programming syntax.
+
+## 55. Canonical Service ID Normalization & UI Alignment
+**Issue**: As part of a data migration to standardize service identifiers (e.g., renaming `managed_sdwan` to `sdwan`), legacy IDs remained in UI code (tabs, type guards, and default states). This caused "disappearing" data in administrative views because the UI was filtering for old IDs that no longer existed in the migrated database.
+**Solution**:
+- **Uniform Migration**: When renaming core data identifiers, the migration must include a coordinated update of all frontend "hardcoded" IDs and initial state values.
+- **Strict TypeScript Boundaries**: Updated the `TabValues` and `activeTab` types in the Admin pages to strictly enforce the new canonical IDs. 
+- **AI Rule Copilot Alignment**: Ensured that AI extraction and logic-generation prompts use the new canonical IDs, preventing the creation of new "orphaned" data.
+- **Key Insight**: Disappearing UI elements in a filtered view are often a symptom of ID-mismatches following a data migration. Centralizing these IDs in a typed constant or enum, rather than using raw strings, is critical for catching these issues at build time rather than runtime.

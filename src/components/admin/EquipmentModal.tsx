@@ -790,6 +790,66 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 </section>
                             )}
 
+                            {/* WAN Cellular Card */}
+                            {activePurposes.includes('WAN') && (
+                                <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                    <h4 className={sectionTitleClass}>WAN — Cellular Capabilities</h4>
+                                    <div className="grid grid-cols-2 gap-x-8 gap-y-8">
+                                        <div className="col-span-1">
+                                            <label className={labelClass}>Cellular Options</label>
+                                            <div className="flex flex-col gap-4">
+                                                <label className="flex items-center gap-3 cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={specs.integrated_cellular || false}
+                                                        onChange={(e) => handleSpecChange("integrated_cellular", e.target.checked)}
+                                                        className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                                    />
+                                                    <div>
+                                                        <span className="text-sm font-bold text-slate-700 dark:text-zinc-200 block group-hover:text-blue-600">Integrated Cellular</span>
+                                                        <span className="text-[10px] text-zinc-400">Device has built-in radio and SIM slot.</span>
+                                                    </div>
+                                                </label>
+                                                <label className="flex items-center gap-3 cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={specs.modular_cellular || false}
+                                                        onChange={(e) => handleSpecChange("modular_cellular", e.target.checked)}
+                                                        className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                                    />
+                                                    <div>
+                                                        <span className="text-sm font-bold text-slate-700 dark:text-zinc-200 block group-hover:text-blue-600">Modular Cellular (PIM)</span>
+                                                        <span className="text-[10px] text-zinc-400">Device supports a pluggable cellular module.</span>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {(specs.integrated_cellular || specs.modular_cellular) && (
+                                            <div className="col-span-1 animate-in fade-in slide-in-from-left-2 duration-300">
+                                                <label className={labelClass}>Cellular Type</label>
+                                                <select
+                                                    value={specs.cellular_type || ""}
+                                                    onChange={(e) => handleSpecChange("cellular_type", e.target.value)}
+                                                    className={selectClass}
+                                                >
+                                                    <option value="">Select Generation...</option>
+                                                    {taxonomy.cellular_types?.map(ct => (
+                                                        <option key={ct} value={ct}>{ct}</option>
+                                                    ))}
+                                                    {!taxonomy.cellular_types && (
+                                                        <>
+                                                            <option value="LTE">LTE</option>
+                                                            <option value="5G">5G</option>
+                                                            <option value="LTE/5G">LTE/5G</option>
+                                                        </>
+                                                    )}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            )}
+
                             {/* LAN Interfaces Card */}
                             {activePurposes.includes('LAN') && (
                                 <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
@@ -1308,8 +1368,8 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                                 // Intentionally leaving licenseSearch intact so the dropdown stays open for multiple selections
                                                             }}
                                                             className={`w-full text-left px-4 py-3 border-b last:border-0 border-zinc-100 dark:border-zinc-800 transition-colors flex items-center justify-between group ${isAttached
-                                                                    ? "bg-zinc-50 dark:bg-zinc-800/80 cursor-not-allowed opacity-75"
-                                                                    : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                                                ? "bg-zinc-50 dark:bg-zinc-800/80 cursor-not-allowed opacity-75"
+                                                                : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
                                                                 }`}
                                                         >
                                                             <div className="flex-1 min-w-0 pr-4">
