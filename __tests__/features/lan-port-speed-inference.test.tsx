@@ -19,13 +19,13 @@ describe('LANIntentCollector Port Speed Inference', () => {
         lanRequirements: {
             needsManualReview: false
         }
-    } as any;
+    };
 
     const mockOnRequirementsChange = jest.fn();
     const mockOnOpenCatalog = jest.fn();
     const mockOnChipsChange = jest.fn();
 
-    it('should infer mGig-Copper when Wi-Fi 6E is selected', () => {
+    it('should infer RJ45-2.5G when Wi-Fi 6E is selected', () => {
         const { rerender } = render(
             <LANIntentCollector
                 site={mockSite}
@@ -42,12 +42,12 @@ describe('LANIntentCollector Port Speed Inference', () => {
 
         // check requirements change call
         expect(mockOnRequirementsChange).toHaveBeenCalledWith(expect.objectContaining({
-            accessPortType: 'mGig-Copper',
+            accessPortType: 'RJ45-2.5G',
             apWifiStandard: 'Wi-Fi 6E'
         }));
     });
 
-    it('should infer 10G-Copper when 10G Workstations are selected', () => {
+    it('should infer RJ45-10G when 10G Workstations are selected', () => {
          render(
             <LANIntentCollector
                 site={mockSite}
@@ -63,7 +63,7 @@ describe('LANIntentCollector Port Speed Inference', () => {
         fireEvent.click(speed10GButton);
 
         expect(mockOnRequirementsChange).toHaveBeenCalledWith(expect.objectContaining({
-            accessPortType: '10G-Copper',
+            accessPortType: 'RJ45-10G',
             highSpeedWorkstations: '10G'
         }));
     });

@@ -97,6 +97,18 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                             <dt className="text-slate-500 dark:text-slate-400">Firewall Throughput</dt>
                                             <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).rawFirewallThroughputMbps || 0} Mbps</dd>
                                         </div>
+                                        {(item.specs as any).integrated_cellular && (
+                                            <>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="text-slate-500 dark:text-slate-400">Cellular Throughput</dt>
+                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).cellular_throughput_mbps || 0} Mbps</dd>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="text-slate-500 dark:text-slate-400">Cellular Type</dt>
+                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).cellular_type || "5G"}</dd>
+                                                </div>
+                                            </>
+                                        )}
                                     </dl>
                                 </>
                             )}
@@ -111,13 +123,13 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                         <div className="flex justify-between text-sm">
                                             <dt className="text-slate-500 dark:text-slate-400">Access Ports</dt>
                                             <dd className="font-semibold text-slate-900 dark:text-slate-100">
-                                                {(item.specs as any).accessPortCount || 0}x {(item.specs as any).accessPortType || "1G-Copper"}
+                                                {(item.specs as any).accessPortCount || 0}x {(item.specs as any).accessPortType || "RJ45-1G"}
                                             </dd>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <dt className="text-slate-500 dark:text-slate-400">Uplink Ports</dt>
                                             <dd className="font-semibold text-slate-900 dark:text-slate-100">
-                                                {(item.specs as any).uplinkPortCount || 0}x {(item.specs as any).uplinkPortType || "10G-Fiber"}
+                                                {(item.specs as any).uplinkPortCount || 0}x {(item.specs as any).uplinkPortType || "SFP+-10G"}
                                             </dd>
                                         </div>
                                     </>
@@ -127,7 +139,7 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                     <>
                                         <div className="flex justify-between text-sm">
                                             <dt className="text-slate-500 dark:text-slate-400">Uplink Interface</dt>
-                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).uplinkType || "1G-Copper"}</dd>
+                                            <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).uplinkType || "RJ45-1G"}</dd>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <dt className="text-slate-500 dark:text-slate-400">Max Power Draw</dt>
@@ -148,6 +160,18 @@ export function SpecsModal({ item, onClose }: SpecsModalProps) {
                                             <dt className="text-slate-500 dark:text-slate-400">Uplink / SFP</dt>
                                             <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).sfpPortCount || 0}</dd>
                                         </div>
+                                        {(item.specs as any).integrated_cellular && (
+                                            <>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="text-slate-500 dark:text-slate-400">Modem Information</dt>
+                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100 text-right">{(item.specs as any).modem_details || "Integrated"}</dd>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="text-slate-500 dark:text-slate-400">Antenna Type</dt>
+                                                    <dd className="font-semibold text-slate-900 dark:text-slate-100">{(item.specs as any).antenna_type || "Internal"}</dd>
+                                                </div>
+                                            </>
+                                        )}
                                     </>
                                 )}
                                 <div className="flex justify-between text-sm">

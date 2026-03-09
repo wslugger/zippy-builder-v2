@@ -27,15 +27,15 @@ function AttributeCell({ attributes, role }: { attributes: any, role: string }) 
         if (data.rawFirewallThroughputMbps) keyAttrs.push({ label: 'Firewall', value: `${data.rawFirewallThroughputMbps} Mbps` });
         if (data.sdwanCryptoThroughputMbps) keyAttrs.push({ label: 'Crypto', value: `${data.sdwanCryptoThroughputMbps} Mbps` });
         if (data.wanPortCount !== undefined) {
-            const wanType = data.wanPortType ? ` ${data.wanPortType.replace('-Copper', 'C').replace('-Fiber', 'F')}` : '';
-            const lanType = data.lanPortType ? ` ${data.lanPortType.replace('-Copper', 'C').replace('-Fiber', 'F')}` : '';
+            const wanType = data.wanPortType ? ` ${data.wanPortType}` : '';
+            const lanType = data.lanPortType ? ` ${data.lanPortType}` : '';
             keyAttrs.push({ label: 'Ports', value: `${data.wanPortCount}W${wanType} / ${data.lanPortCount || 0}L${lanType}` });
         }
         if (data.integrated_cellular) keyAttrs.push({ label: 'Cellular', value: `Int (${data.cellular_type || 'LTE'})` });
         if (data.modular_cellular) keyAttrs.push({ label: 'Cellular', value: `PIM (${data.cellular_type || 'LTE'})` });
     } else if (role === 'LAN') {
         if (data.accessPortCount) {
-            keyAttrs.push({ label: 'Ports', value: `${data.accessPortCount}x ${data.accessPortType ? data.accessPortType.replace('-Copper', ' Copper').replace('-Fiber', ' Fiber') : 'Port'}` });
+            keyAttrs.push({ label: 'Ports', value: `${data.accessPortCount}x ${data.accessPortType || 'Port'}` });
         } else if (data.ports) {
             keyAttrs.push({ label: 'Ports', value: `${data.ports} Ports` });
         }

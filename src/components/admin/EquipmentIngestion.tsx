@@ -2,9 +2,22 @@
 "use client";
 
 import { useState } from "react";
-import { VENDOR_IDS, VENDOR_LABELS, Equipment, EQUIPMENT_PURPOSES } from "@/src/lib/types";
+import { VENDOR_IDS, VENDOR_LABELS, Equipment, EQUIPMENT_PURPOSES, INTERFACE_TYPES } from "@/src/lib/types";
 import { getEquipmentRole } from "@/src/lib/bom-utils";
 import { EquipmentService } from "@/src/lib/firebase/equipment-service";
+
+const PORT_TYPE_FIELDS = ['accessPortType', 'uplinkPortType', 'wanPortType', 'lanPortType', 'uplinkType'] as const;
+
+function getUnknownPortTypes(specs: Record<string, unknown>): string[] {
+    const unknown: string[] = [];
+    PORT_TYPE_FIELDS.forEach(field => {
+        const val = specs[field];
+        if (typeof val === 'string' && val && !(INTERFACE_TYPES as readonly string[]).includes(val)) {
+            unknown.push(`${field}: "${val}"`);
+        }
+    });
+    return unknown;
+}
 
 interface IngestItem {
     data: Equipment;
@@ -72,7 +85,8 @@ export default function EquipmentIngestion() {
                     // Compare specs - specifically the new cellular fields
                     const specFields = [
                         'rawFirewallThroughputMbps', 'sdwanCryptoThroughputMbps', 'advancedSecurityThroughputMbps',
-                        'wanPortCount', 'lanPortCount', 'integrated_cellular', 'modular_cellular', 'cellular_type'
+                        'wanPortCount', 'lanPortCount', 'integrated_cellular', 'modular_cellular', 'cellular_type',
+                        'cellular_throughput_mbps', 'modem_details', 'antenna_type'
                     ];
                     specFields.forEach(sf => {
                         if ((item.specs as any)[sf] !== (existing.specs as any)[sf]) {
@@ -259,7 +273,7 @@ export default function EquipmentIngestion() {
                         {previewData.map((item, index) => (
                             <div key={index} className="relative group bg-white dark:bg-zinc-900 p-4 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-sm">
                                 <div className="flex justify-between items-start mb-3">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 flex-wrap">
                                         <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm border ${item.status === 'new' ? 'bg-green-100 text-green-700 border-green-200' :
                                                 item.status === 'updated' ? 'bg-amber-100 text-amber-700 border-amber-200' :
                                                     'bg-zinc-100 text-zinc-500 border-zinc-200'
@@ -267,6 +281,11 @@ export default function EquipmentIngestion() {
                                             {item.status}
                                         </div>
                                         <span className="font-semibold text-zinc-900 dark:text-zinc-100">{item.data.model}</span>
+                                        {getUnknownPortTypes(item.data.specs as Record<string, unknown>).map(u => (
+                                            <span key={u} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-200" title="Not in canonical taxonomy — add via Settings → Interface Types">
+                                                ⚠ {u}
+                                            </span>
+                                        ))}
                                     </div>
                                     <button
                                         onClick={() => {
@@ -321,6 +340,11 @@ export default function EquipmentIngestion() {
                                                 <span className={`w-2 h-2 rounded-full ${item.data.specs.integrated_cellular ? 'bg-blue-500' : 'bg-zinc-200'}`}></span>
                                                 <span>Integrated {item.data.specs.integrated_cellular ? `(${item.data.specs.cellular_type || 'LTE'})` : ''}</span>
                                             </div>
+                                            {(item.data.specs as any).cellular_throughput_mbps && (
+                                                <div className={`text-[10px] ml-3 ${item.diffFields.includes('specs.cellular_throughput_mbps') ? 'text-amber-600 font-bold' : 'text-zinc-500'}`}>
+                                                    ⚡ {(item.data.specs as any).cellular_throughput_mbps} Mbps
+                                                </div>
+                                            )}
                                             <div className={`flex items-center gap-1 ${item.diffFields.includes('specs.modular_cellular') ? 'text-amber-600 font-bold' : ''}`}>
                                                 <span className={`w-2 h-2 rounded-full ${item.data.specs.modular_cellular ? 'bg-orange-500' : 'bg-zinc-200'}`}></span>
                                                 <span>Modular (PIM)</span>

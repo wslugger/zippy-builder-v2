@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { FeatureService, ServiceService, PackageService, SystemDefaultsService, SiteDefinitionService, BOMService } from "@/src/lib/firebase";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
+import { SEED_PACKAGES } from "@/src/lib/seed-packages";
 
 export async function GET() {
     try {
@@ -22,9 +23,9 @@ export async function GET() {
             await ServiceService.saveService(service);
         }
 
-        // 5. Seed Packages
-        console.log("Seeding packages from DB defaults...");
-        for (const pkg of defaults.packages) {
+        // 5. Seed Packages (from code constant, not system_defaults, to ensure canonical service IDs)
+        console.log("Seeding packages from code constant...");
+        for (const pkg of SEED_PACKAGES) {
             await PackageService.savePackage(pkg);
         }
 

@@ -427,3 +427,10 @@
 - **Price Denormalization**: Added `pricingSku_listPrice` directly onto the `Equipment` and `License` schemas in Firestore.
 - **Key Insight**: When building for scale (e.g., thousands of parts), **Denormalization is your friend**. Storing the "List Price" snapshot directly on the equipment/license object removes the requirement for the frontend to perform a real-time join against a massive 40k+ item pricing table. This ensures the pricing is *always* visible, even if the primary pricing catalog isn't fully loaded into memory.
 - **Process Isolation**: Splitting the sync steps allows for more specific AI system instructions, which drastically improves the quality and reliability of complex vendor SKU generation (especially for Meraki and Cisco DNA).
+## 56. SWC Transform Reliability & Source Tree Hygiene
+**Issue**: Intermittent "Syntax Error" during Jest tests (SWC transform failures) that pointed to incorrect line numbers or cryptic context. One-shot script artifacts (like `.mjs` or `.bak` files created for seeding or debugging) left in the `src/` directory tree were being "discovered" by Jest's module resolution or Next.js build walker, causing fatal parsing errors when they contained TypeScript syntax or invalid AST structures.
+**Solution**: 
+- **Source Hygiene**: Enforced strict cleanup of temporary `.mjs` or backup files within the `src/` and `tmp/` directories.
+- **Explicit String Formatting**: For large multiline strings in constants (like AI Prompts), replaced template literals with double-quoted strings and explicit `\n` characters. This provides a more "stable" AST for the SWC compiler and prevents issues with hidden or invalid characters in backtick blocks.
+- **No-Cache Verification**: Mandatory use of `npm run test -- --no-cache` after structural artifact cleanup to ensure stale transform results were purged.
+**Lesson**: Rogue files in the source tree are more dangerous than rogue code in a active file. Build and test tools often have broad search patterns that ingest unintentional "debris." Keep the source tree pristine.

@@ -1,4 +1,4 @@
-import { Package, Equipment, PricingItem, EQUIPMENT_PURPOSES, INTERFACE_TYPES, POE_CAPABILITIES, Site, SiteType, BOMLineItem } from "@/src/lib/types";
+import { Package, Equipment, PricingItem, EQUIPMENT_PURPOSES, POE_CAPABILITIES, INTERFACE_TYPES, Site, SiteType, BOMLineItem } from "@/src/lib/types";
 /**
  * Shared BOM utility functions.
  * 
@@ -294,9 +294,6 @@ export function extractLANTaxonomy(catalog: Equipment[]): LANTaxonomy {
             }
         });
 
-    // Start with the canonical list (from types.ts constants) as the authoritative base.
-    // This ensures all options are always visible even when catalog coverage is sparse.
-    // Then append any catalog-only custom values not already in the canonical list.
     const mergeWithBase = (base: readonly string[], catalogValues: Set<string>): string[] => {
         const result = [...base];
         catalogValues.forEach(v => {
@@ -305,12 +302,15 @@ export function extractLANTaxonomy(catalog: Equipment[]): LANTaxonomy {
         return result;
     };
 
-    const COPPER_BASE = INTERFACE_TYPES.filter(t => t.includes('Copper'));
-    const FIBER_BASE = INTERFACE_TYPES.filter(t => t.includes('Fiber'));
+    // Sort by numeric speed (1G < 2.5G < 10G < 25G < 40G etc.)
+    const sortBySpeed = (a: string, b: string) => {
+        const speed = (s: string) => parseFloat(s.match(/[\d.]+/)?.[0] || '0');
+        return speed(a) - speed(b);
+    };
 
     return {
-        accessPortTypes: mergeWithBase(COPPER_BASE, catalogAccessPortTypes),
-        uplinkPortTypes: mergeWithBase(FIBER_BASE, catalogUplinkPortTypes),
+        accessPortTypes: mergeWithBase(INTERFACE_TYPES, catalogAccessPortTypes).sort(sortBySpeed),
+        uplinkPortTypes: mergeWithBase(INTERFACE_TYPES, catalogUplinkPortTypes).sort(sortBySpeed),
         poeCapabilities: mergeWithBase(POE_CAPABILITIES, catalogPoeCapabilities),
     };
 }

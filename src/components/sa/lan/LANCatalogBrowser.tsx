@@ -28,6 +28,7 @@ interface SwitchCardProps {
 
 function SwitchCard({ equip, site, onAdd, isSelected, selectedQty }: SwitchCardProps) {
     const [localQty, setLocalQty] = useState(Math.max(1, selectedQty));
+    const [showSpecs, setShowSpecs] = useState(false);
     const specs = equip.specs as Record<string, unknown>;
     const accessPorts = (specs.accessPortCount as number) || 0;
     const uplinkType = (specs.uplinkPortType as string) || "";
@@ -130,7 +131,46 @@ function SwitchCard({ equip, site, onAdd, isSelected, selectedQty }: SwitchCardP
                         </div>
                     </div>
                 )}
+                {/* Details toggle */}
+                <button
+                    onClick={() => setShowSpecs(v => !v)}
+                    className="text-[10px] text-slate-400 hover:text-blue-500 transition-colors font-medium"
+                >
+                    {showSpecs ? "▲ Hide specs" : "▼ Full specs"}
+                </button>
             </div>
+
+            {/* Expandable specs table */}
+            {showSpecs && (
+                <div className="mx-3 mb-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] overflow-hidden">
+                    <table className="w-full">
+                        <tbody>
+                            {([
+                                ["Access ports", specs.accessPortCount != null ? `${specs.accessPortCount}x ${specs.accessPortType || ""}` : null],
+                                ["Uplink ports", specs.uplinkPortCount != null ? `${specs.uplinkPortCount}x ${specs.uplinkPortType || ""}` : null],
+                                ["PoE", specs.poe_capabilities && specs.poe_capabilities !== "None" ? specs.poe_capabilities as string : null],
+                                ["PoE budget", specs.poeBudgetWatts != null ? `${specs.poeBudgetWatts}W` : null],
+                                ["Switching cap.", specs.switchingCapacityGbps != null ? `${specs.switchingCapacityGbps} Gbps` : null],
+                                ["Forwarding", specs.forwardingRateMpps != null ? `${specs.forwardingRateMpps} Mpps` : null],
+                                ["Stackable", specs.isStackable ? "Yes" : null],
+                                ["Rugged", specs.isRugged ? "Yes" : null],
+                                ["Layer", specs.layer != null ? `L${specs.layer}` : null],
+                                ["Dimensions", specs.dimensions as string ?? null],
+                                ["Weight", specs.weightKg != null ? `${specs.weightKg} kg` : null],
+                                ["Power draw", specs.powerConsumptionW != null ? `${specs.powerConsumptionW}W` : null],
+                            ] as [string, string | null][])
+                                .filter(([, v]) => v)
+                                .map(([label, value]) => (
+                                    <tr key={label} className="border-b border-slate-100 dark:border-slate-700 last:border-0">
+                                        <td className="px-2.5 py-1 text-slate-400 font-medium whitespace-nowrap">{label}</td>
+                                        <td className="px-2.5 py-1 text-slate-700 dark:text-slate-300 font-semibold">{value}</td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* Add Controls */}
             <div className="px-3 pb-3 flex items-center gap-2">
@@ -325,6 +365,9 @@ export function LANCatalogBrowser({
                                 ⚡ {p}
                             </button>
                         ))}
+                        {taxonomy.accessPortTypes.length > 0 && (
+                            <span className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 self-center">Access</span>
+                        )}
                         {taxonomy.accessPortTypes.map(a => (
                             <button
                                 key={a}
@@ -337,6 +380,9 @@ export function LANCatalogBrowser({
                                 {a}
                             </button>
                         ))}
+                        {taxonomy.uplinkPortTypes.length > 0 && (
+                            <span className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 self-center">Uplink</span>
+                        )}
                         {taxonomy.uplinkPortTypes.slice(0, 4).map(u => (
                             <button
                                 key={u}

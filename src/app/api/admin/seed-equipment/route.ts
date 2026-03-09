@@ -4,7 +4,7 @@ import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 
 export async function GET() {
     try {
-        console.log("Seeding equipment catalog...");
+        console.log(`Seeding equipment catalog... Total items in SEED_EQUIPMENT: ${SEED_EQUIPMENT.length}`);
         const count = await EquipmentService.saveEquipmentBatch(SEED_EQUIPMENT);
         return NextResponse.json({ success: true, message: `Successfully seeded ${count} equipment items.` });
     } catch (error) {

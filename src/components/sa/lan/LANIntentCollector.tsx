@@ -87,24 +87,24 @@ function deriveRequirements(
     const poe = resolveHighestPoe(selected, INTENT_CHIPS);
     
     // speed inference logic
-    let accessSpeed: "1G-Copper" | "mGig-Copper" | "10G-Copper" = "1G-Copper";
-    
+    let accessSpeed: "RJ45-1G" | "RJ45-2.5G" | "RJ45-10G" = "RJ45-1G";
+
     const isApSelected = selected.includes("aps");
     const isWorkstationSelected = selected.includes("workstations");
 
     if (isApSelected && apWifiStandard === "Wi-Fi 7") {
-        accessSpeed = "10G-Copper";
+        accessSpeed = "RJ45-10G";
     } else if (isWorkstationSelected && highSpeedWorkstations === "10G") {
-        accessSpeed = "10G-Copper";
+        accessSpeed = "RJ45-10G";
     } else if (isApSelected && (apWifiStandard === "Wi-Fi 6" || apWifiStandard === "Wi-Fi 6E")) {
-        accessSpeed = "mGig-Copper";
+        accessSpeed = "RJ45-2.5G";
     } else if (isWorkstationSelected && highSpeedWorkstations === "mGig (2.5G/5G)") {
-        accessSpeed = "mGig-Copper";
+        accessSpeed = "RJ45-2.5G";
     }
 
     return {
         accessPortType: accessSpeed,
-        uplinkPortType: "10G-Fiber",
+        uplinkPortType: "SFP+-10G",
         poeCapabilities: poe,
         isStackable,
         isRugged,
@@ -220,7 +220,7 @@ export function LANIntentCollector({
                                 {["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"].map((std) => (
                                     <button
                                         key={std}
-                                        onClick={() => setApWifiStandard(std as any)}
+                                        onClick={() => setApWifiStandard(std as "Wi-Fi 5" | "Wi-Fi 6" | "Wi-Fi 6E" | "Wi-Fi 7")}
                                         className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${apWifiStandard === std
                                             ? "bg-blue-600 border-blue-600 text-white shadow-sm"
                                             : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300"
@@ -247,7 +247,7 @@ export function LANIntentCollector({
                                 {["Standard (1G)", "mGig (2.5G/5G)", "10G"].map((speed) => (
                                     <button
                                         key={speed}
-                                        onClick={() => setHighSpeedWorkstations(speed as any)}
+                                        onClick={() => setHighSpeedWorkstations(speed as "Standard (1G)" | "mGig (2.5G/5G)" | "10G")}
                                         className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${highSpeedWorkstations === speed
                                             ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
                                             : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300"
@@ -324,11 +324,11 @@ export function LANIntentCollector({
                 {selectedChips.length > 0 && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
                         <span className="font-bold text-slate-700 dark:text-slate-200">Inferred:</span>
-                        <span className={`font-mono ${deriveRequirements(selectedChips, isStackable, isRugged, apWifiStandard, highSpeedWorkstations).accessPortType !== '1G-Copper' ? "text-blue-600 dark:text-blue-400 font-bold" : ""}`}>
+                        <span className={`font-mono ${deriveRequirements(selectedChips, isStackable, isRugged, apWifiStandard, highSpeedWorkstations).accessPortType !== 'RJ45-1G' ? "text-blue-600 dark:text-blue-400 font-bold" : ""}`}>
                             {deriveRequirements(selectedChips, isStackable, isRugged, apWifiStandard, highSpeedWorkstations).accessPortType} access
                         </span>
                         <span className="text-slate-300 dark:text-slate-600">·</span>
-                        <span className="font-mono">10G-Fiber uplinks</span>
+                        <span className="font-mono">SFP+-10G uplinks</span>
                         <span className="text-slate-300 dark:text-slate-600">·</span>
                         <span className={`font-mono font-bold ${needsPoe ? "text-amber-600 dark:text-amber-400" : "text-slate-400"}`}>
                             {resolvedPoe}

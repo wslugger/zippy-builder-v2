@@ -19,7 +19,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
                 actions: [{
                     type: "set_parameter",
                     targetId: "defaultAccessSpeed",
-                    actionValue: "mGig-Copper"
+                    actionValue: "RJ45-2.5G"
                 }]
             })
         });
@@ -41,7 +41,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
 
         // 1. Enter prompt into AI assistant text area
         const aiInput = screen.getByPlaceholderText(/Describe your intent/i);
-        fireEvent.change(aiInput, { target: { value: "Require mGig-Copper if there are 5 indoor APs" } });
+        fireEvent.change(aiInput, { target: { value: "Require RJ45-2.5G if there are 5 indoor APs" } });
 
         // 2. Click the Generate button
         const generateButton = screen.getByRole('button', { name: /Generate/i });
@@ -69,7 +69,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
             body: JSON.stringify({
                 contextType: 'bom_logic_rule',
                 promptData: {
-                    instruction: "Require mGig-Copper if there are 5 indoor APs",
+                    instruction: "Require RJ45-2.5G if there are 5 indoor APs",
                     serviceCategory: "lan"
                 }
             })
@@ -94,7 +94,7 @@ describe('AI Assisted BOM Logic Rule Generation', () => {
         expect(targetIdSelect).toHaveValue("defaultAccessSpeed");
 
         // Setup options dropdown since setting a parameter dynamically loads predefined dropdown options if provided
-        const actionValueSelect = screen.queryByDisplayValue(/mGig-Copper/i);
+        const actionValueSelect = screen.queryByDisplayValue(/RJ45-2.5G/i);
         expect(actionValueSelect).toBeInTheDocument();
     });
 });

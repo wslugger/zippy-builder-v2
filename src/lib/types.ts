@@ -52,24 +52,28 @@ export const WIFI_STANDARDS = ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"] as c
 export const EQUIPMENT_STATUSES = ["Supported", "In development", "Not supported", "eos"] as const;
 
 /**
- * Canonical interface/port speed taxonomy — single source of truth.
+ * Canonical interface/port speed taxonomy  single source of truth.
+ * Access ports use RJ45-{speed} format (always copper RJ45).
+ * Uplink ports use SFP form factor notation (SFP, SFP+, SFP28, QSFP+, QSFP28, QSFP-DD).
  * Matches the system config default and the EquipmentModal dropdown.
  */
 export const INTERFACE_TYPES = [
-  '1G-Copper',
-  '10G-Copper',
-  'mGig-Copper',
-  '1G-Fiber',
-  '10G-Fiber',
-  '25G-Fiber',
-  '40G-Fiber',
-  '100G-Fiber',
-  '400G-Fiber',
-  '1000G-Fiber',
+  // Access port types (RJ45 copper)
+  'RJ45-1G',
+  'RJ45-2.5G',
+  'RJ45-5G',
+  'RJ45-10G',
+  // Uplink port types (SFP form factor)
+  'SFP-1G',
+  'SFP+-10G',
+  'SFP28-25G',
+  'QSFP+-40G',
+  'QSFP28-100G',
+  'QSFP-DD-400G',
 ] as const;
 
 /**
- * Canonical PoE capability taxonomy — single source of truth.
+ * Canonical PoE capability taxonomy  single source of truth.
  * Used in LANRequirementsEditor dropdowns and BOM engine filtering.
  */
 export const POE_CAPABILITIES = [
@@ -90,9 +94,9 @@ export const WANSpecsSchema = z.object({
   advancedSecurityThroughputMbps: z.number(),
   vpn_tunnels: z.number().optional(),
   wanPortCount: z.number().default(0),
-  wanPortType: z.string().nullish().catch('1G-Copper'),
+  wanPortType: z.string().nullish().catch('RJ45-1G'),
   lanPortCount: z.number().default(0),
-  lanPortType: z.string().nullish().catch('1G-Copper'),
+  lanPortType: z.string().nullish().catch('RJ45-1G'),
   sfpPortCount: z.number().optional(),
   // Support mixed WAN/LAN fields often used in compact branches
   ports: z.number().optional(),
@@ -103,24 +107,27 @@ export const WANSpecsSchema = z.object({
   stacking_bandwidth_gbps: z.number().optional(),
   forwarding_rate_mpps: z.number().optional(),
   switching_capacity_gbps: z.number().optional(),
-  primary_power_supply: z.string().nullish().catch(undefined),
-  secondary_power_supply: z.string().nullish().catch(undefined),
-  poe_capabilities: z.string().nullish().catch(undefined),
-  power_load_max_watts: z.number().nullish().catch(undefined),
-  integrated_cellular: z.boolean().nullish().catch(undefined),
-  cellular_type: z.string().nullish().catch(undefined),
-  integrated_wifi: z.boolean().nullish().catch(undefined),
-  wifi_standard: z.string().nullish().catch(undefined),
-  modular_cellular: z.boolean().nullish().catch(undefined),
+  primary_power_supply: z.string().nullish(),
+  secondary_power_supply: z.string().nullish(),
+  poe_capabilities: z.string().nullish(),
+  power_load_max_watts: z.number().nullish(),
+  integrated_cellular: z.boolean().nullish(),
+  cellular_type: z.string().nullish(),
+  cellular_throughput_mbps: z.number().nullish(),
+  modem_details: z.string().nullish(),
+  antenna_type: z.string().nullish(),
+  integrated_wifi: z.boolean().nullish(),
+  wifi_standard: z.string().nullish(),
+  modular_cellular: z.boolean().nullish(),
 }).passthrough();
 
 export const LANSpecsSchema = z.object({
   accessPortCount: z.number().catch(24),
-  accessPortType: z.string().catch('1G-Copper'),
+  accessPortType: z.string().catch('RJ45-1G'),
   poeBudgetWatts: z.number().catch(0),
   poe_capabilities: z.string().catch('None'),
   uplinkPortCount: z.number().catch(4),
-  uplinkPortType: z.string().catch('10G-Fiber'),
+  uplinkPortType: z.string().catch('SFP+-10G'),
   isStackable: z.boolean().catch(false),
 }).passthrough();
 
@@ -128,7 +135,7 @@ export const WLANSpecsSchema = z.object({
   wifiStandard: z.string().catch('Wi-Fi 6'),
   mimoBandwidth: z.string().catch('2x2'),
   powerDrawWatts: z.number().catch(15),
-  uplinkType: z.string().catch('1G-Copper'),
+  uplinkType: z.string().catch('RJ45-1G'),
   environment: z.string().catch('Indoor'),
   usage: z.string().optional(),
   radioSpecification: z.string().optional(),
@@ -175,7 +182,7 @@ const BaseEquipmentSchema = z.object({
 });
 
 /**
- * Unified flat specs schema — all fields optional, accommodates any combination of purposes.
+ * Unified flat specs schema  all fields optional, accommodates any combination of purposes.
  * A multi-purpose device (e.g. WAN + WLAN) stores fields from both groups in this single object.
  * Each BOM module reads only the fields it cares about, ignoring the rest.
  */
@@ -192,6 +199,9 @@ export const UnifiedSpecsSchema = z.object({
   sfpPortCount: z.number().optional(),
   integrated_cellular: z.boolean().nullish(),
   cellular_type: z.string().nullish(),
+  cellular_throughput_mbps: z.number().optional(),
+  modem_details: z.string().optional(),
+  antenna_type: z.string().optional(),
   integrated_wifi: z.boolean().nullish(),
   wifi_standard: z.string().nullish(),
   modular_cellular: z.boolean().nullish(),
@@ -494,7 +504,7 @@ export interface AIPromptConfig {
   label: string;
   description: string;
   model: string;           // e.g. "gemini-2.5-flash"
-  temperature: number;     // 0.0 – 1.0
+  temperature: number;     // 0.0  1.0
   systemInstruction?: string;
   userPromptTemplate: string;
   updatedAt?: string;
@@ -575,9 +585,9 @@ export interface EmbeddedEquipmentSnapshot {
  * left partially undefined for complex sites (needsManualReview === true).
  */
 export interface SiteLANRequirements {
-  /** Access port media type, e.g. '1G-Copper', 'mGig-Copper', '10G-Copper' */
+  /** Access port media type, e.g. 'RJ45-1G', 'RJ45-2.5G', 'RJ45-10G' */
   accessPortType?: string;
-  /** Uplink port media type, e.g. '10G-Fiber', '1G-Fiber' */
+  /** Uplink port media type, e.g. 'SFP+-10G', 'SFP-1G', 'QSFP+-40G' */
   uplinkPortType?: string;
   /** PoE capability level, e.g. 'PoE+', 'PoE++', 'None' */
   poeCapabilities?: string;
@@ -678,8 +688,8 @@ export interface SystemParameterDefinition {
 }
 
 export const SYSTEM_PARAMETERS: SystemParameterDefinition[] = [
-  { id: 'defaultAccessSpeed', label: 'Default Access Speed', description: 'The default port speed for LAN access switches.', type: 'enum', options: ['1G-Copper', 'mGig-Copper', '10G-Copper', '1G-Fiber', '10G-Fiber'], defaultValue: '1G-Copper' },
-  { id: 'defaultUplinkType', label: 'Default Uplink Type', description: 'The default media type for LAN switch uplinks.', type: 'enum', options: ['1G-Copper', '1G-Fiber', '10G-Copper', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber'], defaultValue: '10G-Fiber' },
+  { id: 'defaultAccessSpeed', label: 'Default Access Speed', description: 'The default port speed for LAN access switches.', type: 'enum', options: ['RJ45-1G', 'RJ45-2.5G', 'RJ45-5G', 'RJ45-10G'], defaultValue: 'RJ45-1G' },
+  { id: 'defaultUplinkType', label: 'Default Uplink Type', description: 'The default media type for LAN switch uplinks.', type: 'enum', options: ['SFP-1G', 'SFP+-10G', 'SFP28-25G', 'QSFP+-40G', 'QSFP28-100G'], defaultValue: 'SFP+-10G' },
   { id: 'poeStandard', label: 'PoE Standard', description: 'Required Power over Ethernet standard.', type: 'enum', options: ['None', 'PoE+', 'PoE++'], defaultValue: 'PoE+' },
   { id: 'maxPortUtilization', label: 'Max Port Utilization (%)', description: 'Target maximum utilization for switch ports before adding another switch.', type: 'number', defaultValue: 100 },
   { id: 'maxStackSize', label: 'Max Stack Size', description: 'Maximum number of switches in a stack.', type: 'number', defaultValue: 8 },
@@ -817,6 +827,7 @@ export const SystemConfigSchema = z.object({
     feature_categories: z.array(z.string()).default([]),
     service_categories: z.array(z.string()).default([]),
     design_option_categories: z.array(z.string()).default([]),
+    license_tiers: z.record(z.string(), z.array(z.string())).default({}),
   }).catchall(z.any()).default({
     regions: ['North America', 'Europe', 'Asia Pacific', 'Latin America'],
     siteTypes: ['Small Branch', 'Medium Branch', 'Large Branch', 'Headquarters', 'Data Center', 'Remote/Home Office'],
@@ -826,10 +837,14 @@ export const SystemConfigSchema = z.object({
     wifi_standards: ['Wi-Fi 5', 'Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7'],
     mounting_options: ['Rack', 'Wall', 'Desktop', 'Ceiling'],
     recommended_use_cases: ['High Density', 'Outdoor', 'Harsh Environment', 'Standard Office'],
-    interface_types: ['1G-Copper', '10G-Copper', 'mGig-Copper', '1G-Fiber', '10G-Fiber', '25G-Fiber', '40G-Fiber', '100G-Fiber', '400G-Fiber', '1000G-Fiber'],
+    interface_types: ['RJ45-1G', 'RJ45-2.5G', 'RJ45-5G', 'RJ45-10G', 'SFP-1G', 'SFP+-10G', 'SFP28-25G', 'QSFP+-40G', 'QSFP28-100G', 'QSFP-DD-400G'],
     feature_categories: ['SD-WAN', 'Security', 'Routing', 'Switching', 'Wireless', 'Visibility'],
     service_categories: ['Managed WAN', 'Managed LAN', 'Managed WLAN', 'Managed Security'],
-    design_option_categories: ['Redundancy', 'Performance', 'Scale', 'Topology']
+    design_option_categories: ['Redundancy', 'Performance', 'Scale', 'Topology'],
+    license_tiers: {
+      meraki: ['Enterprise', 'Advanced Security', 'Secure SD-WAN Plus'],
+      cisco_catalyst: ['DNA Essentials', 'DNA Advantage', 'DNA Premier']
+    }
   }),
   calculationBaselines: z.object({
     defaultRedundancyFactor: z.number().default(1),

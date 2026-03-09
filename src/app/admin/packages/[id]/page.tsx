@@ -6,7 +6,9 @@ import { PackageService } from "@/src/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useServices } from "@/src/hooks/useServices";
+import { normalizeServiceId } from "@/src/lib/bom-utils";
 import { useTechnicalFeatures } from "@/src/hooks/useTechnicalFeatures";
+import { useSystemConfig } from "@/src/hooks/useSystemConfig";
 import { InclusionToggle } from "@/src/components/admin/inclusion-toggle";
 import { InlineCopilotTrigger } from "@/src/components/common/InlineCopilotTrigger";
 import { CopilotSuggestion } from "@/src/components/common/CopilotSuggestion";
@@ -43,6 +45,7 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
 
     const { services, loading: loadingServices } = useServices();
     const { features, loading: loadingFeatures } = useTechnicalFeatures();
+    const { config } = useSystemConfig();
     const [loading, setLoading] = useState(!isNew);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -452,9 +455,10 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
 
                         <div className="space-y-6">
                             {services.filter(s => !s.is_attachment).map(service => {
-                                const isServiceSelected = pkg.items?.some(i => i.service_id === service.id && !i.service_option_id);
-                                const serviceItem = pkg.items?.find(i => i.service_id === service.id && !i.service_option_id);
-                                const attachmentServices = services.filter(s => s.is_attachment && s.attaches_to?.includes(service.id));
+                                const normSvcId = normalizeServiceId(service.id);
+                                const isServiceSelected = pkg.items?.some(i => normalizeServiceId(i.service_id) === normSvcId && !i.service_option_id);
+                                const serviceItem = pkg.items?.find(i => normalizeServiceId(i.service_id) === normSvcId && !i.service_option_id);
+                                const attachmentServices = services.filter(s => s.is_attachment && s.attaches_to?.some(a => normalizeServiceId(a) === normSvcId));
 
                                 return (
                                     <div key={service.id} className={`border rounded-2xl transition-all overflow-hidden ${isServiceSelected ? 'border-blue-200 dark:border-blue-900 shadow-sm' : 'border-zinc-100 dark:border-zinc-800'}`}>
@@ -474,13 +478,6 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
 
                                             {isServiceSelected && (
                                                 <div className="flex items-center gap-3">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="License Tier (e.g. SEC)"
-                                                        value={serviceItem?.required_license_tier || ''}
-                                                        onChange={(e) => updateLicenseTier(service.id, e.target.value)}
-                                                        className="text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 w-32 outline-none focus:ring-1 focus:ring-blue-500/50"
-                                                    />
                                                     {service.supported_features && service.supported_features.length > 0 && (
                                                         <button
                                                             onClick={(e) => {
@@ -550,8 +547,8 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                         {isServiceSelected && service.service_options?.length > 0 && (
                                             <div className="px-10 pb-5 pt-2 space-y-6 border-t border-zinc-50 dark:border-zinc-800/50">
                                                 {service.service_options.map(option => {
-                                                    const isOptionSelected = pkg.items?.some(i => i.service_id === service.id && i.service_option_id === option.id && !i.design_option_id);
-                                                    const optionItem = pkg.items?.find(i => i.service_id === service.id && i.service_option_id === option.id && !i.design_option_id);
+                                                    const isOptionSelected = pkg.items?.some(i => normalizeServiceId(i.service_id) === normSvcId && i.service_option_id === option.id && !i.design_option_id);
+                                                    const optionItem = pkg.items?.find(i => normalizeServiceId(i.service_id) === normSvcId && i.service_option_id === option.id && !i.design_option_id);
 
                                                     return (
                                                         <div key={option.id} className="space-y-4">
@@ -567,13 +564,6 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                 </div>
                                                                 {isOptionSelected && (
                                                                     <div className="flex items-center gap-3">
-                                                                        <input
-                                                                            type="text"
-                                                                            placeholder="License Tier"
-                                                                            value={optionItem?.required_license_tier || ''}
-                                                                            onChange={(e) => updateLicenseTier(service.id, e.target.value, option.id)}
-                                                                            className="text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 w-28 outline-none focus:ring-1 focus:ring-blue-500/50"
-                                                                        />
                                                                         {option.supported_features && option.supported_features.length > 0 && (
                                                                             <button
                                                                                 onClick={(e) => {
@@ -620,53 +610,91 @@ export default function PackageEditorPage({ params }: { params: Promise<{ id: st
                                                                                     const designItem = pkg.items?.find(i => i.service_id === service.id && i.service_option_id === option.id && i.design_option_id === design.id);
 
                                                                                     return (
-                                                                                        <div key={design.id} className={`p-3 rounded-xl border transition-all flex items-center justify-between ${isDesignSelected ? 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 shadow-sm' : 'border-zinc-100 dark:border-zinc-800 opacity-60 hover:opacity-100'}`}>
-                                                                                            <div className="flex items-center gap-3 overflow-hidden">
-                                                                                                <input
-                                                                                                    type="checkbox"
-                                                                                                    checked={isDesignSelected}
-                                                                                                    onChange={() => toggleItem(service.id, option.id, design.id)}
-                                                                                                    className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/10 cursor-pointer"
-                                                                                                />
-                                                                                                <div className="truncate cursor-pointer" onClick={() => toggleItem(service.id, option.id, design.id)}>
-                                                                                                    <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">{design.name}</p>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                            {isDesignSelected && (
-                                                                                                <div className="flex items-center gap-2 shrink-0 ml-2">
-                                                                                                    <input
-                                                                                                        type="text"
-                                                                                                        placeholder="License"
-                                                                                                        value={designItem?.required_license_tier || ''}
-                                                                                                        onChange={(e) => updateLicenseTier(service.id, e.target.value, option.id, design.id)}
-                                                                                                        className="text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 w-20 outline-none focus:ring-1 focus:ring-blue-500/50"
-                                                                                                    />
-                                                                                                    {design.supported_features && design.supported_features.length > 0 && (
-                                                                                                        <button
-                                                                                                            onClick={(e) => {
-                                                                                                                e.stopPropagation();
-                                                                                                                setEditingItem({
-                                                                                                                    serviceId: service.id,
-                                                                                                                    optionId: option.id,
-                                                                                                                    designId: design.id,
-                                                                                                                    label: design.name,
-                                                                                                                    supportedFeatures: design.supported_features || []
-                                                                                                                });
-                                                                                                            }}
-                                                                                                            className="w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors text-zinc-400 hover:text-blue-600"
-                                                                                                            title="Manage Features"
-                                                                                                        >
-                                                                                                            <span className="text-xs">⚙</span>
-                                                                                                        </button>
-                                                                                                    )}
-                                                                                                    <InclusionToggle
-                                                                                                        value={designItem?.inclusion_type || 'required'}
-                                                                                                        onChange={(val) => updateInclusion(service.id, val, option.id, design.id)}
-                                                                                                        className="py-1 px-1.5 scale-90 origin-right" // Make it slightly smaller
-                                                                                                    />
-                                                                                                </div>
-                                                                                            )}
-                                                                                        </div>
+                                                        <div key={design.id} 
+                                                            className={`p-3 rounded-xl border transition-all flex flex-col gap-2 ${isDesignSelected ? 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 shadow-sm' : 'border-zinc-100 dark:border-zinc-800 opacity-60 hover:opacity-100'}`}
+                                                        >
+                                                            <div className="flex items-center gap-3 w-full">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isDesignSelected}
+                                                                    onChange={() => toggleItem(service.id, option.id, design.id)}
+                                                                    className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500/10 cursor-pointer shrink-0"
+                                                                />
+                                                                <div className="min-w-0 cursor-pointer flex-1" onClick={() => toggleItem(service.id, option.id, design.id)}>
+                                                                    <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200" title={design.name}>{design.name}</p>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {isDesignSelected && (
+                                                                <div className="flex items-center justify-between gap-3 pl-7 pt-1 border-t border-zinc-100/50 dark:border-zinc-800/50 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="flex items-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-md px-1.5 py-0.5 shadow-sm">
+                                                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter mr-1.5 border-r border-zinc-100 dark:border-zinc-800 pr-1.5 whitespace-nowrap">License</span>
+                                                                            <select
+                                                                                value={designItem?.required_license_tier || ''}
+                                                                                onChange={(e) => updateLicenseTier(service.id, e.target.value, option.id, design.id)}
+                                                                                className="text-[10px] font-bold bg-transparent border-none min-w-[80px] outline-none focus:ring-0 p-0 cursor-pointer"
+                                                                            >
+                                                                                <option value="">None / Default</option>
+                                                                                {(() => {
+                                                                                    const searchString = `${design.vendor_id || ''} ${option.vendor_id || ''} ${service.metadata?.vendor_id || ''} ${design.name} ${option.name} ${service.name} ${design.id} ${option.id} ${service.id} ${service.metadata?.category || ''}`.toLowerCase();
+                                                                                    
+                                                                                    let vendorKey = '';
+                                                                                    if (searchString.includes('meraki')) {
+                                                                                        vendorKey = 'meraki';
+                                                                                    } else if (searchString.includes('cisco') || searchString.includes('dna') || searchString.includes('catalyst')) {
+                                                                                        vendorKey = 'cisco_catalyst';
+                                                                                    } else if (searchString.includes('sd-wan') || searchString.includes('sdwan') || searchString.includes('mx') || searchString.includes('topology')) {
+                                                                                        vendorKey = 'meraki';
+                                                                                    } else if (searchString.includes('lan') || searchString.includes('wlan') || searchString.includes('wifi')) {
+                                                                                        vendorKey = 'cisco_catalyst';
+                                                                                    } else {
+                                                                                        // Last resort fallback to Meraki if we really can't tell, 
+                                                                                        // to avoid a blank list for networking services.
+                                                                                        vendorKey = 'meraki';
+                                                                                    }
+                                                                                    
+                                                                                    // Fallback defaults if not in Firestore yet
+                                                                                    const FALLBACK_TIERS: Record<string, string[]> = {
+                                                                                        meraki: ['Enterprise', 'Advanced Security', 'Secure SD-WAN Plus'],
+                                                                                        cisco_catalyst: ['DNA Essentials', 'DNA Advantage', 'DNA Premier']
+                                                                                    };
+                                                                                    const tiers = (config?.taxonomy?.license_tiers?.[vendorKey]?.length ? config.taxonomy.license_tiers[vendorKey] : null) || FALLBACK_TIERS[vendorKey] || [];
+                                                                                    return tiers.map(tier => (
+                                                                                        <option key={tier} value={tier}>{tier}</option>
+                                                                                    ));
+                                                                                })()}
+                                                                            </select>
+                                                                        </div>
+                                                                        
+                                                                        {design.supported_features && design.supported_features.length > 0 && (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setEditingItem({
+                                                                                        serviceId: service.id,
+                                                                                        optionId: option.id,
+                                                                                        designId: design.id,
+                                                                                        label: design.name,
+                                                                                        supportedFeatures: design.supported_features || []
+                                                                                    });
+                                                                                }}
+                                                                                className="w-6 h-6 rounded flex items-center justify-center transition-colors text-zinc-400 hover:text-blue-600 hover:bg-white dark:hover:bg-zinc-800 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
+                                                                                title="Manage Features"
+                                                                            >
+                                                                                <span className="text-[10px]">⚙</span>
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    
+                                                                    <InclusionToggle
+                                                                        value={designItem?.inclusion_type || 'required'}
+                                                                        onChange={(val) => updateInclusion(service.id, val, option.id, design.id)}
+                                                                        className="scale-90 origin-right transition-transform"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                                                     );
                                                                                 })}
                                                                             </div>

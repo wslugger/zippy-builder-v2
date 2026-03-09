@@ -323,8 +323,8 @@ export function calculateLANBOM(input: BOMModuleInput): BOMLineItem[] {
 
         let reasoning = `${matchType}: ${specParts.join(', ')}.`;
 
-        // Add Transceiver note for Fiber uplinks
-        if (siteParameters['fiberTransceiverNote'] !== false && lanSpecs.uplinkPortType?.toLowerCase().includes('fiber')) {
+        // Add Transceiver note for SFP uplinks (any non-RJ45 uplink port)
+        if (siteParameters['fiberTransceiverNote'] !== false && lanSpecs.uplinkPortType && !lanSpecs.uplinkPortType.startsWith('RJ45')) {
             reasoning += ` NOTE: Requires ${lanSpecs.uplinkPortCount || 0}x Fiber Transceivers for uplinks.`;
         }
 

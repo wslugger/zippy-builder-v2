@@ -229,11 +229,6 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 const p = await ProjectService.getProject(projectId);
                 setProject(p);
 
-                if (p?.selectedPackageId) {
-                    const pk = await PackageService.getPackageById(p.selectedPackageId);
-                    setPkg(pk);
-                }
-
                 const [allPkgs, svcs, eq, globalParams, mgmtMatrix, projectSites, pricingItems] = await Promise.all([
                     PackageService.getAllPackages().catch(() => []),
                     ServiceService.getAllServices().catch(() => []),
@@ -245,6 +240,15 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 ]);
 
                 setAllPackages(allPkgs);
+
+                // Set package: use saved selection, or fall back to first available
+                if (p?.selectedPackageId) {
+                    const savedPkg = allPkgs.find(pk => pk.id === p.selectedPackageId);
+                    if (savedPkg) setPkg(savedPkg);
+                } else if (allPkgs.length > 0) {
+                    setPkg(allPkgs[0]);
+                }
+
                 setServices(svcs);
                 setPricingCatalog(pricingItems as PricingItem[]);
                 if (p?.status === "completed" && p?.embeddedEquipment?.length) {

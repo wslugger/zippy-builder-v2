@@ -759,6 +759,42 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 </select>
                                             </div>
                                         )}
+                                        {(specs.integrated_cellular || specs.modular_cellular) && (
+                                            <>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Cellular Throughput (Mbps)</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="number"
+                                                            value={specs.cellular_throughput_mbps ?? 0}
+                                                            onChange={(e) => handleSpecChange("cellular_throughput_mbps", e.target.value)}
+                                                            className={inputClass}
+                                                        />
+                                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-zinc-800 px-1 py-0.5 rounded">Mbps</span>
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Modem Details</label>
+                                                    <input
+                                                        type="text"
+                                                        value={specs.modem_details || ""}
+                                                        onChange={(e) => handleSpecChange("modem_details", e.target.value)}
+                                                        className={inputClass}
+                                                        placeholder="e.g. CAT20 5G"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className={labelClass}>Antenna Type</label>
+                                                    <input
+                                                        type="text"
+                                                        value={specs.antenna_type || ""}
+                                                        onChange={(e) => handleSpecChange("antenna_type", e.target.value)}
+                                                        className={inputClass}
+                                                        placeholder="e.g. Dipole, Patch"
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </section>
                             )}

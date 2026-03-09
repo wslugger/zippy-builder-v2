@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSystemConfig } from '@/src/hooks/useSystemConfig';
-import { SystemConfig, SystemConfigSchema, SYSTEM_PARAMETERS, SystemParameterDefinition, BOMLogicRule } from '@/src/lib/types';
+import { SystemConfig, SystemConfigSchema, SYSTEM_PARAMETERS, SystemParameterDefinition, BOMLogicRule, INTERFACE_TYPES } from '@/src/lib/types';
 import { useBOMRules } from "@/src/hooks/useBOMRules";
 import RuleList from "@/src/components/admin/bom-logic/RuleList";
 import RuleEditorModal from "@/src/components/admin/bom-logic/RuleEditorModal";
@@ -39,6 +39,19 @@ export default function AdminSettingsPage() {
                         initialStrings[key] = value.join(', ');
                     }
                 });
+            }
+            // interface_types: always show canonical base merged with any Firestore extras
+            const firestoreTypes = Array.isArray((config.taxonomy as Record<string, unknown>)?.interface_types)
+                ? (config.taxonomy as Record<string, string[]>).interface_types
+                : [];
+            const merged = [...INTERFACE_TYPES] as string[];
+            firestoreTypes.forEach(t => { if (!merged.includes(t)) merged.push(t); });
+            initialStrings.interface_types = merged.join(', ');
+
+            // license_tiers: specific handling for Meraki and Cisco
+            if (config.taxonomy?.license_tiers) {
+                initialStrings.meraki_licenses = (config.taxonomy.license_tiers.meraki || []).join(', ');
+                initialStrings.cisco_licenses = (config.taxonomy.license_tiers.cisco_catalyst || []).join(', ');
             }
             setLocalTaxonomyStrings(initialStrings);
         } else if (config === null && !isLoading) {
@@ -123,6 +136,24 @@ export default function AdminSettingsPage() {
             [category]: {
                 ...draftConfig[category],
                 [field]: parseFloat(value) || 0
+            }
+        });
+    };
+
+    const handleLicenseTierChange = (vendor: string, value: string) => {
+        if (!draftConfig) return;
+        const field = vendor === 'meraki' ? 'meraki_licenses' : 'cisco_licenses';
+        setLocalTaxonomyStrings(prev => ({ ...prev, [field]: value }));
+
+        const tiers = value.split(',').map(s => s.trim()).filter(Boolean);
+        setDraftConfig({
+            ...draftConfig,
+            taxonomy: {
+                ...draftConfig.taxonomy,
+                license_tiers: {
+                    ...(draftConfig.taxonomy?.license_tiers || {}),
+                    [vendor === 'meraki' ? 'meraki' : 'cisco_catalyst']: tiers
+                }
             }
         });
     };
@@ -413,6 +444,7 @@ export default function AdminSettingsPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Interface Types (Comma separated)</label>
+                                    <p className="text-xs text-slate-500 mb-1">Base types are built-in. Add custom types here — they will be merged with the defaults.</p>
                                     <textarea
                                         rows={3}
                                         value={localTaxonomyStrings.interface_types || ''}
@@ -446,6 +478,30 @@ export default function AdminSettingsPage() {
                                         onChange={(e) => handleArrayChange('taxonomy', 'design_option_categories', e.target.value)}
                                         className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     />
+                                </div>
+
+                                <div className="mt-8 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
+                                    <h2 className="text-lg font-bold text-purple-800 mb-4">License Taxonomy</h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Meraki License Tiers</label>
+                                            <textarea
+                                                rows={2}
+                                                value={localTaxonomyStrings.meraki_licenses || ''}
+                                                onChange={(e) => handleLicenseTierChange('meraki', e.target.value)}
+                                                className="w-full px-4 py-2 bg-white border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Cisco Catalyst License Tiers</label>
+                                            <textarea
+                                                rows={2}
+                                                value={localTaxonomyStrings.cisco_licenses || ''}
+                                                onChange={(e) => handleLicenseTierChange('cisco', e.target.value)}
+                                                className="w-full px-4 py-2 bg-white border border-slate-300 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         )}

@@ -54,11 +54,11 @@ const baseSwitch = (id: string, extra: Record<string, unknown> = {}): Equipment 
     status: 'Supported',
     specs: {
         accessPortCount: 24,
-        accessPortType: '1G-Copper',
+        accessPortType: 'RJ45-1G',
         poeBudgetWatts: 370,
         poe_capabilities: 'PoE+',
         uplinkPortCount: 4,
-        uplinkPortType: '10G-Fiber',
+        uplinkPortType: 'SFP+-10G',
         isStackable: true,
         ...extra,
     },
@@ -93,8 +93,8 @@ describe('Smart Defaults Engine', () => {
 
         expect(result.lanRequirements).toBeDefined();
         expect(result.lanRequirements!.needsManualReview).toBe(false);
-        expect(result.lanRequirements!.accessPortType).toBe('1G-Copper');
-        expect(result.lanRequirements!.uplinkPortType).toBe('10G-Fiber');
+        expect(result.lanRequirements!.accessPortType).toBe('RJ45-1G');
+        expect(result.lanRequirements!.uplinkPortType).toBe('SFP+-10G');
         expect(result.lanRequirements!.poeCapabilities).toBe('PoE+');
     });
 
@@ -104,21 +104,21 @@ describe('Smart Defaults Engine', () => {
 
         expect(result.lanRequirements).toBeDefined();
         expect(result.lanRequirements!.needsManualReview).toBe(false);
-        expect(result.lanRequirements!.accessPortType).toBe('1G-Copper');
-        expect(result.lanRequirements!.uplinkPortType).toBe('10G-Fiber');
+        expect(result.lanRequirements!.accessPortType).toBe('RJ45-1G');
+        expect(result.lanRequirements!.uplinkPortType).toBe('SFP+-10G');
     });
 
     it('preserves existing SA-set lanRequirements (does not overwrite)', () => {
         const saOverride = {
-            accessPortType: 'mGig-Copper',
-            uplinkPortType: '10G-Fiber',
+            accessPortType: 'RJ45-2.5G',
+            uplinkPortType: 'SFP+-10G',
             poeCapabilities: 'PoE++',
             needsManualReview: false,
         };
         const site = baseSite({ userCount: 10, lanRequirements: saOverride });
         const result = evaluateSiteComplexity(site, [], basePackage);
 
-        expect(result.lanRequirements!.accessPortType).toBe('mGig-Copper');
+        expect(result.lanRequirements!.accessPortType).toBe('RJ45-2.5G');
         expect(result.lanRequirements!.poeCapabilities).toBe('PoE++');
     });
 
@@ -131,32 +131,32 @@ describe('Smart Defaults Engine', () => {
 
 describe('extractLANTaxonomy', () => {
     const catalog: Equipment[] = [
-        baseSwitch('sw1', { accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' }),
-        baseSwitch('sw2', { accessPortType: 'mGig-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE++' }),
-        baseSwitch('sw3', { accessPortType: '1G-Copper', uplinkPortType: '1G-Fiber', poe_capabilities: 'PoE+' }),
+        baseSwitch('sw1', { accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE+' }),
+        baseSwitch('sw2', { accessPortType: 'RJ45-2.5G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE++' }),
+        baseSwitch('sw3', { accessPortType: 'RJ45-1G', uplinkPortType: 'SFP-1G', poe_capabilities: 'PoE+' }),
         // Inactive — excluded from catalog scan, but canonical base still provides its value
-        { ...baseSwitch('sw4', { accessPortType: '10G-Copper' }), active: false } as unknown as Equipment,
+        { ...baseSwitch('sw4', { accessPortType: 'RJ45-10G' }), active: false } as unknown as Equipment,
         // WLAN device — excluded from catalog scan
         { ...baseSwitch('ap1', {}), role: 'WLAN' } as unknown as Equipment,
     ];
 
     it('includes full INTERFACE_TYPES canonical base in accessPortTypes', () => {
         const taxonomy = extractLANTaxonomy(catalog);
-        expect(taxonomy.accessPortTypes).toContain('1G-Copper');
-        expect(taxonomy.accessPortTypes).toContain('10G-Copper');
-        expect(taxonomy.accessPortTypes).toContain('mGig-Copper');
-        expect(taxonomy.accessPortTypes).toContain('1G-Fiber');
-        expect(taxonomy.accessPortTypes).toContain('10G-Fiber');
-        expect(taxonomy.accessPortTypes).toContain('25G-Fiber');
-        expect(taxonomy.accessPortTypes).toContain('100G-Fiber');
+        expect(taxonomy.accessPortTypes).toContain('RJ45-1G');
+        expect(taxonomy.accessPortTypes).toContain('RJ45-10G');
+        expect(taxonomy.accessPortTypes).toContain('RJ45-2.5G');
+        expect(taxonomy.accessPortTypes).toContain('SFP-1G');
+        expect(taxonomy.accessPortTypes).toContain('SFP+-10G');
+        expect(taxonomy.accessPortTypes).toContain('SFP28-25G');
+        expect(taxonomy.accessPortTypes).toContain('QSFP28-100G');
     });
 
     it('includes full INTERFACE_TYPES canonical base in uplinkPortTypes', () => {
         const taxonomy = extractLANTaxonomy(catalog);
-        expect(taxonomy.uplinkPortTypes).toContain('1G-Fiber');
-        expect(taxonomy.uplinkPortTypes).toContain('10G-Fiber');
-        expect(taxonomy.uplinkPortTypes).toContain('25G-Fiber');
-        expect(taxonomy.uplinkPortTypes).toContain('100G-Fiber');
+        expect(taxonomy.uplinkPortTypes).toContain('SFP-1G');
+        expect(taxonomy.uplinkPortTypes).toContain('SFP+-10G');
+        expect(taxonomy.uplinkPortTypes).toContain('SFP28-25G');
+        expect(taxonomy.uplinkPortTypes).toContain('QSFP28-100G');
     });
 
     it('includes POE_CAPABILITIES base and catalog-only extras in poeCapabilities', () => {
@@ -185,8 +185,8 @@ describe('extractLANTaxonomy', () => {
 
 describe('BOM Engine strict LAN filtering', () => {
     const switches: Equipment[] = [
-        baseSwitch('sw_1g', { accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' }),
-        baseSwitch('sw_mgig', { accessPortType: 'mGig-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' }),
+        baseSwitch('sw_1g', { accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE+' }),
+        baseSwitch('sw_mgig', { accessPortType: 'RJ45-2.5G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE+' }),
     ];
 
     const makeBOM = (lanReq: Site['lanRequirements']) =>
@@ -200,10 +200,10 @@ describe('BOM Engine strict LAN filtering', () => {
             rules: [],
         });
 
-    it('selects only 1G-Copper switch when accessPortType is "1G-Copper"', () => {
+    it('selects only RJ45-1G switch when accessPortType is "RJ45-1G"', () => {
         const bom = makeBOM({
-            accessPortType: '1G-Copper',
-            uplinkPortType: '10G-Fiber',
+            accessPortType: 'RJ45-1G',
+            uplinkPortType: 'SFP+-10G',
             poeCapabilities: 'PoE+',
             needsManualReview: false,
         });
@@ -212,10 +212,10 @@ describe('BOM Engine strict LAN filtering', () => {
         expect(lanItems.some(i => i.itemId === 'sw_mgig')).toBe(false);
     });
 
-    it('selects only mGig switch when accessPortType is "mGig-Copper"', () => {
+    it('selects only mGig switch when accessPortType is "RJ45-2.5G"', () => {
         const bom = makeBOM({
-            accessPortType: 'mGig-Copper',
-            uplinkPortType: '10G-Fiber',
+            accessPortType: 'RJ45-2.5G',
+            uplinkPortType: 'SFP+-10G',
             poeCapabilities: 'PoE+',
             needsManualReview: false,
         });
@@ -230,12 +230,12 @@ describe('BOM Engine strict LAN filtering', () => {
     });
 
     it('selects smaller port-count switch when multiple match criteria', () => {
-        const smallSwitch = baseSwitch('sw_24', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' });
-        const largeSwitch = baseSwitch('sw_48', { accessPortCount: 48, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' });
+        const smallSwitch = baseSwitch('sw_24', { accessPortCount: 24, accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE+' });
+        const largeSwitch = baseSwitch('sw_48', { accessPortCount: 48, accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE+' });
 
         const bom = calculateBOM({
             projectId: 'test',
-            sites: [baseSite({ userCount: 10, lanPorts: 12, lanRequirements: { accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poeCapabilities: 'PoE+', needsManualReview: false } })],
+            sites: [baseSite({ userCount: 10, lanPorts: 12, lanRequirements: { accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poeCapabilities: 'PoE+', needsManualReview: false } })],
             selectedPackage: basePackage,
             services,
             siteTypes,
@@ -247,16 +247,16 @@ describe('BOM Engine strict LAN filtering', () => {
     });
 
     it('rejects switches with insufficient PoE capabilities tier', () => {
-        const noneSwitch = baseSwitch('sw_none', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'None' });
-        const poeSwitch = baseSwitch('sw_poe', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE' });
-        const poePlusSwitch = baseSwitch('sw_poe_plus', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE+' });
-        const poePlusPlusSwitch = baseSwitch('sw_poe_plus_plus', { accessPortCount: 24, accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poe_capabilities: 'PoE++' });
+        const noneSwitch = baseSwitch('sw_none', { accessPortCount: 24, accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'None' });
+        const poeSwitch = baseSwitch('sw_poe', { accessPortCount: 24, accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE' });
+        const poePlusSwitch = baseSwitch('sw_poe_plus', { accessPortCount: 24, accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE+' });
+        const poePlusPlusSwitch = baseSwitch('sw_poe_plus_plus', { accessPortCount: 24, accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poe_capabilities: 'PoE++' });
 
         // Requesting PoE+ -- None and PoE should fail, PoE+ and PoE++ should pass
         // Calculate BOM will just return the best fit of those that pass
         const bom = calculateBOM({
             projectId: 'test',
-            sites: [baseSite({ userCount: 10, lanPorts: 12, lanRequirements: { accessPortType: '1G-Copper', uplinkPortType: '10G-Fiber', poeCapabilities: 'PoE+', needsManualReview: false } })],
+            sites: [baseSite({ userCount: 10, lanPorts: 12, lanRequirements: { accessPortType: 'RJ45-1G', uplinkPortType: 'SFP+-10G', poeCapabilities: 'PoE+', needsManualReview: false } })],
             selectedPackage: basePackage,
             services,
             siteTypes,

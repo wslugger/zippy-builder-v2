@@ -25,7 +25,6 @@ export async function POST(req: Request) {
     const activeWifiStandards = taxonomy.wifi_standards || ["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"];
     const activeMountingOptions = taxonomy.mounting_options || ["Rack", "Wall", "Desktop", "DIN rail"];
     const activeUseCases = taxonomy.recommended_use_cases || ["Small branch"];
-    const activeInterfaceTypes = taxonomy.interface_types || ["1GE RJ45", "10GE SFP+"];
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -53,13 +52,21 @@ export async function POST(req: Request) {
       1. For Meraki Switches (MS Series): Set "performance_rating" to "Wire Rate".
       2. For Meraki Switches: Extract SFP/SFP+ uplink module compatibility if listed.
       3. For Meraki Switches: Extract power supply part numbers and PoE budgets.
-      4. For Meraki Security appliances (MX):
-         - Look for models ending in "CW" (e.g., MX68CW) which indicate "integrated_cellular": true and "cellular_type": "LTE" or "5G".
-         - Terminology Mapping:
-           - Map "Stateful Firewall Throughput" or "NGFW Throughput" to rawFirewallThroughputMbps.
-           - Map "Maximum Site-to-Site VPN Throughput" (Auto VPN) to sdwanCryptoThroughputMbps.
-           - Map "Advanced Security Services Throughput" to advancedSecurityThroughputMbps.
-            `
+       4. For Meraki Security appliances (MX):
+          - Look for models ending in "CW" (e.g., MX68CW) which indicate "integrated_cellular": true and "cellular_type": "LTE" or "5G".
+          - Terminology Mapping:
+            - Map "Stateful Firewall Throughput" or "NGFW Throughput" to rawFirewallThroughputMbps.
+            - Map "Maximum Site-to-Site VPN Throughput" (Auto VPN) to sdwanCryptoThroughputMbps.
+            - Map "Advanced Security Services Throughput" to advancedSecurityThroughputMbps.
+       5. For Meraki MG family devices (cellular gateways):
+        - primary_purpose: "WAN"
+        - additional_purposes: ["Cellular Gateway", "SD-WAN Accessory"]
+        - mapped_services: ["Managed SD-WAN"]
+        - Extract "cellular_throughput_mbps" from the "Throughput" or "Cellular performance" section.
+        - Set "integrated_cellular": true.
+        - Map "Modem" details to "modem_details".
+        - Map "Antennas" to "antenna_type".
+             `
         : `
       1. Extract performance metrics as found in documentation.
             `;
@@ -88,9 +95,14 @@ export async function POST(req: Request) {
               "ports": Number (Total),
               "poe_budget": Number (Watts),
               "wanPortCount": Number (WAN-dedicated interfaces),
+              "wanPortType": "RJ45-1G | RJ45-2.5G | RJ45-10G | SFP-1G | SFP+-10G (WAN port connector type)",
               "lanPortCount": Number (LAN-dedicated interfaces),
+              "lanPortType": "RJ45-1G | RJ45-2.5G | RJ45-10G (LAN/handoff port connector type)",
               "accessPortCount": Number (LAN access ports),
+              "accessPortType": "RJ45-1G | RJ45-2.5G | RJ45-5G | RJ45-10G | SFP-1G | SFP+-10G | SFP28-25G | QSFP+-40G (access port connector type)",
               "uplinkPortCount": Number (Uplink/SFP ports),
+              "uplinkPortType": "SFP-1G | SFP+-10G | SFP28-25G | QSFP+-40G | QSFP28-100G | QSFP-DD-400G (uplink port connector type)",
+              "uplinkType": "RJ45-1G | RJ45-2.5G | RJ45-5G (WLAN AP uplink connector type)",
               "poe_capabilities": String (e.g. "PoE+", "UPOE"),
               "rack_units": Number,
               "stacking_supported": Boolean,
@@ -104,10 +116,13 @@ export async function POST(req: Request) {
               "power": String,
               "rawFirewallThroughputMbps": Number,
               "sdwanCryptoThroughputMbps": Number,
-              "advancedSecurityThroughputMbps": Number,
+               "advancedSecurityThroughputMbps": Number,
               "integrated_cellular": Boolean,
               "modular_cellular": Boolean,
               "cellular_type": "LTE | 5G | LTE/5G",
+              "cellular_throughput_mbps": Number,
+              "modem_details": String,
+              "antenna_type": String,
               "compatible_uplink_modules": [
                 { "part_number": String, "description": String, "ports": Number, "speed": String }
               ],
@@ -121,17 +136,23 @@ export async function POST(req: Request) {
 
       CRITICAL INSTRUCTIONS:
       ${vendorSpecificInstructions}
-      6. MAPPING THROUGHPUT METRICS (Units MUST be In Mbps, e.g. "1.5 Gbps" -> 1500):
+      6. PORT TYPE TAXONOMY — All port type fields MUST use this exact format:
+         - RJ45/copper ports: "RJ45-{speed}" (e.g., "RJ45-1G", "RJ45-2.5G", "RJ45-10G")
+         - SFP ports: "{form-factor}-{speed}" (e.g., "SFP-1G", "SFP+-10G", "SFP28-25G", "QSFP+-40G", "QSFP28-100G")
+         - For access ports: use accessPortType. If the access ports are RJ45, use "RJ45-{speed}". If SFP (e.g. C9300-24S has 1G SFP access ports), use "SFP-1G".
+         - For uplinks: use uplinkPortType with SFP form factor (SFP, SFP+, SFP28, QSFP+, QSFP28, QSFP-DD).
+         - NEVER use old formats like "1G-Copper", "10G-Fiber", "mGig-Copper", "2.5G-Copper".
+      7. MAPPING THROUGHPUT METRICS (Units MUST be In Mbps, e.g. "1.5 Gbps" -> 1500):
          - rawFirewallThroughputMbps: "Forwarding (512B)" [Cisco] OR "Stateful Firewall" [Meraki].
          - sdwanCryptoThroughputMbps: "IPsec (512B)" [Cisco] OR "Site-to-Site VPN" [Meraki].
          - advancedSecurityThroughputMbps: "SD-WAN (512B)" [Cisco] OR "Advanced Security" [Meraki].
-      7. ESTIMATING MANAGEMENT SIZE:
+      8. ESTIMATING MANAGEMENT SIZE:
          - If access switch ports < 8 or micro firewall: "X-Small".
          - If access switch ports < 24 or small firewall: "Small".
          - If access switch ports >= 24 or medium firewall: "Medium".
          - If large core switch / chassis or high-end border router: "Large" or "X-Large".
          - If accessory: "None".
-      8. Return ONLY the JSON object. No markdown.
+      9. Return ONLY the JSON object. No markdown.
     `;
 
     const result = await model.generateContent([

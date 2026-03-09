@@ -48,7 +48,16 @@ export function useCatalogMetadata() {
         wifiStandards: getTaxonomyField('wifi_standards', WIFI_STANDARDS),
         mountingOptions: getTaxonomyField('mounting_options', []),
         recommendedUseCases: getTaxonomyField('recommended_use_cases', []),
-        interfaceTypes: getTaxonomyField('interface_types', INTERFACE_TYPES),
+        interfaceTypes: (() => {
+            // Canonical types always come first; Firestore extras (admin-added) are appended.
+            // Old-format values (e.g. "1G-Copper", "10G-Fiber") are stripped automatically.
+            const DEPRECATED = /^(\d+G|mGig)-(Copper|Fiber)$/;
+            const merged = [...INTERFACE_TYPES] as string[];
+            getTaxonomyField('interface_types', []).forEach(t => {
+                if (!DEPRECATED.test(t) && !merged.includes(t)) merged.push(t);
+            });
+            return merged;
+        })(),
         featureCategories: getTaxonomyField('feature_categories', []),
         serviceCategories: getTaxonomyField('service_categories', SERVICE_CATEGORIES),
         designOptionCategories: getTaxonomyField('design_option_categories', DESIGN_OPTION_CATEGORIES),

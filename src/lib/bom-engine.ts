@@ -80,14 +80,14 @@ export function evaluateSiteComplexity(
 
 /**
  * Applies safe LAN topology defaults for simple sites.
- * - Small branch (userCount <= 15): auto-fill 1G-Copper access, 10G-Fiber uplink, PoE+ capabilities.
+ * - Small branch (userCount <= 15): auto-fill RJ45-1G access, SFP+-10G uplink, PoE+ capabilities.
  * - Complex site: flag for manual SA review via LANRequirementsEditor.
  */
 function applySmartLANDefaults(site: Site): SiteLANRequirements {
     const needsPoe = (site.poePorts && site.poePorts > 0) || (site.indoorAPs && site.indoorAPs > 0) || (site.outdoorAPs && site.outdoorAPs > 0);
     return {
-        accessPortType: '1G-Copper',
-        uplinkPortType: '10G-Fiber',
+        accessPortType: 'RJ45-1G',
+        uplinkPortType: 'SFP+-10G',
         poeCapabilities: needsPoe ? 'PoE+' : 'None',
         isStackable: false,
         isRugged: false,

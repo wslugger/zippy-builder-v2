@@ -26,16 +26,8 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firestore
 export const db = initializeFirestore(app, {});
 
-let storage: FirebaseStorage;
-try {
-    storage = getStorage(app);
-} catch (error) {
-    console.error("Failed to initialize Firebase Storage. Ensure NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is set.", error);
-    // @ts-expect-error - storage might be undefined if initialization fails
-    storage = undefined;
-}
-
-export { storage };
+// Initialize Storage
+export const storage = getStorage(app);
 
 // Collection name constants
 export const EQUIPMENT_COLLECTION = "equipment_catalog";
