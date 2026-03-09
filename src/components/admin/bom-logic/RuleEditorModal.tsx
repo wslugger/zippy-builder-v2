@@ -52,6 +52,8 @@ const FIELDS_LAN: FieldDef[] = [
     { label: "LAN Intent: Uplink Port Type", value: "site.lanRequirements.uplinkPortType", hint: '"10G-Fiber" | "1G-Fiber" | "25G-Fiber"' },
     { label: "LAN Intent: Stackable Required", value: "site.lanRequirements.isStackable", hint: 'true | false' },
     { label: "LAN Intent: Rugged / Industrial", value: "site.lanRequirements.isRugged", hint: 'true | false' },
+    { label: "LAN Intent: AP WiFi Standard", value: "site.lanRequirements.apWifiStandard", hint: '"Wi-Fi 5" | "Wi-Fi 6" | "Wi-Fi 6E" | "Wi-Fi 7"' },
+    { label: "LAN Intent: Workstation Speed", value: "site.lanRequirements.highSpeedWorkstations", hint: '"Standard (1G)" | "mGig (2.5G/5G)" | "10G"' },
 ];
 
 // WLAN specific fields

@@ -80,15 +80,36 @@ function resolveHighestPoe(
 function deriveRequirements(
     selected: IntentChipId[],
     isStackable: boolean,
-    isRugged: boolean
+    isRugged: boolean,
+    apWifiStandard: "Wi-Fi 5" | "Wi-Fi 6" | "Wi-Fi 6E" | "Wi-Fi 7",
+    highSpeedWorkstations: "Standard (1G)" | "mGig (2.5G/5G)" | "10G"
 ): Omit<SiteLANRequirements, "needsManualReview"> {
     const poe = resolveHighestPoe(selected, INTENT_CHIPS);
+    
+    // speed inference logic
+    let accessSpeed: "1G-Copper" | "mGig-Copper" | "10G-Copper" = "1G-Copper";
+    
+    const isApSelected = selected.includes("aps");
+    const isWorkstationSelected = selected.includes("workstations");
+
+    if (isApSelected && apWifiStandard === "Wi-Fi 7") {
+        accessSpeed = "10G-Copper";
+    } else if (isWorkstationSelected && highSpeedWorkstations === "10G") {
+        accessSpeed = "10G-Copper";
+    } else if (isApSelected && (apWifiStandard === "Wi-Fi 6" || apWifiStandard === "Wi-Fi 6E")) {
+        accessSpeed = "mGig-Copper";
+    } else if (isWorkstationSelected && highSpeedWorkstations === "mGig (2.5G/5G)") {
+        accessSpeed = "mGig-Copper";
+    }
+
     return {
-        accessPortType: "1G-Copper",
+        accessPortType: accessSpeed,
         uplinkPortType: "10G-Fiber",
         poeCapabilities: poe,
         isStackable,
         isRugged,
+        apWifiStandard,
+        highSpeedWorkstations
     };
 }
 
@@ -113,12 +134,14 @@ export function LANIntentCollector({
     const existing = site.lanRequirements;
     const [isStackable, setIsStackable] = useState(existing?.isStackable ?? false);
     const [isRugged, setIsRugged] = useState(existing?.isRugged ?? false);
+    const [apWifiStandard, setApWifiStandard] = useState<"Wi-Fi 5" | "Wi-Fi 6" | "Wi-Fi 6E" | "Wi-Fi 7">(existing?.apWifiStandard ?? "Wi-Fi 6");
+    const [highSpeedWorkstations, setHighSpeedWorkstations] = useState<"Standard (1G)" | "mGig (2.5G/5G)" | "10G">(existing?.highSpeedWorkstations ?? "Standard (1G)");
 
     // Emit derived requirements whenever selection changes
     useEffect(() => {
-        const req = deriveRequirements(selectedChips, isStackable, isRugged);
+        const req = deriveRequirements(selectedChips, isStackable, isRugged, apWifiStandard, highSpeedWorkstations);
         onRequirementsChange({ ...req, needsManualReview: false });
-    }, [selectedChips, isStackable, isRugged]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [selectedChips, isStackable, isRugged, apWifiStandard, highSpeedWorkstations]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const toggleChip = (id: IntentChipId) => {
         const next = selectedChips.includes(id)
@@ -185,6 +208,63 @@ export function LANIntentCollector({
                 })}
             </div>
 
+            {/* Sub-intent questions */}
+            {(selectedChips.includes("aps") || selectedChips.includes("workstations")) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5 p-4 bg-slate-50 dark:bg-slate-800/20 rounded-xl border border-dotted border-slate-300 dark:border-slate-700 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {selectedChips.includes("aps") && (
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+                                📡 WiFi Standard / Requirements
+                            </label>
+                            <div className="flex flex-wrap gap-1.5">
+                                {["Wi-Fi 5", "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7"].map((std) => (
+                                    <button
+                                        key={std}
+                                        onClick={() => setApWifiStandard(std as any)}
+                                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${apWifiStandard === std
+                                            ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                                            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                                            }`}
+                                    >
+                                        {std}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="text-[9px] text-slate-400">
+                                {apWifiStandard.includes("Wi-Fi 6") || apWifiStandard === "Wi-Fi 7"
+                                    ? "✨ Suggests mGig or 10G ports."
+                                    : "Standard 1G capability recommended."}
+                            </p>
+                        </div>
+                    )}
+
+                    {selectedChips.includes("workstations") && (
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+                                🖥️ Workstation Speed Needs
+                            </label>
+                            <div className="flex flex-wrap gap-1.5">
+                                {["Standard (1G)", "mGig (2.5G/5G)", "10G"].map((speed) => (
+                                    <button
+                                        key={speed}
+                                        onClick={() => setHighSpeedWorkstations(speed as any)}
+                                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${highSpeedWorkstations === speed
+                                            ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                                            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                                            }`}
+                                    >
+                                        {speed}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="text-[9px] text-slate-400">
+                                Select higher speeds for NAS users or power workstations.
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Constraint toggles + inferred config preview */}
             <div className="flex flex-col sm:flex-row gap-3">
                 {/* Toggles */}
@@ -244,7 +324,9 @@ export function LANIntentCollector({
                 {selectedChips.length > 0 && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
                         <span className="font-bold text-slate-700 dark:text-slate-200">Inferred:</span>
-                        <span className="font-mono">1G-Copper access</span>
+                        <span className={`font-mono ${deriveRequirements(selectedChips, isStackable, isRugged, apWifiStandard, highSpeedWorkstations).accessPortType !== '1G-Copper' ? "text-blue-600 dark:text-blue-400 font-bold" : ""}`}>
+                            {deriveRequirements(selectedChips, isStackable, isRugged, apWifiStandard, highSpeedWorkstations).accessPortType} access
+                        </span>
                         <span className="text-slate-300 dark:text-slate-600">·</span>
                         <span className="font-mono">10G-Fiber uplinks</span>
                         <span className="text-slate-300 dark:text-slate-600">·</span>

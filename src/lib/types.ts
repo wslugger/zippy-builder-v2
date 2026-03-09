@@ -587,6 +587,10 @@ export interface SiteLANRequirements {
   isRugged?: boolean;
   /** Minimum total PoE budget required across all switches in watts */
   totalPoeBudgetWatts?: number;
+  /** WiFi standard for APs (helps determine port speed) */
+  apWifiStandard?: 'Wi-Fi 5' | 'Wi-Fi 6' | 'Wi-Fi 6E' | 'Wi-Fi 7';
+  /** High speed workstation requirements */
+  highSpeedWorkstations?: 'Standard (1G)' | 'mGig (2.5G/5G)' | '10G';
   /** True when the site requires manual SA review before BOM can be generated */
   needsManualReview: boolean;
 }
@@ -642,6 +646,8 @@ export const SiteSchema = z.object({
     isStackable: z.boolean().optional(),
     isRugged: z.boolean().optional(),
     totalPoeBudgetWatts: z.number().optional(),
+    apWifiStandard: z.enum(['Wi-Fi 5', 'Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7']).optional(),
+    highSpeedWorkstations: z.enum(['Standard (1G)', 'mGig (2.5G/5G)', '10G']).optional(),
     needsManualReview: z.boolean(),
   }).optional(),
 });
