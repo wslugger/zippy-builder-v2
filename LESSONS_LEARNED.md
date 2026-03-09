@@ -1,5 +1,12 @@
 # Lessons Learned
 
+## 0. Service ID Normalization & Merging
+**Issue**: When external branches introduced new UI components that relied on legacy service IDs or un-normalized service ID strings (e.g. `managed_lan` vs `lan`), it caused entire sections of the BOM builder (like the LAN Tab) to disappear due to mismatches in tab categorization. 
+**Solution**:
+- **Centralized Normalization**: Implemented a robust `normalizeServiceId` function in `bom-utils.ts` and forced all BOM logic and UI tab aggregators to use canonical IDs (`sdwan`, `lan`, `wlan`).
+- **Consistent Selection Keys**: Created `getSelectionKey(site, service)` to guarantee that manual selections made by users are tied to a normalized string (ignoring whitespace and casing variations).
+- **Graceful Merging**: When bringing in new component code (like `LANIntentCollector`), it is critical to adapt the incoming code to use `getSelectionKey` rather than reverting the state handling back to un-normalized strings.
+
 ## 1. Dynamic Metadata vs. Hardcoded Enums
 **Issue**: Initial reliance on hardcoded TypeScript enums and constant arrays (e.g., `EQUIPMENT_PURPOSES`, `INTERFACE_TYPES`) led to rigidity. Adding a new interface type required code changes and deployments.
 **Solution**: Implemented a **Metadata Management System** backed by Firestore. 
