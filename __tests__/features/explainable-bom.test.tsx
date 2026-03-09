@@ -1,6 +1,7 @@
+import { Package, Service, BOMLogicRule, Site } from "@/src/lib/types";
 import { calculateBOM } from "@/src/lib/bom-engine";
-import { Site } from "@/src/lib/bom-types";
-import { Package, Service, BOMLogicRule } from "@/src/lib/types";
+
+
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 

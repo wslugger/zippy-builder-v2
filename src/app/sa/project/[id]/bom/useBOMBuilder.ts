@@ -1,11 +1,12 @@
 "use client";
 
+import { Project, Package, Service, Equipment, PricingItem, ManagementPricingMatrix, TriagedSite, Site, BOM, SiteType } from "@/src/lib/types";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ProjectService, PackageService, ServiceService, SiteDefinitionService, EquipmentService, PricingService } from "@/src/lib/firebase";
 import { ManagementPricingService } from "@/src/lib/firebase/management-pricing-service";
-import { Project, Package, Service, Equipment, PricingItem, ManagementPricingMatrix, TriagedSite } from "@/src/lib/types";
-import { Site, BOM } from "@/src/lib/bom-types";
-import { SiteType } from "@/src/lib/site-types";
+
+
+
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_PACKAGES } from "@/src/lib/seed-packages";
@@ -328,14 +329,25 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
         pkg.items.forEach((pItem) => {
             const rawServiceId = pItem.service_id;
             // Normalize BOTH sides of the comparison to handle ID drift between package and service catalog
-            const service = services.find((s) => normalizeServiceId(s.id) === normalizeServiceId(rawServiceId));
-            if (!service) return;
+            const serviceId = normalizeServiceId(rawServiceId);
+            const service = services.find((s) => normalizeServiceId(s.id) === serviceId);
+
+            if (!service) {
+                // Failsafe for known buckets even if service record is missing
+                if (serviceId === 'sdwan' || serviceId === 'managed_circuit' || serviceId === 'broadband') {
+                    if (!buckets.WAN.services.includes(serviceId)) buckets.WAN.services.push(serviceId);
+                } else if (serviceId === 'lan' || serviceId === 'managed_lan') {
+                    if (!buckets.LAN.services.includes(serviceId)) buckets.LAN.services.push(serviceId);
+                } else if (serviceId === 'wlan' || serviceId === 'managed_wifi') {
+                    if (!buckets.WLAN.services.includes(serviceId)) buckets.WLAN.services.push(serviceId);
+                }
+                return;
+            }
             
             // Attachment services don't get their own tab — they ride with base service tabs
             if (service.is_attachment) return;
             
             // Use canonical (normalized) ID for internal categorization
-            const serviceId = normalizeServiceId(rawServiceId);
             const name = (service.name || "").toLowerCase();
             const category = (service.metadata?.category || "").toLowerCase();
             

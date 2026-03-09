@@ -1,5 +1,6 @@
-import { Site, BOMLineItem } from "@/src/lib/bom-types";
-import { Equipment } from "@/src/lib/types";
+
+
+import { Equipment, Site, BOMLineItem } from "@/src/lib/types";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
 import { useState, useEffect, useMemo } from "react";
 import { getEquipmentRole, getSelectionKey } from "@/src/lib/bom-utils";

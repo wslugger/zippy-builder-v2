@@ -1,5 +1,6 @@
+import { SiteType, SiteTypeSchema } from "@/src/lib/types";
 import { collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "firebase/firestore";
-import { SiteType, SiteTypeSchema } from "@/src/lib/site-types";
+
 import { cleanObject } from "@/src/lib/feature-utils";
 import { applyTimestamps } from "@/src/lib/timestamps";
 import { db, SITE_DEFINITIONS_COLLECTION } from "./config";

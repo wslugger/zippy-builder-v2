@@ -1,6 +1,7 @@
+import { TriagedSite, Site } from "@/src/lib/types";
 import React from 'react';
-import { Site } from '@/src/lib/bom-types';
-import { TriagedSite } from '@/src/lib/types';
+
+
 
 interface SiteImportReviewModalProps {
     sites: TriagedSite[];

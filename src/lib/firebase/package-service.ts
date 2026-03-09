@@ -36,18 +36,18 @@ export const PackageService = {
 
     uploadCollateral: async (packageId: string, file: File, type: string) => {
         try {
-            console.log("Starting upload to Storage for:", file.name);
+
             const path = `packages/${packageId}/collateral/${Date.now()}_${file.name}`;
             const storageRef = ref(storage, path);
 
-            console.log("Uploading bytes to path:", path);
+
             const snapshot = await uploadBytes(storageRef, file);
 
-            console.log("Upload succesful. Metadata:", snapshot.metadata);
-            console.log("Retrieving download URL...");
+
+
             const url = await getDownloadURL(snapshot.ref);
 
-            console.log("URL retrieved:", url);
+
             const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
                 ? crypto.randomUUID()
                 : Math.random().toString(36).substring(2, 11);

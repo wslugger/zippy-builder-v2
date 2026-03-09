@@ -1,3 +1,4 @@
+import { Package, Equipment, PricingItem, EQUIPMENT_PURPOSES, INTERFACE_TYPES, POE_CAPABILITIES, Site, SiteType, BOMLineItem } from "@/src/lib/types";
 /**
  * Shared BOM utility functions.
  * 
@@ -5,9 +6,9 @@
  * and the BOM builder UI. Keeping them in one place prevents logic drift.
  */
 
-import { Package, Equipment, PricingItem, EQUIPMENT_PURPOSES, INTERFACE_TYPES, POE_CAPABILITIES } from "./types";
-import { Site } from "./bom-types";
-import { SiteType } from "./site-types";
+
+
+
 
 /**
  * Canonical service ID normalization.
@@ -95,11 +96,12 @@ export function resolveVendorForService(
     serviceId: string,
     services?: { id: string; service_options: { id: string; vendor_id?: string; design_options: { id: string; vendor_id?: string }[] }[] }[]
 ): string {
-    const pkgItem = pkg.items.find(i => normalizeServiceId(i.service_id) === normalizeServiceId(serviceId));
+    const normalizedId = normalizeServiceId(serviceId);
+    const pkgItem = pkg.items.find(i => normalizeServiceId(i.service_id) === normalizedId);
 
     // 1. Try explicit vendor_id from design option data
     if (pkgItem?.design_option_id && services) {
-        const service = services.find(s => normalizeServiceId(s.id) === normalizeServiceId(serviceId));
+        const service = services.find(s => normalizeServiceId(s.id) === normalizedId);
         const designOption = service?.service_options
             .flatMap(so => so.design_options)
             .find(d => d.id === pkgItem.design_option_id);
@@ -108,7 +110,7 @@ export function resolveVendorForService(
 
     // 2. Try explicit vendor_id from service option data
     if (pkgItem?.service_option_id && services) {
-        const service = services.find(s => normalizeServiceId(s.id) === normalizeServiceId(serviceId));
+        const service = services.find(s => normalizeServiceId(s.id) === normalizedId);
         const serviceOption = service?.service_options.find(so => so.id === pkgItem.service_option_id);
         if (serviceOption?.vendor_id) return serviceOption.vendor_id;
     }
@@ -205,11 +207,12 @@ export function calculateThroughputOverhead(
  * Use this for multi-purpose equipment filtering (e.g. WAN+WLAN router).
  */
 export function hasEquipmentPurpose(equip: Equipment, purpose: string): boolean {
+    const targetPurpose = purpose.toUpperCase();
     const purposes = [
-        String(equip.primary_purpose || ""),
-        ...(equip.additional_purposes || []).map(String),
+        String(equip.primary_purpose || "").toUpperCase(),
+        ...(equip.additional_purposes || []).map(p => String(p).toUpperCase()),
     ];
-    return purposes.some(p => p === purpose || p.includes(purpose));
+    return purposes.some(p => p === targetPurpose || p.includes(targetPurpose));
 }
 
 /**
@@ -309,7 +312,7 @@ export function extractLANTaxonomy(catalog: Equipment[]): LANTaxonomy {
     };
 }
 
-import { BOMLineItem } from "./types";
+
 
 /**
  * Exports detailed BOM items to a CSV file and triggers a browser download.
@@ -406,4 +409,81 @@ export function matchesConstraints(equipment: Equipment, constraints: { type: st
         }
     }
     return true;
+}
+
+/**
+ * Translates a JSON Logic condition object into a human-readable English string.
+ * Used for admin displays and audit logs.
+ */
+export function formatLogicCondition(condition: unknown): string {
+    if (!condition || typeof condition !== 'object' || Object.keys(condition).length === 0) return 'Always fires';
+
+    const operators: Record<string, string> = {
+        '==': 'is',
+        '===': 'is',
+        '!=': 'is not',
+        '!==': 'is not',
+        '>': 'is greater than',
+        '<': 'is less than',
+        '>=': 'is at least',
+        '<=': 'is at most',
+        'in': 'is in',
+        'contains': 'contains',
+    };
+
+    const fieldLabels: Record<string, string> = {
+        'serviceId': 'Service',
+        'packageId': 'Package',
+        'site.category': 'Site Category',
+        'site.userCount': 'User Count',
+        'site.bandwidthDownMbps': 'Download Speed',
+        'site.bandwidthUpMbps': 'Upload Speed',
+        'site.wanLinks': 'WAN Links',
+        'site.redundancyModel': 'Redundancy',
+        'site.lanPorts': 'LAN Ports',
+        'site.poePorts': 'PoE Ports',
+        'site.indoorAPs': 'Indoor APs',
+        'site.outdoorAPs': 'Outdoor APs',
+        'site.lanRequirements.poeCapabilities': 'PoE Capability',
+        'site.lanRequirements.accessPortType': 'Access Port Type',
+        'site.lanRequirements.uplinkPortType': 'Uplink Port Type',
+        'site.lanRequirements.isStackable': 'Stackable Required',
+        'site.lanRequirements.isRugged': 'Rugged / Industrial',
+    };
+
+    const formatVar = (v: unknown): string => {
+        if (typeof v === 'object' && v !== null && 'var' in v) {
+            const varName = (v as { var: string }).var;
+            return fieldLabels[varName] || varName;
+        }
+        return JSON.stringify(v);
+    };
+
+    const walk = (node: unknown): string => {
+        if (!node || typeof node !== 'object') return String(node);
+
+        const op = Object.keys(node)[0];
+        const args = (node as Record<string, unknown>)[op];
+
+        if (op === 'and' && Array.isArray(args)) {
+            return args.map(walk).join(' AND ');
+        }
+        if (op === 'or' && Array.isArray(args)) {
+            return `(${args.map(walk).join(' OR ')})`;
+        }
+
+        if (operators[op] && Array.isArray(args) && args.length === 2) {
+            const left = formatVar(args[0]);
+            const right = formatVar(args[1]);
+            return `${left} ${operators[op]} ${right}`;
+        }
+
+        return JSON.stringify(node);
+    };
+
+    try {
+        return walk(condition);
+    } catch {
+        return 'Complex Logic';
+    }
 }

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { LANTab } from "@/src/app/sa/project/[id]/bom/LANTab";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
+import "@testing-library/jest-dom";
 
 const mockSite = {
     id: "site-1",
@@ -9,7 +10,7 @@ const mockSite = {
     poePorts: 5,
 } as unknown as import("@/src/lib/types").Site;
 
-test("Add Switch Model button adds a switch to selections", () => {
+test("Find Your Own button opens the catalog browser and adding a switch updates selections", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let manualSelections: Record<string, any[]> = {};
     const setManualSelections = (valOrFn: unknown) => {
@@ -22,7 +23,7 @@ test("Add Switch Model button adds a switch to selections", () => {
         }
     };
 
-    const { rerender } = render(
+    render(
         <LANTab
             selectedSite={mockSite}
             lanItems={[]}
@@ -35,11 +36,31 @@ test("Add Switch Model button adds a switch to selections", () => {
         />
     );
 
-    const addButton = screen.getByText("Add Switch Model");
-    fireEvent.click(addButton);
+    // Open the catalog browser
+    const findOwnBtn = screen.getByRole('button', { name: /Find Your Own/i });
+    expect(findOwnBtn).toBeInTheDocument();
+    fireEvent.click(findOwnBtn);
 
-    // Expecting to see new state
-    console.log("manualSelections after click:", manualSelections);
-    expect(manualSelections["Test Site:lan"]).toBeDefined();
-    expect(manualSelections["Test Site:lan"].length).toBe(1);
+    // Catalog browser should be open
+    expect(screen.getByRole('dialog', { name: /LAN Switch Catalog/i })).toBeInTheDocument();
+});
+
+test("Intent chips are rendered in the new design", () => {
+    render(
+        <LANTab
+            selectedSite={mockSite}
+            lanItems={[]}
+            manualSelections={{}}
+            setManualSelections={() => { }}
+            catalog={SEED_EQUIPMENT}
+            setSelectedSpecsItem={() => { }}
+            resolvedVendor="meraki"
+            handleSiteUpdate={() => { }}
+        />
+    );
+
+    // The new UI shows intent chips instead of an "Add Switch Model" button
+    expect(screen.getByText(/What connects here\?/i)).toBeInTheDocument();
+    expect(screen.getByText('Workstations')).toBeInTheDocument();
+    expect(screen.getByText('Wireless APs')).toBeInTheDocument();
 });

@@ -1,7 +1,8 @@
+import { Project, Equipment, Site } from "@/src/lib/types";
 import { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Project, Equipment } from "@/src/lib/types";
-import { Site } from "@/src/lib/bom-types";
+
+
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, storage, PROJECTS_COLLECTION } from "./config";
 import { validateDoc, ProjectSchema } from "./validation";
@@ -39,11 +40,12 @@ export const ProjectService = {
             const projectsRef = collection(db, PROJECTS_COLLECTION);
             const q = query(
                 projectsRef,
-                where("userId", "==", userId),
-                orderBy("updatedAt", "desc")
+                where("userId", "==", userId)
             );
             const snapshot = await getDocs(q);
-            return snapshot.docs.map(d => validateDoc(ProjectSchema, d.data(), d.id));
+            return snapshot.docs
+                .map(d => validateDoc(ProjectSchema, d.data(), d.id))
+                .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
         } catch (error) {
             // Fallback to client-side filtering if index is missing
             console.warn("[ProjectService] Server-side query failed (missing index?), falling back to client-side filter:", error);
@@ -130,7 +132,7 @@ export const ProjectService = {
                 updatedAt: now
             }, { merge: true });
 
-            console.log(`[ProjectService] Project ${projectId} finalized with ${embeddedEquipment.length} items cloned.`);
+
         } catch (error) {
             console.error("[ProjectService] Finalization Failed:", error);
             throw error;

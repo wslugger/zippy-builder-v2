@@ -51,3 +51,14 @@ firebase-debug.log
 # Playwright
 /playwright-report/
 /test-results/
+
+# Google Drive Temp Files
+.tmp.drivedownload/
+*.tmp.drivedownload
+
+# Dependencies & Build Output
+node_modules/
+.DS_Store
+.build/
+dist/
+

@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Package, Service, Equipment, PricingItem, Site } from "@/src/lib/types";
 import { calculateBOM } from "@/src/lib/bom-engine";
-import { Site } from "@/src/lib/bom-types";
-import { Package, Service, Equipment, PricingItem } from "@/src/lib/types";
+
+
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
 import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";

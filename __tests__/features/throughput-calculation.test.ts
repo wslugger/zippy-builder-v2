@@ -1,9 +1,10 @@
+import { Package, Service, Site, BOM, SiteType } from "@/src/lib/types";
 import { calculateBOM } from "@/src/lib/bom-engine";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { SEED_EQUIPMENT } from "@/src/lib/seed-equipment";
-import { Site, BOM } from "@/src/lib/bom-types";
-import { Package, Service } from "@/src/lib/types";
-import { SiteType } from "@/src/lib/site-types";
+
+
+
 
 describe("BOM Engine - Throughput Calculation", () => {
     let testRules: import("@/src/lib/types").BOMLogicRule[]; let testCatalog: import("@/src/lib/types").Equipment[];

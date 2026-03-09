@@ -1,6 +1,7 @@
+import { TriageCriterion, BOMLogicRule } from "@/src/lib/types";
 import { collection, doc, setDoc, getDoc, getDocs, deleteDoc } from "firebase/firestore";
-import { BOMLogicRule } from "@/src/lib/bom-types";
-import { TriageCriterion } from "@/src/lib/types";
+
+
 import { cleanObject } from "@/src/lib/feature-utils";
 import { db, BOM_RULES_COLLECTION, TRIAGE_CRITERIA_COLLECTION } from "./config";
 import { validateDoc, validateDocs, BOMLogicRuleSchema } from "./validation";

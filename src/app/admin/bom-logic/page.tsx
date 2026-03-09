@@ -6,10 +6,11 @@ import RuleList from "@/src/components/admin/bom-logic/RuleList";
 import RuleEditorModal from "@/src/components/admin/bom-logic/RuleEditorModal";
 import { AITriageRuleEditor } from "@/src/components/admin/bom-logic/AITriageRuleEditor";
 import { GlobalTriageParameters } from "@/src/components/admin/bom-logic/GlobalTriageParameters";
+import { RuleCoverageReport } from "@/src/components/admin/bom-logic/RuleCoverageReport";
 import { BOMLogicRule } from "@/src/lib/types";
 import { BOMService } from "@/src/lib/firebase/bom-service";
 
-type TabValues = "sdwan" | "lan" | "wlan" | "ai_triage";
+type TabValues = "sdwan" | "lan" | "wlan" | "ai_triage" | "coverage";
 
 export default function BOMRulesListPage() {
     const { rules, loading, refreshRules: loadRules } = useBOMRules();
@@ -23,6 +24,7 @@ export default function BOMRulesListPage() {
 
     // Filter rules based on active tab. Use normalization mapping to ensure legacy IDs show in the correct tab.
     const filteredRules = rules.filter(r => {
+        if (activeTab === "ai_triage" || activeTab === "coverage") return false;
         const conditionStr = JSON.stringify(r.condition || {}).toLowerCase();
         
         // Define which service IDs belong to which tab category
@@ -30,7 +32,8 @@ export default function BOMRulesListPage() {
             sdwan: ["sdwan", "managed_sdwan", "sd_wan_service", "sdwan_service", "managed_circuit", "broadband"],
             lan: ["lan", "managed_lan"],
             wlan: ["wlan", "managed_wifi", "managed_wlan", "wifi"],
-            ai_triage: []
+            ai_triage: [],
+            coverage: []
         };
 
         const targetIds = CATEGORY_MAP[activeTab] || [];
@@ -123,7 +126,8 @@ export default function BOMRulesListPage() {
                         { id: "sdwan", label: "SD-WAN Rules" },
                         { id: "lan", label: "LAN Rules" },
                         { id: "wlan", label: "WLAN Rules" },
-                        { id: "ai_triage", label: "AI Extraction Rules" }
+                        { id: "ai_triage", label: "AI Extraction Rules" },
+                        { id: "coverage", label: "📊 Coverage Report" }
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -142,6 +146,8 @@ export default function BOMRulesListPage() {
                 {/* Content Area */}
                 {activeTab === "ai_triage" ? (
                     <AITriageRuleEditor />
+                ) : activeTab === "coverage" ? (
+                    <RuleCoverageReport rules={rules} />
                 ) : (
                     <>
                         <RuleList rules={filteredRules} onEdit={openEditModal} onDelete={handleDeleteRule} />

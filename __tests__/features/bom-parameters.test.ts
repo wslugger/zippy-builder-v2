@@ -1,6 +1,7 @@
+import { BOMEngineInput, Package, Service, SiteType, Equipment, BOMLogicRule, Site } from "@/src/lib/types";
 import { calculateBOM } from "@/src/lib/bom-engine";
-import { BOMEngineInput, Package, Service, SiteType, Equipment, BOMLogicRule } from "@/src/lib/types";
-import { Site } from "@/src/lib/bom-types";
+
+
 
 describe("BOM Parameters Feature", () => {
     let mockInput: BOMEngineInput;

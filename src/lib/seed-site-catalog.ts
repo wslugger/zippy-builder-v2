@@ -1,4 +1,5 @@
-import { SiteType } from "./site-types";
+import { SiteType } from "@/src/lib/types";
+
 
 // Extracted from sampledocs/SD-WAN Site Type Framework.md
 export const SDWAN_SITE_TYPES: SiteType[] = [

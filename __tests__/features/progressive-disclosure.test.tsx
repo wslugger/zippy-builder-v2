@@ -1,7 +1,8 @@
+import { Site } from "@/src/lib/types";
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ProjectSummaryDashboard } from '@/src/app/sa/project/[id]/bom/ProjectSummaryDashboard';
-import { Site } from '@/src/lib/bom-types';
+
 
 describe("Progressive Disclosure - ProjectSummaryDashboard", () => {
     const mockSites: Site[] = [

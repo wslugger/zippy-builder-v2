@@ -33,12 +33,13 @@ For the AI to assist with setup, ensure these are in `.env.local`:
 1.  **Start New Features with `/plan`**: Forces a `PLAN.md` creation based on this file and `ARCHITECTURE.md`.
 2.  **Verify UI with `/audit`**: Checks a component against `.agent/rules/UI_STANDARDS.md`.
 3.  **Code with `/tdd`**: Writes a failing test first conformant to `.agent/rules/TESTING_SUITE.md`.
-4.  **Context Loading**: The AI reads `.agent/rules/` files when relevant keywords (UI, Backend, Test) appear in the prompt.
+4.  **Reference Experience**: Always consult [LESSONS\_LEARNED.md](file:///Users/sdunn22/zippy-builder-v2/LESSONS_LEARNED.md) when touching BOM logic, AI extraction, or data normalization.
+5.  **Context Loading**: The AI reads `.agent/rules/` and `.agent/skills/` files when relevant keywords appear.
 
 ## 🔌 MCP Integration
-To maximize my capabilities, please enable the **GitHub** and **Firebase** MCP (Model Context Protocol) servers in your AI IDE (Cline, Cursor, Claude Desktop, etc.).
+I have direct access to the following MCP servers to assist in development:
 
-1. **GitHub MCP**: Allows me to manage Pull Requests, issues, and read CI/CD statuses directly.
-2. **Firebase MCP**: Allows me to directly query Firestore and manage configurations without you having to check the Firebase Console.
+1. **Firebase MCP (`firebase-mcp-server`)**: Use this to queryFirestore collections, check document schemas, or manage Firebase Auth and environment settings.
+2. **MongoDB MCP (`mongodb-mcp-server`)**: Use this if the project leverages MongoDB for large-scale data archiving, knowledge-base searches, or external data sources not stored in Firestore.
 
-You can copy the configuration from `mcp_config.json` in the root directory into your IDE's MCP settings file (e.g., `cline_mcp_settings.json` or `.cursor/mcp.json`) and replace the template tokens with your actual access tokens.
+When exploring the codebase or debugging data issues, proactively use these tools to inspect the live environment.

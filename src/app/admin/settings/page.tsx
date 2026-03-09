@@ -536,7 +536,12 @@ export default function AdminSettingsPage() {
                                     </div>
 
                                     <RuleList
-                                        rules={rules.filter(r => JSON.stringify(r.condition || {}).includes(activeRuleCategory))}
+                                        rules={rules.filter(r => {
+                                            const conditionStr = JSON.stringify(r.condition || {});
+                                            return conditionStr.includes(`"serviceId","${activeRuleCategory}"`) ||
+                                                conditionStr.includes(`"serviceId":"${activeRuleCategory}"`) ||
+                                                conditionStr.includes(`"${activeRuleCategory}"`);
+                                        })}
                                         onEdit={openEditRule}
                                         onDelete={handleDeleteRule}
                                     />
