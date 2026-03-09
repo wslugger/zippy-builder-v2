@@ -141,10 +141,13 @@ export function calculateBOM(input: BOMEngineInput): BOM {
 
         const processedServices = new Set<string>();
         for (const pkgItem of sortedPackageItems) {
-            const service = services.find(s => s.id === pkgItem.service_id);
-            if (!service) continue;
+            const service = services.find(s => normalizeServiceId(s.id) === normalizeServiceId(pkgItem.service_id));
+            if (!service) {
+                console.warn(`[BOMEngine] Service definition not found for ID: ${pkgItem.service_id} (Site: ${site.name}). Skipping.`);
+                continue;
+            }
 
-            const canonicalServiceId = normalizeServiceId(service.id);
+            const canonicalServiceId = normalizeServiceId(pkgItem.service_id);
             if (processedServices.has(canonicalServiceId)) {
                 console.log(`[BOMEngine] Skipping duplicate service ${canonicalServiceId} in package for site ${site.name}`);
                 continue;

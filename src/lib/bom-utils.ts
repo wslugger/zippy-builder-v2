@@ -31,13 +31,36 @@ const SERVICE_ID_ALIASES: Record<string, string> = {
     // Legacy aliases — kept for backward compatibility with Firestore docs and in-flight data
     "managed_sdwan": "sdwan",
     "sd_wan_service": "sdwan",
+    "sdwan_service": "sdwan",
     "managed_lan": "lan",
     "managed_wifi": "wlan",
     "managed_wlan": "wlan",
+    "managed_circuit": "sdwan",
+    "broadband": "sdwan"
 };
 
 export function normalizeServiceId(id: string): string {
-    return SERVICE_ID_ALIASES[id] || id;
+    if (!id) return id;
+    let normalized = id.toLowerCase().trim();
+    
+    // Remove common prefixes used in legacy IDs
+    if (normalized.startsWith("zippy_")) normalized = normalized.replace("zippy_", "");
+    if (normalized.startsWith("managed_")) normalized = normalized.replace("managed_", "");
+    
+    // Legacy specific mappings
+    if (normalized === "sd_wan_service" || normalized === "sdwan_service") return "sdwan";
+    if (normalized === "wifi" || normalized === "managed_wifi") return "wlan";
+    if (normalized === "circuit" || normalized === "broadband") return "sdwan";
+
+    return SERVICE_ID_ALIASES[normalized] || normalized;
+}
+
+/**
+ * Consistent key generator for manual selections.
+ * Trims and normalizes inputs to prevent mismatches.
+ */
+export function getSelectionKey(siteName: string, serviceId: string): string {
+    return `${(siteName || "").trim()}:${normalizeServiceId(serviceId)}`;
 }
 
 // ============================================================
@@ -72,11 +95,11 @@ export function resolveVendorForService(
     serviceId: string,
     services?: { id: string; service_options: { id: string; vendor_id?: string; design_options: { id: string; vendor_id?: string }[] }[] }[]
 ): string {
-    const pkgItem = pkg.items.find(i => i.service_id === serviceId);
+    const pkgItem = pkg.items.find(i => normalizeServiceId(i.service_id) === normalizeServiceId(serviceId));
 
     // 1. Try explicit vendor_id from design option data
     if (pkgItem?.design_option_id && services) {
-        const service = services.find(s => s.id === serviceId);
+        const service = services.find(s => normalizeServiceId(s.id) === normalizeServiceId(serviceId));
         const designOption = service?.service_options
             .flatMap(so => so.design_options)
             .find(d => d.id === pkgItem.design_option_id);
@@ -85,7 +108,7 @@ export function resolveVendorForService(
 
     // 2. Try explicit vendor_id from service option data
     if (pkgItem?.service_option_id && services) {
-        const service = services.find(s => s.id === serviceId);
+        const service = services.find(s => normalizeServiceId(s.id) === normalizeServiceId(serviceId));
         const serviceOption = service?.service_options.find(so => so.id === pkgItem.service_option_id);
         if (serviceOption?.vendor_id) return serviceOption.vendor_id;
     }

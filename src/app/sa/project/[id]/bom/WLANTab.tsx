@@ -2,7 +2,7 @@ import { Site, BOMLineItem } from "@/src/lib/bom-types";
 import { Equipment } from "@/src/lib/types";
 import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover";
 import { useState, useEffect, useMemo } from "react";
-import { getEquipmentRole } from "@/src/lib/bom-utils";
+import { getEquipmentRole, getSelectionKey } from "@/src/lib/bom-utils";
 
 interface WLANTabProps {
     selectedSite: Site;
@@ -42,7 +42,7 @@ export function WLANTab({
         }
     }, [wlanItems.length, wlanItems.map(i => i.itemId + i.quantity).join(',')]);
 
-    const selectionKey = `${selectedSite.name}:wlan`;
+    const selectionKey = getSelectionKey(selectedSite.name, 'wlan');
     const rawValue = manualSelections[selectionKey];
 
     const selections = useMemo<Array<{ itemId: string; quantity: number }>>(() => {

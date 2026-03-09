@@ -4,7 +4,7 @@ import { TraceabilityPopover } from "@/src/components/common/TraceabilityPopover
 import { LANRequirementsEditor } from "@/src/components/sa/LANRequirementsEditor";
 import { useState, useEffect, useMemo } from "react";
 import { SiteLANRequirements } from "@/src/lib/types";
-import { getEquipmentRole } from "@/src/lib/bom-utils";
+import { normalizeServiceId, getSelectionKey, getEquipmentRole } from "@/src/lib/bom-utils";
 
 interface LANTabProps {
     selectedSite: Site;
@@ -53,7 +53,7 @@ export function LANTab({
         setShowRequirementsEditor(false);
     };
 
-    const selectionKey = `${selectedSite.name}:lan`;
+    const selectionKey = getSelectionKey(selectedSite.name, 'lan');
     const rawValue = manualSelections[selectionKey];
 
     // Normalize any legacy single selection or string into an array [{ itemId, quantity }]
@@ -131,7 +131,7 @@ export function LANTab({
         updateSelections(next);
     };
 
-    // Calculate provided ports, usage, and oversubscription
+    // Calculate provided ports, usage, and oversubscription from ALL LAN items (system or manual)
     const { providedLanPorts, providedPoePorts, totalAccessGbps, totalUplinkGbps } = useMemo(() => {
         let lanP = 0;
         let poeP = 0;
@@ -152,23 +152,23 @@ export function LANTab({
             return 1; // Default to 1G for unknown
         };
 
-        selections.forEach(sel => {
-            const eq = catalog.find(e => e.id === sel.itemId);
+        lanItems.forEach(item => {
+            const eq = catalog.find(e => e.id === item.itemId);
             if (eq && eq.specs) {
                 const s = eq.specs as Record<string, unknown>;
                 const accessPorts = (s.accessPortCount as number) || 0;
-                lanP += accessPorts * sel.quantity;
+                lanP += accessPorts * item.quantity;
 
                 const poeBudgetVal = (s.poeBudgetWatts as number) || (s.poe_budget as number) || (s.poeBudget as number) || 0;
-                if (poeBudgetVal > 0) poeP += accessPorts * sel.quantity;
+                if (poeBudgetVal > 0) poeP += accessPorts * item.quantity;
 
                 // Oversubscription speeds
                 const accessSpeedGbps = getSpeedGbps(s.accessPortType as string);
                 const uplinkSpeedGbps = getSpeedGbps(s.uplinkPortType as string);
                 const uplinkPorts = (s.uplinkPortCount as number) || 0;
 
-                accGbps += (accessPorts * accessSpeedGbps) * sel.quantity;
-                upGbps += (uplinkPorts * uplinkSpeedGbps) * sel.quantity;
+                accGbps += (accessPorts * accessSpeedGbps) * item.quantity;
+                upGbps += (uplinkPorts * uplinkSpeedGbps) * item.quantity;
             }
         });
         return {
@@ -177,7 +177,7 @@ export function LANTab({
             totalAccessGbps: accGbps,
             totalUplinkGbps: upGbps
         };
-    }, [selections, catalog]);
+    }, [lanItems, catalog]);
 
     const requiredLanPorts = selectedSite.lanPorts || 0;
     const requiredPoePorts = selectedSite.poePorts || selectedSite.requiredPoePorts || 0;

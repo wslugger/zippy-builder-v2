@@ -11,7 +11,7 @@ import { ALL_SITE_TYPES } from "@/src/lib/seed-site-catalog";
 import { SEED_PACKAGES } from "@/src/lib/seed-packages";
 import { SEED_SERVICES } from "@/src/lib/seed-services";
 import { calculateBOM, calculateUtilization, validatePOE, evaluateSiteComplexity } from "@/src/lib/bom-engine";
-import { normalizeServiceId } from "@/src/lib/bom-utils";
+import { normalizeServiceId, getSelectionKey } from "@/src/lib/bom-utils";
 import { SEED_BOM_RULES } from "@/src/lib/seed-bom-rules";
 import { parseSiteListCSV } from "@/src/lib/csv-parser";
 import { resolveVendorForService, calculateThroughputOverhead, makePricingSnapshot } from "@/src/lib/bom-utils";
@@ -267,7 +267,21 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 }
 
                 if (p?.bomState) {
-                    if (p.bomState.manualSelections) setManualSelections(p.bomState.manualSelections);
+                    if (p.bomState.manualSelections) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const normalized: Record<string, any> = {};
+                        for (const [key, val] of Object.entries(p.bomState.manualSelections)) {
+                            const parts = key.split(":");
+                            if (parts.length >= 2) {
+                                const siteName = parts[0].trim();
+                                const serviceId = parts[1].trim();
+                                normalized[getSelectionKey(siteName, serviceId)] = val;
+                            } else {
+                                normalized[key.trim()] = val;
+                            }
+                        }
+                        setManualSelections(normalized);
+                    }
                     if (p.bomState.globalDiscount !== undefined) setGlobalDiscount(p.bomState.globalDiscount);
                     if (p.bomState.acquisitionModel) setAcquisitionModel(p.bomState.acquisitionModel);
                     if (p.bomState.projectManagementLevel) setProjectManagementLevel(p.bomState.projectManagementLevel);
@@ -313,30 +327,25 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
         pkg.items.forEach((pItem) => {
             const rawServiceId = pItem.service_id;
-            const service = services.find((s) => s.id === rawServiceId);
+            // Normalize BOTH sides of the comparison to handle ID drift between package and service catalog
+            const service = services.find((s) => normalizeServiceId(s.id) === normalizeServiceId(rawServiceId));
             if (!service) return;
+            
             // Attachment services don't get their own tab — they ride with base service tabs
             if (service.is_attachment) return;
-            // Use canonical (normalized) ID so it matches what the BOM engine emits
+            
+            // Use canonical (normalized) ID for internal categorization
             const serviceId = normalizeServiceId(rawServiceId);
-            const name = service.name.toLowerCase();
+            const name = (service.name || "").toLowerCase();
             const category = (service.metadata?.category || "").toLowerCase();
-            if (
-                name.includes("wifi") ||
-                name.includes("wi-fi") ||
-                name.includes("wlan") ||
-                name.includes("wireless") ||
-                category.includes("wifi") ||
-                category.includes("wlan") ||
-                category.includes("wireless") ||
-                serviceId === "wlan" ||
-                serviceId === "managed_wifi" ||
-                serviceId === "managed_wlan"
-            ) {
-                if (!buckets.WLAN.services.includes(serviceId)) buckets.WLAN.services.push(serviceId);
-            } else if (name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || category.includes("wan") || serviceId === "sdwan") {
+            
+            const isWAN = ["sdwan", "managed_sdwan", "sd_wan_service", "sdwan_service", "managed_circuit", "broadband", "sd-wan", "wan"].includes(serviceId) || name.includes("sd-wan") || name.includes("sdwan") || name.includes("broadband") || name.includes("circuit") || name.includes("wan") || category.includes("wan");
+            const isLAN = ["lan", "managed_lan"].includes(serviceId) || name.includes("lan") || category.includes("lan");
+            const isWLAN = ["wlan", "managed_wifi", "managed_wlan", "wifi"].includes(serviceId) || name.includes("wifi") || name.includes("wlan") || category.includes("wifi");
+
+            if (isWAN) {
                 if (!buckets.WAN.services.includes(serviceId)) buckets.WAN.services.push(serviceId);
-            } else if (name.includes("lan") || name.includes("switch") || category.includes("lan") || serviceId === "lan") {
+            } else if (isLAN) {
                 if (!buckets.LAN.services.includes(serviceId)) buckets.LAN.services.push(serviceId);
             } else {
                 if (!buckets.SERVICES.services.includes(serviceId)) buckets.SERVICES.services.push(serviceId);
@@ -353,9 +362,14 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
                 icon: data.icon,
             }));
 
-        // Failsafe: Ensure WAN tab is visible if the package includes sdwan
-        const hasSDWAN = pkg.items.some(i => normalizeServiceId(i.service_id) === 'sdwan');
-        if (hasSDWAN && !tabs.some(t => t.id === "WAN")) {
+        // Failsafe: Ensure WAN tab is visible if the package includes any WAN/Circuit type service, 
+        // OR if any site has circuits or WAN links defined.
+        const hasWANService = pkg.items.some(i => {
+            const normId = normalizeServiceId(i.service_id);
+            return normId === 'sdwan' || normId === 'managed_circuit' || normId === 'broadband' || normId === 'sdwan_service';
+        }) || sites.some(s => (s.wanLinks || 0) > 0 || (s.primaryCircuit && s.primaryCircuit !== 'None') || s.secondaryCircuit);
+
+        if (hasWANService && !tabs.some(t => t.id === "WAN")) {
             tabs.unshift({
                 id: "WAN",
                 label: "WAN",
@@ -534,9 +548,23 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
 
         // Only count items from the canonical managed services that the site tabs render.
         // WAN tab: sdwan, LAN tab: lan, WLAN tab: wlan
-        const SITE_TAB_SERVICE_IDS = new Set(["sdwan", "lan", "wlan", "managed_circuit", "managed_sdwan", "managed_lan", "managed_wifi"]);
+        const SERVICE_ID_TO_TAB_MAP: Record<string, string> = {
+            "sdwan": "sdwan",
+            "lan": "lan",
+            "wlan": "wlan",
+            "managed_sdwan": "sdwan",
+            "sd_wan_service": "sdwan",
+            "sdwan_service": "sdwan",
+            "managed_lan": "lan",
+            "managed_wifi": "wlan",
+            "managed_wlan": "wlan",
+            "managed_circuit": "sdwan", // Treat circuits as part of WAN tab
+            "broadband": "sdwan"
+        };
+        const SITE_TAB_SERVICE_IDS = new Set(Object.values(SERVICE_ID_TO_TAB_MAP));
+
         bom.items
-            .filter(item => SITE_TAB_SERVICE_IDS.has(item.serviceId))
+            .filter(item => SITE_TAB_SERVICE_IDS.has(SERVICE_ID_TO_TAB_MAP[item.serviceId] || item.serviceId))
             .forEach(item => {
                 const qty = item.quantity || 0;
                 let unitOTCList = 0;
@@ -647,7 +675,11 @@ export function useBOMBuilder(projectId: string): BOMBuilderState {
     }, [bom, swapSimulation, catalog, globalDiscount, pricingSummary.totalNetPrice, acquisitionModel]);
 
     const selectedSite = selectedSiteIndex !== null ? sites[selectedSiteIndex] : undefined;
-    const siteBOMItems = bom?.items.filter((i) => i.siteName === selectedSite?.name) ?? [];
+    const siteBOMItems = useMemo(() => {
+        if (!bom || !selectedSite) return [];
+        const targetName = selectedSite.name.trim().toLowerCase();
+        return bom.items.filter((i) => (i.siteName || "").trim().toLowerCase() === targetName);
+    }, [bom, selectedSite]);
 
     // -------------------------------------------------------
     // Derived utilization values

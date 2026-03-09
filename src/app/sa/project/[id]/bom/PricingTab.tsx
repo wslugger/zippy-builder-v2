@@ -14,7 +14,7 @@ export function PricingTab({ state, selectedSite }: { state: BOMBuilderState, se
     // Only show items from the canonical managed services that the site tabs render.
     // WAN tab renders sdwan, LAN tab renders lan, WLAN tab renders wlan.
     // Circuit pricing is manually entered in WAN tab and needs to show here.
-    const SITE_TAB_SERVICE_IDS = new Set(["sdwan", "lan", "wlan", "managed_circuit", "managed_sdwan", "managed_lan"]);
+    const SITE_TAB_SERVICE_IDS = new Set(["sdwan", "lan", "wlan", "managed_circuit", "managed_sdwan", "managed_lan", "managed_wifi", "managed_wlan", "sd_wan_service", "sdwan_service", "broadband"]);
 
     if (!bom) return <div className="p-8 text-slate-500">No BOM data available to price.</div>;
 

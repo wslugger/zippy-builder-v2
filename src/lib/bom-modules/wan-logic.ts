@@ -9,7 +9,8 @@ import {
     hasEquipmentPurpose,
     makePricingSnapshot,
     matchesConstraints,
-    SERVICE_TO_PURPOSE
+    SERVICE_TO_PURPOSE,
+    getSelectionKey
 } from "../bom-utils";
 import jsonLogic from "json-logic-js";
 
@@ -30,7 +31,7 @@ export function calculateWANBOM(input: BOMModuleInput): BOMLineItem[] {
     const bomItems: BOMLineItem[] = [];
 
     // 1. Check for manual overrides
-    const selectionKey = `${site.name}:${canonicalServiceId}`;
+    const selectionKey = getSelectionKey(site.name, canonicalServiceId);
     const manualOverrideRaw = input.siteParameters?.manualSelections?.[selectionKey];
 
     let selections: Array<{ itemId: string; quantity?: number }> = [];

@@ -21,10 +21,21 @@ export default function BOMRulesListPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [ruleToEdit, setRuleToEdit] = useState<BOMLogicRule | null>(null);
 
-    // Filter rules based on active tab. Assuming rule condition has serviceId matching the tab.
-    const filteredRules = rules.filter(r =>
-        JSON.stringify(r.condition || {}).includes(activeTab)
-    );
+    // Filter rules based on active tab. Use normalization mapping to ensure legacy IDs show in the correct tab.
+    const filteredRules = rules.filter(r => {
+        const conditionStr = JSON.stringify(r.condition || {}).toLowerCase();
+        
+        // Define which service IDs belong to which tab category
+        const CATEGORY_MAP: Record<TabValues, string[]> = {
+            sdwan: ["sdwan", "managed_sdwan", "sd_wan_service", "sdwan_service", "managed_circuit", "broadband"],
+            lan: ["lan", "managed_lan"],
+            wlan: ["wlan", "managed_wifi", "managed_wlan", "wifi"],
+            ai_triage: []
+        };
+
+        const targetIds = CATEGORY_MAP[activeTab] || [];
+        return targetIds.some(id => conditionStr.includes(`"${id}"`));
+    });
 
     async function handleSeed() {
         if (!confirm("This will overwrite existing rules with defaults from code. Are you sure?")) return;
