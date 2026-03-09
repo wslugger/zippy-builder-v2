@@ -164,81 +164,288 @@ export const SEED_EQUIPMENT: Equipment[] = [
         }
     },
 
-    // --- Meraki Managed LAN (MS130 Series) ---
+    // --- Meraki Managed LAN (Fixed/Stackable Access) ---
+    // MS120 Series (Layer 2, 1G Uplinks)
     {
-        id: "meraki_ms1308phw",
+        id: "meraki_ms120_8lp",
         vendor_id: "meraki",
-        model: "MS130-8P-HW",
+        model: "MS120-8LP",
         active: true,
         status: "Supported",
-        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
-        description: "8-port 1GbE PoE+ compact switch with 2x 1GbE SFP uplinks.",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS120",
+        description: "8-port 1GbE PoE (67W) compact L2 switch with 2x 1G SFP uplinks.",
         mapped_services: ["Managed LAN"],
         specs: {
-            accessPortCount: 8,
-            accessPortType: '1G-Copper',
-            poeBudgetWatts: 150,
-            poe_capabilities: 'PoE+',
-            uplinkPortCount: 2,
-            uplinkPortType: '1G-Fiber',
+            accessPortCount: 8, accessPortType: '1G-Copper',
+            poeBudgetWatts: 67, poe_capabilities: 'PoE',
+            uplinkPortCount: 2, uplinkPortType: '1G-Fiber',
             isStackable: false
         }
     },
     {
-        id: "meraki_ms13012xhw",
+        id: "meraki_ms120_24p",
         vendor_id: "meraki",
-        model: "MS130-12X-HW",
+        model: "MS120-24P",
         active: true,
         status: "Supported",
-        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
-        description: "12-port Multi-Gigabit PoE+ switch with 2x 10GbE SFP+ uplinks (8x 1GbE + 4x 2.5GbE RJ45 access ports).",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS120",
+        description: "24-port 1GbE PoE+ (370W) L2 switch with 4x 1G SFP uplinks.",
         mapped_services: ["Managed LAN"],
         specs: {
-            accessPortCount: 12,
-            accessPortType: '1G-Copper',
-            poeBudgetWatts: 240,
-            poe_capabilities: 'PoE+',
-            uplinkPortCount: 2,
-            uplinkPortType: '10G-Fiber',
+            accessPortCount: 24, accessPortType: '1G-Copper',
+            poeBudgetWatts: 370, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '1G-Fiber',
             isStackable: false
         }
     },
     {
-        id: "meraki_ms13024phw",
+        id: "meraki_ms120_48lp",
         vendor_id: "meraki",
-        model: "MS130-24P-HW",
+        model: "MS120-48LP",
         active: true,
         status: "Supported",
-        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
-        description: "24-port 1GbE PoE+ switch with 4x 1GbE SFP uplinks.",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS120",
+        description: "48-port 1GbE PoE+ (370W) L2 switch with 4x 1G SFP uplinks.",
         mapped_services: ["Managed LAN"],
         specs: {
-            accessPortCount: 24,
-            accessPortType: '1G-Copper',
-            poeBudgetWatts: 370,
-            poe_capabilities: 'PoE+',
-            uplinkPortCount: 4,
-            uplinkPortType: '1G-Fiber',
+            accessPortCount: 48, accessPortType: '1G-Copper',
+            poeBudgetWatts: 370, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '1G-Fiber',
             isStackable: false
         }
     },
     {
-        id: "meraki_ms13048phw",
+        id: "meraki_ms120_48fp",
         vendor_id: "meraki",
-        model: "MS130-48P-HW",
+        model: "MS120-48FP",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS120",
+        description: "48-port 1GbE PoE+ (740W) L2 switch with 4x 1G SFP uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 48, accessPortType: '1G-Copper',
+            poeBudgetWatts: 740, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '1G-Fiber',
+            isStackable: false
+        }
+    },
+
+    // MS130 Series (Layer 2, mGig options)
+    {
+        id: "meraki_ms130_8p",
+        vendor_id: "meraki",
+        model: "MS130-8P",
         active: true,
         status: "Supported",
         primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
-        description: "48-port 1GbE PoE+ switch with 4x 1GbE SFP uplinks.",
+        description: "8-port 1GbE PoE+ compact switch with 2x 1G SFP uplinks.",
         mapped_services: ["Managed LAN"],
         specs: {
-            accessPortCount: 48,
-            accessPortType: '1G-Copper',
-            poeBudgetWatts: 740,
-            poe_capabilities: 'PoE+',
-            uplinkPortCount: 4,
-            uplinkPortType: '1G-Fiber',
+            accessPortCount: 8, accessPortType: '1G-Copper',
+            poeBudgetWatts: 150, poe_capabilities: 'PoE+',
+            uplinkPortCount: 2, uplinkPortType: '1G-Fiber',
             isStackable: false
+        }
+    },
+    {
+        id: "meraki_ms130_24p",
+        vendor_id: "meraki",
+        model: "MS130-24P",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
+        description: "24-port 1GbE PoE+ switch with 4x 1G SFP uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 24, accessPortType: '1G-Copper',
+            poeBudgetWatts: 370, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '1G-Fiber',
+            isStackable: false
+        }
+    },
+    {
+        id: "meraki_ms130_48p",
+        vendor_id: "meraki",
+        model: "MS130-48P",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
+        description: "48-port 1GbE PoE+ switch with 4x 1G SFP uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 48, accessPortType: '1G-Copper',
+            poeBudgetWatts: 740, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '1G-Fiber',
+            isStackable: false
+        }
+    },
+    {
+        id: "meraki_ms130_12x",
+        vendor_id: "meraki",
+        model: "MS130-12X",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS130",
+        description: "12-port mGig PoE+ switch (8x 1G + 4x 2.5G) with 2x 10G SFP+ uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 12, accessPortType: 'mGig-Copper',
+            poeBudgetWatts: 240, poe_capabilities: 'PoE+',
+            uplinkPortCount: 2, uplinkPortType: '10G-Fiber',
+            isStackable: false
+        }
+    },
+
+    // MS210 Series (Layer 2, Stackable)
+    {
+        id: "meraki_ms210_24p",
+        vendor_id: "meraki",
+        model: "MS210-24P",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS210",
+        description: "Stackable 24-port 1GbE PoE+ (370W) L2 switch with 4x 1G SFP uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 24, accessPortType: '1G-Copper',
+            poeBudgetWatts: 370, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '1G-Fiber',
+            isStackable: true
+        }
+    },
+    {
+        id: "meraki_ms210_48fp",
+        vendor_id: "meraki",
+        model: "MS210-48FP",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS210",
+        description: "Stackable 48-port 1GbE PoE+ (740W) L2 switch with 4x 1G SFP uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 48, accessPortType: '1G-Copper',
+            poeBudgetWatts: 740, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '1G-Fiber',
+            isStackable: true
+        }
+    },
+
+    // MS225 Series (Layer 2, Stackable, 10G Uplinks)
+    {
+        id: "meraki_ms225_24p",
+        vendor_id: "meraki",
+        model: "MS225-24P",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS225",
+        description: "Stackable 24-port 1GbE PoE+ (370W) L2 switch with 4x 10G SFP+ uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 24, accessPortType: '1G-Copper',
+            poeBudgetWatts: 370, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '10G-Fiber',
+            isStackable: true
+        }
+    },
+    {
+        id: "meraki_ms225_48fp",
+        vendor_id: "meraki",
+        model: "MS225-48FP",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS225",
+        description: "Stackable 48-port 1GbE PoE+ (740W) L2 switch with 4x 10G SFP+ uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 48, accessPortType: '1G-Copper',
+            poeBudgetWatts: 740, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '10G-Fiber',
+            isStackable: true
+        }
+    },
+
+    // MS250 Series (Layer 3, Stackable, 10G Uplinks)
+    {
+        id: "meraki_ms250_24p",
+        vendor_id: "meraki",
+        model: "MS250-24P",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS250",
+        description: "Stackable 24-port 1GbE PoE+ (370W) L3 switch with 4x 10G SFP+ uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 24, accessPortType: '1G-Copper',
+            poeBudgetWatts: 370, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '10G-Fiber',
+            isStackable: true
+        }
+    },
+    {
+        id: "meraki_ms250_48fp",
+        vendor_id: "meraki",
+        model: "MS250-48FP",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS250",
+        description: "Stackable 48-port 1GbE PoE+ (740W) L3 switch with 4x 10G SFP+ uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 48, accessPortType: '1G-Copper',
+            poeBudgetWatts: 740, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '10G-Fiber',
+            isStackable: true
+        }
+    },
+
+    // MS350/355 Series (mGig, UPOE high performance)
+    {
+        id: "meraki_ms350_24p",
+        vendor_id: "meraki",
+        model: "MS350-24P",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS350",
+        description: "Stackable 24-port 1GbE PoE+ switch with 4x 10G SFP+ uplinks.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 24, accessPortType: '1G-Copper',
+            poeBudgetWatts: 370, poe_capabilities: 'PoE+',
+            uplinkPortCount: 4, uplinkPortType: '10G-Fiber',
+            isStackable: true
+        }
+    },
+    {
+        id: "meraki_ms355_24x",
+        vendor_id: "meraki",
+        model: "MS355-24X",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS355",
+        description: "Stackable 24-port mGig (UPOE) switch for high-perf wireless.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 24, accessPortType: 'mGig-Copper',
+            poeBudgetWatts: 740, poe_capabilities: 'UPOE',
+            uplinkPortCount: 2, uplinkPortType: '40G-Fiber',
+            isStackable: true
+        }
+    },
+    {
+        id: "meraki_ms355_48x",
+        vendor_id: "meraki",
+        model: "MS355-48X",
+        active: true,
+        status: "Supported",
+        primary_purpose: "LAN", role: "LAN", additional_purposes: [], family: "Meraki MS355",
+        description: "Stackable 48-port mGig (UPOE) switch for high-perf wireless.",
+        mapped_services: ["Managed LAN"],
+        specs: {
+            accessPortCount: 48, accessPortType: 'mGig-Copper',
+            poeBudgetWatts: 740, poe_capabilities: 'UPOE',
+            uplinkPortCount: 2, uplinkPortType: '40G-Fiber',
+            isStackable: true
         }
     },
 

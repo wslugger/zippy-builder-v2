@@ -6,12 +6,13 @@ import { getEquipmentRole, extractLANTaxonomy } from "@/src/lib/bom-utils";
 
 // ─── Filter chips config ──────────────────────────────────────────────────────
 
-type FilterKey = "portCount" | "poe" | "uplink" | "stackable";
+type FilterKey = "portCount" | "poe" | "uplink" | "accessSpeed" | "stackable";
 
 interface ActiveFilters {
     portCount: string | null;
     poe: string | null;
     uplink: string | null;
+    accessSpeed: string | null;
     stackable: boolean;
 }
 
@@ -184,6 +185,7 @@ export function LANCatalogBrowser({
         portCount: null,
         poe: null,
         uplink: null,
+        accessSpeed: null,
         stackable: false,
     });
 
@@ -218,6 +220,9 @@ export function LANCatalogBrowser({
             }
             if (filters.uplink !== null) {
                 if ((s.uplinkPortType as string) !== filters.uplink) return false;
+            }
+            if (filters.accessSpeed !== null) {
+                if ((s.accessPortType as string) !== filters.accessSpeed) return false;
             }
             if (filters.stackable) {
                 if (!s.isStackable) return false;
@@ -320,6 +325,18 @@ export function LANCatalogBrowser({
                                 ⚡ {p}
                             </button>
                         ))}
+                        {taxonomy.accessPortTypes.map(a => (
+                            <button
+                                key={a}
+                                onClick={() => setFilter("accessSpeed", a)}
+                                className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all ${filters.accessSpeed === a
+                                        ? "bg-blue-500 border-blue-500 text-white"
+                                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400"
+                                    }`}
+                            >
+                                {a}
+                            </button>
+                        ))}
                         {taxonomy.uplinkPortTypes.slice(0, 4).map(u => (
                             <button
                                 key={u}
@@ -341,9 +358,9 @@ export function LANCatalogBrowser({
                         >
                             Stackable
                         </button>
-                        {(filters.portCount || filters.poe || filters.uplink || filters.stackable) && (
+                        { (filters.portCount || filters.poe || filters.uplink || filters.accessSpeed || filters.stackable) && (
                             <button
-                                onClick={() => setFilters({ portCount: null, poe: null, uplink: null, stackable: false })}
+                                onClick={() => setFilters({ portCount: null, poe: null, uplink: null, accessSpeed: null, stackable: false })}
                                 className="px-2.5 py-1 rounded-full text-[11px] font-bold border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 transition-all"
                             >
                                 ✕ Clear filters

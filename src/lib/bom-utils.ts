@@ -305,9 +305,12 @@ export function extractLANTaxonomy(catalog: Equipment[]): LANTaxonomy {
         return result;
     };
 
+    const COPPER_BASE = INTERFACE_TYPES.filter(t => t.includes('Copper'));
+    const FIBER_BASE = INTERFACE_TYPES.filter(t => t.includes('Fiber'));
+
     return {
-        accessPortTypes: mergeWithBase(INTERFACE_TYPES, catalogAccessPortTypes),
-        uplinkPortTypes: mergeWithBase(INTERFACE_TYPES, catalogUplinkPortTypes),
+        accessPortTypes: mergeWithBase(COPPER_BASE, catalogAccessPortTypes),
+        uplinkPortTypes: mergeWithBase(FIBER_BASE, catalogUplinkPortTypes),
         poeCapabilities: mergeWithBase(POE_CAPABILITIES, catalogPoeCapabilities),
     };
 }
