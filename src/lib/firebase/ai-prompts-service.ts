@@ -173,6 +173,102 @@ Rules:
         userPromptTemplate: `Service Category: {serviceCategory}
 
 Instruction: {instruction}`
+    },
+    {
+        id: 'license_mapping_wan',
+        label: 'WAN License Mapping',
+        description: 'Rules for discovering WAN licensing strictly for existing catalog equipment.',
+        model: 'gemini-2.5-flash',
+        temperature: 0.1,
+        systemInstruction: 'You are an expert in SD-WAN licensing pricing (Cisco, Meraki, HPE).',
+        userPromptTemplate: `Given a WAN device "{model}" (Vendor: {vendor}), generate valid license SKUs for Enterprise and Advanced Security tiers across 1, 3, and 5 year terms. You should try to estimate a logical List Price based on standard market MSRP.
+        
+        Output strictly a JSON object: 
+        {
+          "licenses": [
+            {"id": "SKU", "description": "License Description", "tier": "Tier", "termLength": "Term", "listPrice": 0}
+          ]
+        }`
+    },
+    {
+        id: 'license_mapping_lan',
+        label: 'LAN License Mapping',
+        description: 'Rules for discovering Switch licensing strictly for existing catalog equipment.',
+        model: 'gemini-2.5-flash',
+        temperature: 0.1,
+        systemInstruction: 'You are an expert in Network Switch licensing and pricing.',
+        userPromptTemplate: `Given a LAN switch "{model}" (Vendor: {vendor}), generate valid license SKUs for Essential and Advantage/Premier tiers (typically 1, 3, 5, 7Y). You should try to estimate a logical List Price based on standard market MSRP.
+        
+        Output strictly a JSON object: 
+        {
+          "licenses": [
+            {"id": "SKU", "description": "License Description", "tier": "Tier", "termLength": "Term", "listPrice": 0}
+          ]
+        }`
+    },
+    {
+        id: 'license_mapping_wlan',
+        label: 'WLAN License Mapping',
+        description: 'Rules for discovering AP licensing strictly for existing catalog equipment.',
+        model: 'gemini-2.5-flash',
+        temperature: 0.1,
+        systemInstruction: 'You are an expert in Wireless AP licensing and pricing.',
+        userPromptTemplate: `Given an Access Point "{model}" (Vendor: {vendor}), generate valid license SKUs (typically 1, 3, 5, 7, 10Y). You should try to estimate a logical List Price based on standard market MSRP.
+        
+        Output strictly a JSON object: 
+        {
+          "licenses": [
+            {"id": "SKU", "description": "License Description", "tier": "Tier", "termLength": "Term", "listPrice": 0}
+          ]
+        }`
+    },
+    {
+        id: 'pricing_mapping_wan',
+        label: 'WAN Hardware Pricing',
+        description: 'Rules for generating WAN hardware pricing SKUs.',
+        model: 'gemini-2.5-flash',
+        temperature: 0.1,
+        systemInstruction: 'You are an expert in SD-WAN hardware pricing.',
+        userPromptTemplate: `Given a WAN device "{model}" (Vendor: {vendor}), generate its base hardware pricing SKU and list price.
+        
+        Output strictly a JSON object: 
+        {
+          "hardwareSku": "SKU",
+          "description": "Hardware Description",
+          "listPrice": 0
+        }`
+    },
+    {
+        id: 'pricing_mapping_lan',
+        label: 'LAN Hardware Pricing',
+        description: 'Rules for generating Network Switch hardware pricing SKUs.',
+        model: 'gemini-2.5-flash',
+        temperature: 0.1,
+        systemInstruction: 'You are an expert in Network Switch pricing.',
+        userPromptTemplate: `Given a LAN switch "{model}" (Vendor: {vendor}), generate its base hardware pricing SKU and list price.
+        
+        Output strictly a JSON object: 
+        {
+          "hardwareSku": "SKU",
+          "description": "Hardware Description",
+          "listPrice": 0
+        }`
+    },
+    {
+        id: 'pricing_mapping_wlan',
+        label: 'WLAN Hardware Pricing',
+        description: 'Rules for generating Access Point hardware pricing SKUs.',
+        model: 'gemini-2.5-flash',
+        temperature: 0.1,
+        systemInstruction: 'You are an expert in Wireless AP pricing.',
+        userPromptTemplate: `Given an Access Point "{model}" (Vendor: {vendor}), generate its base hardware pricing SKU and list price.
+        
+        Output strictly a JSON object: 
+        {
+          "hardwareSku": "SKU",
+          "description": "Hardware Description",
+          "listPrice": 0
+        }`
     }
 ];
 

@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Equipment, VENDOR_LABELS, EQUIPMENT_PURPOSES } from "@/src/lib/types";
+import { Equipment, VENDOR_LABELS, EQUIPMENT_PURPOSES, getActivePurposes } from "@/src/lib/types";
 import { getEquipmentRole } from "@/src/lib/bom-utils";
 
 interface EquipmentTableProps {
@@ -178,6 +178,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                 <th className="px-6 py-4">Purpose</th>
                                 <th className="px-6 py-4">Mapped Services</th>
                                 <th className="px-6 py-4 w-64 max-w-sm">Attributes</th>
+                                <th className="px-6 py-4">Pricing</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Licenses</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
@@ -248,11 +249,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                         <td className="px-6 py-4">
                                             <div className="flex flex-wrap gap-1">
                                                 {(() => {
-                                                    const itemWithAny = item as any;
-                                                    const purposes = [
-                                                        itemWithAny.primary_purpose,
-                                                        ...(itemWithAny.additional_purposes || [])
-                                                    ].filter((p): p is string => Boolean(p) && EQUIPMENT_PURPOSES.includes(p as any));
+                                                    const purposes = getActivePurposes(item).filter((p): p is string => Boolean(p) && EQUIPMENT_PURPOSES.includes(p as any));
 
                                                     return purposes.map((p) => (
                                                         <span key={p} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
@@ -269,7 +266,7 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-wrap gap-1">
-                                                {(item.mapped_services || []).map((s) => (
+                                                {Array.from(new Set(item.mapped_services || [])).map((s) => (
                                                     <span key={s} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
                                                         {s}
                                                     </span>
@@ -281,6 +278,22 @@ export default function EquipmentTable({ data, onEdit, onDelete, selectedIds = n
                                         </td>
                                         <td className="px-6 py-4">
                                             <AttributeCell attributes={item.specs} role={getEquipmentRole(item)} />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {item.pricingSku ? (
+                                                <div className="flex flex-col items-start gap-1">
+                                                    <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded truncate max-w-[120px]" title={item.pricingSku}>
+                                                        {item.pricingSku}
+                                                    </span>
+                                                    {item.pricingSku_listPrice !== undefined && (
+                                                        <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                                            ${Number(item.pricingSku_listPrice).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-[10px] text-zinc-400 italic">None</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <StatusBadge status={item.status || "Supported"} />

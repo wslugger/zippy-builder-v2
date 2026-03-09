@@ -392,3 +392,16 @@
 - **Strict TypeScript Boundaries**: Updated the `TabValues` and `activeTab` types in the Admin pages to strictly enforce the new canonical IDs. 
 - **AI Rule Copilot Alignment**: Ensured that AI extraction and logic-generation prompts use the new canonical IDs, preventing the creation of new "orphaned" data.
 - **Key Insight**: Disappearing UI elements in a filtered view are often a symptom of ID-mismatches following a data migration. Centralizing these IDs in a typed constant or enum, rather than using raw strings, is critical for catching these issues at build time rather than runtime.
+## 54. Multi-Stage AI Sync & Data Denormalization for Scale
+**Issue**: Initial attempts to sync a massive 47,000+ item pricing catalog using a single AI pass were fragile. 
+- **Scale Limits**: The frontend's 5,000-item fetch limit meant newly synced items often became "invisible" in UI lookups.
+- **Data Pollution**: One-pass logic often ingested thousands of unrelated generic licenses, "polluting" the catalog with low-quality data.
+- **AI Context Overload**: Asking the AI to match hardware *and* multiple tiers of licenses in one prompt led to truncated responses or missing detail.
+
+**Solution**:
+- **Intentional 2-Step Flow**: Rearchitected the sync into two distinct stages:
+    1. **Step 1: Hardware Pricing**: Focus strictly on base unit SKUs and List Prices for existing catalog equipment.
+    2. **Step 2: Licensing Discovery**: Match valid license tiers (Enterprise, Advanced, etc.) and terms (1Y/3Y/5Y) to those specific devices.
+- **Price Denormalization**: Added `pricingSku_listPrice` directly onto the `Equipment` and `License` schemas in Firestore.
+- **Key Insight**: When building for scale (e.g., thousands of parts), **Denormalization is your friend**. Storing the "List Price" snapshot directly on the equipment/license object removes the requirement for the frontend to perform a real-time join against a massive 40k+ item pricing table. This ensures the pricing is *always* visible, even if the primary pricing catalog isn't fully loaded into memory.
+- **Process Isolation**: Splitting the sync steps allows for more specific AI system instructions, which drastically improves the quality and reliability of complex vendor SKU generation (especially for Meraki and Cisco DNA).

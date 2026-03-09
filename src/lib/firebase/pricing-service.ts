@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db } from './config';
 import { stampCreate, stampUpdate } from '../timestamps';
 import { PricingItem, PricingItemSchema } from '../types';
@@ -18,12 +18,20 @@ export class PricingService {
         return PricingItemSchema.parse({ ...data, id: data.id || snapshot.id });
     }
 
-    static async getAllPricingItems(): Promise<PricingItem[]> {
-        const q = query(collection(db, PRICING_COLLECTION), orderBy("id"));
-        const smt = await getDocs(q);
-        return smt.docs.map(doc => {
+    static async getAllPricingItems(limitCount?: number): Promise<PricingItem[]> {
+        let q = query(collection(db, PRICING_COLLECTION), orderBy("id"));
+        if (limitCount) {
+            q = query(q, limit(limitCount));
+        }
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => {
             const data = doc.data();
-            return PricingItemSchema.parse({ ...data, id: data.id || doc.id });
+            // Lighter-weight parsing for the list view to avoid massive Zod overhead
+            return {
+                ...data,
+                id: data.id || doc.id,
+                listPrice: Number(data.listPrice || 0)
+            } as PricingItem;
         });
     }
 

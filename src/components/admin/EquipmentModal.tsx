@@ -61,51 +61,9 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
     const [descriptionSuggestion, setDescriptionSuggestion] = useState<string | null>(null);
     const [isLoadingDescriptionCopilot, setIsLoadingDescriptionCopilot] = useState(false);
-    const [isDiscovering, setIsDiscovering] = useState(false);
-    const [licenseSearch, setLicenseSearch] = useState("");
 
     const { pricingItems: pricingCatalog } = usePricing();
 
-    // Matching logic for pricing SKU suggestion
-    const pricingSuggestion = (!formData.pricingSku && !formData.pricingSkuConfirmed) ? (() => {
-        if (!formData.model && !formData.id) return null;
-        const target = (formData.model || formData.id).toLowerCase();
-
-        // Exact match
-        const exact = pricingCatalog.find(p => p.id.toLowerCase() === target);
-        if (exact) return exact.id;
-
-        // Best fuzzy match: starts with target
-        const matches = pricingCatalog.filter(p => p.id.toLowerCase().startsWith(target));
-        if (matches.length > 0) {
-            return matches.sort((a, b) => a.id.length - b.id.length)[0].id;
-        }
-
-        // Fallback: contains target
-        const contains = pricingCatalog.filter(p => p.id.toLowerCase().includes(target));
-        if (contains.length > 0) {
-            return contains[0].id;
-        }
-
-        return null;
-    })() : null;
-
-    // Direct lookup for ACTIVE price from catalog
-    const activeCatalogItem = (() => {
-        const lookupId = formData.pricingSku || formData.id;
-        if (!lookupId) return null;
-        return pricingCatalog.find(p => p.id === lookupId);
-    })();
-
-    const handleConfirmSuggestion = () => {
-        if (pricingSuggestion) {
-            setFormData({
-                ...formData,
-                pricingSku: pricingSuggestion,
-                pricingSkuConfirmed: true
-            });
-        }
-    };
 
     const handleAskDescriptionCopilot = async () => {
         setIsLoadingDescriptionCopilot(true);
@@ -134,43 +92,6 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
         }
     };
 
-    const handleDiscoverLicenses = async () => {
-        setIsDiscovering(true);
-        try {
-            const res = await fetch("/api/admin/equipment/discover-licenses", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    equipmentId: formData.id,
-                    model: formData.model,
-                    vendor_id: formData.vendor_id
-                })
-            });
-
-            if (!res.ok) throw new Error("Failed to discover");
-            const { suggestions } = await res.json();
-
-            if (suggestions && suggestions.length > 0) {
-                // Merge new suggestions with existing, avoiding duplicates by id
-                const existing = (formData as any).licenses || [];
-                const existingIds = new Set(existing.map((l: any) => l.id));
-                const newOnes = suggestions.filter((s: any) => !existingIds.has(s.id));
-
-                if (newOnes.length > 0) {
-                    handleChange("licenses" as any, [...existing, ...newOnes] as any);
-                } else {
-                    alert("AI found duplicates of existing licenses.");
-                }
-            } else {
-                alert("No new compatible licenses found by AI.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Error discovering licenses.");
-        } finally {
-            setIsDiscovering(false);
-        }
-    };
 
     if (!isOpen) return null;
 
@@ -576,70 +497,62 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
 
                             {/* Pricing Information Card */}
                             <section className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h4 className={sectionTitleClass}>Pricing Catalog Linking</h4>
+                                <h4 className={sectionTitleClass}>Pricing & Catalog Linking</h4>
                                 <div className="grid grid-cols-2 gap-x-8 gap-y-8">
                                     <div className="col-span-1">
-                                        <label className={labelClass}>Pricing Catalog SKU</label>
+                                        <label className={labelClass}>Hardware Pricing SKU</label>
                                         <input
                                             type="text"
                                             value={formData.pricingSku || ""}
-                                            onChange={(e) => setFormData({ ...formData, pricingSku: e.target.value, pricingSkuConfirmed: true })}
-                                            className={`${inputClass} ${!formData.pricingSkuConfirmed && formData.pricingSku ? 'border-amber-500/50 bg-amber-500/5' : ''}`}
-                                            placeholder="e.g. C9200-DNA-A-24-5Y"
+                                            onChange={(e) => handleChange("pricingSku" as any, e.target.value)}
+                                            className={inputClass}
+                                            placeholder="e.g. C9200-DNA-A-24"
                                         />
-                                        {pricingSuggestion && (
-                                            <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between gap-4 animate-in slide-in-from-top-2 duration-300">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-lg">💁‍♂️</span>
-                                                    <div>
-                                                        <p className="text-[11px] font-semibold text-amber-500 uppercase tracking-wider">Suggested Match</p>
-                                                        <p className="text-sm text-zinc-300 font-mono">{pricingSuggestion}</p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={handleConfirmSuggestion}
-                                                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-amber-950 text-[11px] font-bold rounded-lg transition-colors uppercase tracking-tight"
-                                                >
-                                                    Confirm Match
-                                                </button>
-                                            </div>
-                                        )}
-                                        {formData.pricingSku && !formData.pricingSkuConfirmed && !pricingSuggestion && (
-                                            <p className="text-[10px] text-amber-500 mt-2 flex items-center gap-1">
-                                                <span>⚠️</span> Needs Confirmation
-                                            </p>
-                                        )}
-                                        <p className="text-[10px] text-zinc-500 mt-2 italic font-medium">This SKU links the equipment to the global price list. If empty, the system defaults to the Equipment ID.</p>
+                                        <p className="text-[10px] text-zinc-500 mt-2 italic font-medium">This SKU links the equipment to the global price list. If empty, the system defaults to the Equipment ID. Use AI Sync on the Pricing page to map automatically.</p>
                                     </div>
                                     <div className="col-span-1">
-                                        <div className={`p-5 rounded-2xl border transition-all duration-300 ${activeCatalogItem ? 'bg-blue-600/5 dark:bg-blue-600/10 border-blue-600/20' : 'bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-100 dark:border-zinc-800/50 opacity-60'}`}>
-                                            <div className="flex items-center justify-between mb-4">
-                                                <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Active List Price</label>
-                                                {activeCatalogItem && (
-                                                    <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-md uppercase tracking-tighter">Active</span>
-                                                )}
-                                            </div>
-                                            {activeCatalogItem ? (
-                                                <div>
-                                                    <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-mono tracking-tighter">
-                                                        ${activeCatalogItem.listPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                        {(() => {
+                                            const lookupId = (formData as any).pricingSku || formData.id;
+                                            const activeCatalogItem = lookupId ? pricingCatalog.find(p => p.id === lookupId) : null;
+
+                                            // Fallback to denormalized listPrice if it exists on the equipment document directly.
+                                            const displayPrice = activeCatalogItem?.listPrice ?? (formData as any).pricingSku_listPrice ?? 0;
+                                            const hasPrice = !!activeCatalogItem || !!(formData as any).pricingSku_listPrice;
+
+                                            return (
+                                                <div className={`p-5 rounded-2xl border transition-all duration-300 ${hasPrice ? 'bg-blue-600/5 dark:bg-blue-600/10 border-blue-600/20' : 'bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-100 dark:border-zinc-800/50 opacity-60'}`}>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Active List Price</label>
+                                                        {hasPrice ? (
+                                                            <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-md uppercase tracking-tighter">Linked</span>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 bg-zinc-300 text-zinc-600 text-[10px] font-bold rounded-md uppercase tracking-tighter">Unlinked</span>
+                                                        )}
                                                     </div>
-                                                    <div className="text-[11px] text-zinc-500 mt-2 line-clamp-2 leading-relaxed" title={activeCatalogItem.description}>
-                                                        {activeCatalogItem.description}
-                                                    </div>
+                                                    {hasPrice ? (
+                                                        <div>
+                                                            <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-mono tracking-tighter">
+                                                                ${(displayPrice).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-500 mt-2 line-clamp-2 leading-relaxed" title={activeCatalogItem?.description || "Hardware Base Price"}>
+                                                                {activeCatalogItem?.description || "Hardware Base Price"}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="py-2">
+                                                            <div className="text-xl font-bold text-zinc-400 dark:text-zinc-600 font-mono italic">
+                                                                $0.00
+                                                            </div>
+                                                            <p className="text-[10px] text-zinc-400 mt-2 italic font-medium leading-relaxed">No match found in the Catalog. Run AI Sync or enter a valid SKU.</p>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <div className="py-2">
-                                                    <div className="text-xl font-bold text-zinc-400 dark:text-zinc-600 font-mono italic">
-                                                        Unlinked
-                                                    </div>
-                                                    <p className="text-[10px] text-zinc-400 mt-2 italic font-medium leading-relaxed">No match found in the current Pricing Catalog. Please upload a price list or link a valid SKU.</p>
-                                                </div>
-                                            )}
-                                        </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </section>
+
 
                             {/* Throughput & Performance Card - WAN purpose */}
                             {activePurposes.includes('WAN') && (
@@ -1299,22 +1212,6 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <button
-                                        onClick={handleDiscoverLicenses}
-                                        disabled={isDiscovering}
-                                        className={`px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-purple-900/10 flex items-center gap-2 ${isDiscovering ? 'opacity-50' : ''}`}
-                                    >
-                                        {isDiscovering ? (
-                                            <>
-                                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                Discovering...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span>✨</span> Discover with AI
-                                            </>
-                                        )}
-                                    </button>
-                                    <button
                                         onClick={() => {
                                             const newLicenses = [...((formData as any).licenses || []), { id: "", tier: "advanced", termLength: "1YR" }];
                                             handleChange("licenses" as any, newLicenses as any);
@@ -1326,80 +1223,6 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 </div>
                             </div>
 
-                            {/* Manual Search & Attach */}
-                            <div className="bg-zinc-50 dark:bg-zinc-800/20 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                                <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-2 block">Quick-Attach from Global Pricing Catalog</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Search master pricing list by SKU or description..."
-                                        value={licenseSearch}
-                                        onChange={(e) => setLicenseSearch(e.target.value)}
-                                        className="w-full text-xs p-2.5 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
-                                    />
-                                    {licenseSearch.length >= 2 && (
-                                        <div className="absolute z-10 top-full left-0 w-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                                            {pricingCatalog
-                                                .filter(p => p.id.toLowerCase().includes(licenseSearch.toLowerCase()) || p.description?.toLowerCase().includes(licenseSearch.toLowerCase()))
-                                                .slice(0, 50)
-                                                .map(p => {
-                                                    const existing = (formData as any).licenses || [];
-                                                    const isAttached = existing.some((l: any) => l.id === p.id);
-
-                                                    return (
-                                                        <button
-                                                            key={p.id}
-                                                            type="button"
-                                                            disabled={isAttached}
-                                                            onClick={() => {
-                                                                if (isAttached) return;
-
-                                                                // Guess tier/term for common Cisco/Meraki patterns
-                                                                let tier = "advanced";
-                                                                let term = "1YR";
-                                                                if (p.id.toLowerCase().includes("3yr")) term = "3YR";
-                                                                else if (p.id.toLowerCase().includes("5yr")) term = "5YR";
-                                                                else if (p.id.toLowerCase().includes("10y")) term = "10Y";
-
-                                                                if (p.id.toLowerCase().includes("ent")) tier = "enterprise";
-                                                                else if (p.id.toLowerCase().includes("sec")) tier = "advanced-security";
-
-                                                                handleChange("licenses" as any, [...existing, { id: p.id, tier, termLength: term }] as any);
-                                                                // Intentionally leaving licenseSearch intact so the dropdown stays open for multiple selections
-                                                            }}
-                                                            className={`w-full text-left px-4 py-3 border-b last:border-0 border-zinc-100 dark:border-zinc-800 transition-colors flex items-center justify-between group ${isAttached
-                                                                ? "bg-zinc-50 dark:bg-zinc-800/80 cursor-not-allowed opacity-75"
-                                                                : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                                                                }`}
-                                                        >
-                                                            <div className="flex-1 min-w-0 pr-4">
-                                                                <div className={`font-mono text-[11px] font-bold ${isAttached ? "text-zinc-500" : "text-zinc-900 dark:text-zinc-100"}`}>{p.id}</div>
-                                                                <div className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">{p.description}</div>
-                                                            </div>
-                                                            {isAttached ? (
-                                                                <span className="text-emerald-500 flex-shrink-0">
-                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                    </svg>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-transparent group-hover:text-blue-500 flex-shrink-0 transition-colors">
-                                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                                                    </svg>
-                                                                </span>
-                                                            )}
-                                                        </button>
-                                                    );
-                                                })
-                                            }
-                                            {pricingCatalog.filter(p => p.id.toLowerCase().includes(licenseSearch.toLowerCase())).length === 0 && (
-                                                <div className="p-4 text-center text-xs text-zinc-400 italic">No matches found.</div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                             <div className="space-y-3">
                                 {(!(formData as any).licenses || (formData as any).licenses.length === 0) && (
                                     <div className="text-center py-8 text-zinc-400 text-xs italic bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700">
@@ -1408,7 +1231,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                 )}
                                 {(formData as any).licenses?.map((lic: any, i: number) => (
                                     <div key={i} className="grid grid-cols-12 gap-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-700">
-                                        <div className="col-span-5 relative">
+                                        <div className="col-span-4 relative">
                                             <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1 block">License SKU / ID</label>
                                             <input
                                                 type="text" placeholder="e.g. LIC-MX68-SEC-3YR"
@@ -1434,7 +1257,7 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 className="w-full text-sm p-3 rounded-lg border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                                             />
                                         </div>
-                                        <div className="col-span-3">
+                                        <div className="col-span-2">
                                             <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1 block">Term Length</label>
                                             <input
                                                 type="text" placeholder="e.g. 1YR, 3YR"
@@ -1446,6 +1269,16 @@ export default function EquipmentModal({ equipment, isOpen, onClose, onSave }: E
                                                 }}
                                                 className="w-full text-sm p-3 rounded-lg border border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                                             />
+                                        </div>
+                                        <div className="col-span-2 flex flex-col justify-end">
+                                            <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1 block">List Price</label>
+                                            <div className="w-full text-sm p-3 rounded-lg border border-transparent flex items-center bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-600 dark:text-zinc-400 font-mono italic">
+                                                {(() => {
+                                                    const catalogMatch = pricingCatalog.find(p => p.id === lic.id);
+                                                    const displayPrice = catalogMatch?.listPrice ?? lic.listPrice ?? 0;
+                                                    return `$${displayPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+                                                })()}
+                                            </div>
                                         </div>
                                         <div className="col-span-1 flex items-end justify-center pb-2">
                                             <button

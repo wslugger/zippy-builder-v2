@@ -142,6 +142,7 @@ export const EquipmentLicenseSchema = z.object({
   id: z.string().describe("The exact License SKU (must match the ID in vendor_pricing catalog)"),
   tier: z.string().describe("The capability tier (e.g., 'SEC', 'ENT', 'SDW', 'advanced', etc.)"),
   termLength: z.string().describe("Duration string or number (e.g., '1D', '1YR', '3YR', '10Y')"),
+  listPrice: z.number().optional().describe("Denormalized list price for immediate display"),
 });
 export type EquipmentLicense = z.infer<typeof EquipmentLicenseSchema>;
 
@@ -163,6 +164,7 @@ const BaseEquipmentSchema = z.object({
   formFactor: z.string().optional(),
   pricingSku: z.string().optional().describe("Explicit SKU used to lookup pricing in the Pricing Catalog. If omitted, falls back to equipment ID."),
   pricingSkuConfirmed: z.boolean().optional().describe("Whether the mapped pricing SKU has been confirmed by an admin."),
+  pricingSku_listPrice: z.number().optional().describe("Denormalized list price of the mapped pricing SKU"),
   eosDate: z.string().nullable().optional().describe("ISO date of End-of-Sale announcement"),
   datasheet_url: z.string().optional(),
   images: z.array(z.string()).optional(),
@@ -265,9 +267,8 @@ export type LANSpecs = z.infer<typeof LANSpecsSchema>;
 export type WLANSpecs = z.infer<typeof WLANSpecsSchema>;
 export type UnifiedSpecs = z.infer<typeof UnifiedSpecsSchema>;
 
-/** Returns all active purposes for a piece of equipment (primary + additional). */
 export function getActivePurposes(equip: { primary_purpose: string; additional_purposes?: string[] }): string[] {
-  return [equip.primary_purpose, ...(equip.additional_purposes || [])];
+  return Array.from(new Set([equip.primary_purpose, ...(equip.additional_purposes || [])]));
 }
 
 // ============================================================
@@ -478,6 +479,12 @@ export const PROMPT_IDS = [
   'bom_generation',
   'hld_generation',
   'bom_logic_rules',
+  'license_mapping_wan',
+  'license_mapping_lan',
+  'license_mapping_wlan',
+  'pricing_mapping_wan',
+  'pricing_mapping_lan',
+  'pricing_mapping_wlan',
 ] as const;
 
 export type PromptId = typeof PROMPT_IDS[number];
