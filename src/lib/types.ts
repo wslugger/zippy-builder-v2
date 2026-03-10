@@ -423,14 +423,17 @@ export interface Project {
   name: string;
   customerName: string;
   description?: string;
-  status: 'draft' | 'scope_selection' | 'package_selection' | 'customizing' | 'completed';
-  projectScope?: 'complete_network' | 'standalone_sites';
+  status: 'draft' | 'scope_selection' | 'package_selection' | 'customizing' | 'completed' | 'express_connect_selection';
+  projectScope?: 'complete_network' | 'standalone_sites' | 'express_connect';
   currentStep: number; // 1-6 (mapped to UI steps)
 
   // Step 2: Package Selection
   selectedPackageId?: string;
   packageConfidenceScore?: number; // 0-100
   packageReasoning?: string;
+
+  // Express Connect specific requirements
+  expressConnectRequirements?: ExpressConnectRequirements;
 
   // Requirements (Gemini Analysis Context)
   requirementsFiles?: string[]; // URLs to storage
@@ -477,6 +480,59 @@ export interface AIAnalysisResult {
   packageId: string;
   confidence: number;
   reasoning: string;
+}
+
+export interface ExpressConnectRequirements {
+  // 1. Topology
+  topology: 'hub-and-spoke' | 'partial-mesh';
+  trafficFlow: 'centralized' | 'cloud' | 'distributed';
+  spokeToSpokeEnabled: boolean;
+  latencySensitive: boolean;
+
+  // 2. Underlay & HA
+  haModel: 'active-active' | 'active-standby';
+  hardwareRedundancy: 'none' | 'hub-only' | 'hub-and-critical-spokes' | 'all-sites';
+
+  // 3. Internet Breakout Strategy
+  saasHeavy: boolean;
+  breakoutStrategy: 'backhaul' | 'direct' | 'hybrid';
+  localUTMEnabled: boolean;
+  missionCriticalApps: string[];
+
+  // 4. Cloud Services (IaaS)
+  cloudPlatforms: ('aws' | 'azure' | 'gcp' | 'none')[];
+  cloudAccessMethod: 'ipsec' | 'direct-connect' | 'public-internet';
+  multiCloudCommsRequired: boolean;
+  cloudThroughputTier: 'vMX-S' | 'vMX-M' | 'vMX-L' | 'none';
+
+  // 5. WAN Connectivity
+  wanPriority: '5G-primary' | '5G-backup' | 'wired-only';
+  cellularProviderPreference?: string;
+
+  // 6. Site Sizing
+  maxConcurrentUsers: number;
+  totalThroughputMbps: number;
+  securityPosture: 'advanced-security-plus' | 'enterprise-security' | 'cloud-security-proxy';
+  physicalRequirements: ('poe' | 'wifi' | 'rack-mount' | 'wall-mount')[];
+
+  // 7. LAN / Switching
+  lanPortDensity: number;
+  lanPoEBudget: 'low' | 'medium' | 'high';
+  lanUplinkSpeed: '1G' | '10G' | '40G';
+  lanStackingRequired: boolean;
+  lanLayer3Required: boolean;
+  lanEnvironment: 'standard' | 'ruggedized';
+
+  // 8. WLAN / Wireless
+  wlanDensity: 'low' | 'high' | 'ultra-high';
+  wlanEnvironment: 'drop-ceiling' | 'open-ceiling' | 'outdoor';
+  wlanSiteSurveyAvailable: boolean;
+  wlanStandard: 'wifi-6' | 'wifi-6e' | 'wifi-7';
+  wlanAuthMethod: '802.1X' | 'psk' | 'splash-page';
+  wlanIoTAnalyticsRequired: boolean;
+
+  // 9. Additional Services
+  additionalServices: ('ddos' | 'aiops' | 'umbrella' | 'thousandeyes')[];
 }
 
 // ============================================================

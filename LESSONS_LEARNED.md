@@ -434,3 +434,12 @@
 - **Explicit String Formatting**: For large multiline strings in constants (like AI Prompts), replaced template literals with double-quoted strings and explicit `\n` characters. This provides a more "stable" AST for the SWC compiler and prevents issues with hidden or invalid characters in backtick blocks.
 - **No-Cache Verification**: Mandatory use of `npm run test -- --no-cache` after structural artifact cleanup to ensure stale transform results were purged.
 **Lesson**: Rogue files in the source tree are more dangerous than rogue code in a active file. Build and test tools often have broad search patterns that ingest unintentional "debris." Keep the source tree pristine.
+
+## 57. Progressive Disclosure & Intent-Based Sizing (Express Connect)
+**Issue**: Solution Architects (SAs) often need to build standardized branch networks quickly without manually selecting every switch and AP. Traditional "Package Selection" was too granular for high-velocity "Express" designs.
+**Solution**:
+- **Vertical Accordion Flow**: Implemented a 9-step progressive disclosure flow that captures high-level design intents (Topology, Cloud, 5G priority) rather than individual SKUs.
+- **Intent-to-Hardware Mapping**: Built logic to automatically detect "All-in-One" opportunities (e.g., using MX built-in ports for <50 user sites) based on sizing intents.
+- **Literal Type Safety**: Forcing the use of `as const` and union types in the intent collector prevents "string soup" and ensures that the downstream BOM engine receives well-defined, validated inputs.
+- **Key Insight**: A successful "Express" flow must prioritize **constrained choices**. By limiting the design boundaries (e.g., standardizing on Wi-Fi 6 vs 6E, or Hub-and-Spoke vs Mesh), we reduce the SA's decision fatigue and enable automated hardware sizing that feels "correct" by default.
+- **UX Pattern**: Use a single-page accordion to maintain context while guiding the user through a linear narrative. This is more effective for "Intent Design" than multi-page forms or tabbed interfaces.
