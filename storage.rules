@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Package collateral uploads
+    match /packages/{packageId}/collateral/{filename} {
+      allow read: if true;
+      allow write: if request.resource.size < 20 * 1024 * 1024  // 20MB max
+                   && request.resource.contentType.matches('application/pdf|image/.*|application/msword|application/vnd\\..*|text/.*');
+      allow delete: if true;
+    }
+
+    // Project requirements uploads
+    match /projects/{projectId}/requirements/{filename} {
+      allow read: if true;
+      allow write: if request.resource.size < 20 * 1024 * 1024  // 20MB max
+                   && request.resource.contentType.matches('application/pdf|image/.*|application/msword|application/vnd\\..*|text/.*');
+      allow delete: if true;
+    }
+
+    // Deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
